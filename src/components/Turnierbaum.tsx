@@ -1,4 +1,3 @@
-import React from "react";
 import type { BracketData, Match, Team, RunData } from "../types";
 import { fmtTime } from "../utils/helpers";
 
@@ -15,7 +14,7 @@ function MatchBox({ match, editable, onUpdateRun }: MatchBoxProps) {
     const isWinner = match.winnerId && match.winnerId === team?.id;
     
     // Calculate display summary value
-    const totalScore = run.zeit !== null ? run.zeit + run.strafe : null;
+    const totalScore = run.zeit !== null ? run.zeit + (run.strafe ?? 0) : null;
 
     return (
       <div className={`match-team-row ${isWinner ? "match-winner" : ""}`}>
@@ -50,7 +49,7 @@ function MatchBox({ match, editable, onUpdateRun }: MatchBoxProps) {
         ) : (
           <span className="bracket-time-display">
             {run.zeit !== null ? `${fmtTime(run.zeit)}` : "—"}
-            {run.strafe > 0 && <span className="bracket-penalty-badge"> +{run.strafe}s</span>}
+            {(run.strafe ?? 0) > 0 && <span className="bracket-penalty-badge"> +{run.strafe}s</span>}
             {totalScore !== null && <strong className="bracket-total-score"> ({fmtTime(totalScore)})</strong>}
           </span>
         )}

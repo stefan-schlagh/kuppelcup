@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { seedTeams, gesamt, punkte, SEED_ORDER } from "./utils/helpers";
-import type { Team, BracketData } from "./types";
+import type { RunData, Team, BracketData } from "./types";
 import Bestenliste from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
@@ -79,7 +79,7 @@ export default function KuppelCup() {
         g2: gesamt(t.dg2),
         punkte: punkte(t),
       }))
-      .sort((a, b) => b.punkte === 0 ? -1 : (a.punkte) - (b.punkte));
+      .sort((a, b) => b.punkte === 0 ? -1 : (a.punkte ?? 0) - (b.punkte ?? 0));
   }, [teams]);
 
   const eligible = ranked.filter((t) => (!t.gastgeber && punkte(t) !== 0));
@@ -90,8 +90,8 @@ export default function KuppelCup() {
       const saved = ko[matchId] || {};
       const runA = { ...defaultRun(), ...saved.runA };
       const runB = { ...defaultRun(), ...saved.runB };
-      const scoreA = runA.zeit !== null ? runA.zeit + runA.strafe : Infinity;
-      const scoreB = runB.zeit !== null ? runB.zeit + runB.strafe : Infinity;
+      const scoreA = runA.zeit !== null ? runA.zeit + (runA.strafe ?? 0) : Infinity;
+      const scoreB = runB.zeit !== null ? runB.zeit + (runB.strafe ?? 0) : Infinity;
       let winnerId: string | null = null;
       if (scoreA < Infinity || scoreB < Infinity) {
         winnerId = scoreA <= scoreB ? teamA?.id ?? null : teamB?.id ?? null;
@@ -158,7 +158,7 @@ export default function KuppelCup() {
             <AdminPanel 
             teams={scheduledTeams} /* Passes Fixed Starter Sequence directly down to admin rows */
             updateRun={updateRun} 
-            toggleGastgeber={(id) => setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
+            toggleGastgeber={(id: string) => setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
             bracket={bracket}
             setWinner={updateKoRun}
             updateKoRun={updateKoRun}

@@ -1,4 +1,6 @@
-export const fmtTime = (s) => {
+import type { Team, RunData } from "../types";
+
+export const fmtTime = (s: any) => {
   if (s == null || Number.isNaN(s)) return "–";
   const m = Math.floor(s / 60);
   const sec = (s - m * 60).toFixed(2).padStart(5, "0");
@@ -15,7 +17,7 @@ export const seedTeams = () => {
     "FF Steinwand", "FF Fellbach", "FF Dornbach", "FF Königsau", "FF Reitdorf",
   ];
   
-  const randomStrafe = () => {
+  /*const randomStrafe = () => {
     const r = Math.random();
     if (r < 0.65) return 0;
     const pool = [5, 10, 20];
@@ -23,10 +25,10 @@ export const seedTeams = () => {
     let sum = 0;
     for (let i = 0; i < count; i++) sum += pool[Math.floor(Math.random() * pool.length)];
     return sum;
-  };
+  };*/
 
   return names.map((name, i) => {
-    const base = 18 + Math.random() * 10;
+    //const base = 18 + Math.random() * 10;
     return {
       id: `t${i + 1}`,
       name,
@@ -40,15 +42,15 @@ export const seedTeams = () => {
   });
 };
 
-export function gesamt(run) {
+export function gesamt(run: RunData) {
   if (!run || run.zeit == null) return null;
   return run.zeit + (run.strafe || 0);
 }
 
-export function punkte(t) {
+export function punkte(t: Team) {
   if (!gesamt(t.dg1) && !gesamt(t.dg2)) return 0
   if (!gesamt(t.dg2)) return gesamt(t.dg1)
-  Math.min(gesamt(t.dg1), gesamt(t.dg2) ?? 0)
+  Math.min(gesamt(t.dg1) ?? 0, gesamt(t.dg2) ?? 0)
 }
 
 export const SEED_ORDER = [

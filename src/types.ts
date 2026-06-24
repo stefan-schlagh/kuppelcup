@@ -1,6 +1,6 @@
 export interface RunData {
   zeit: number | null;
-  strafe: number;
+  strafe: number | null;
 }
 
 export interface Team {

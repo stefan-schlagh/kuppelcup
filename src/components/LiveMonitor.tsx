@@ -1,4 +1,3 @@
-import React from "react";
 import type { Team } from "../types";
 import { fmtTime } from "../utils/helpers";
 
@@ -42,7 +41,7 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
                 </p>
                 <div className="monitor-time-box text-muted-color">
                   {fmtTime(entry.team[entry.round].zeit)}
-                  {entry.team[entry.round].strafe > 0 && (
+                  {(entry.team[entry.round].strafe ?? 0) > 0 && (
                     <span className="monitor-error-text"> (+{entry.team[entry.round].strafe}s)</span>
                   )}
                 </div>

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS } from "../utils/helpers";
+import type { Team} from '../types'
 
-export default function AdminPanel({ teams, updateRun, toggleGastgeber, bracket, setWinner, updateKoRun }) {
+export default function AdminPanel({ teams, updateRun, toggleGastgeber, bracket, /*setWinner,*/ updateKoRun }: any) {
   const [sub, setSub] = useState("ergebnisse");
   return (
     <div>
@@ -27,7 +28,7 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, bracket,
                 </tr>
               </thead>
               <tbody>
-                {teams.map((t) => (
+                {teams.map((t: Team) => (
                   <tr key={t.id}>
                     <td className="td-name">{t.name}</td>
                     <td><input type="number" step="0.01" value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
@@ -46,7 +47,7 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, bracket,
       )}
 
       {sub === "ko" && (
-        <Turnierbaum bracket={bracket} editable={true} onUpdateRun={updateKoRun} onPick={(matchId, teamId) => setWinner(matchId, teamId)} />
+        <Turnierbaum bracket={bracket} editable={true} onUpdateRun={updateKoRun} /*{(matchId, teamId) => setWinner(matchId, teamId)}*/ />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
-import React from "react";
 import { fmtTime } from "../utils/helpers";
+import type { Team } from "../types";
 
-export default function Bestenliste({ ranked, top8Ids }) {
+export default function Bestenliste({ ranked, top8Ids }: any) {
   return (
     <div>
       <h2 className="panel-title">Bestenliste — Grunddurchgang</h2>
@@ -19,7 +19,7 @@ export default function Bestenliste({ ranked, top8Ids }) {
             </tr>
           </thead>
           <tbody>
-            {ranked.map((t, i) => {
+            {ranked.map((t: Team, i: number) => {
               const qualified = top8Ids.has(t.id);
               return (
                 <tr key={t.id} className={qualified ? "row-qualified" : ""}>
@@ -28,13 +28,13 @@ export default function Bestenliste({ ranked, top8Ids }) {
                     {t.name}
                     {t.gastgeber && <span className="host-tag">Gastgeber</span>}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.g1)}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.dg1)}`}>
                     {fmtTime(t.dg1.zeit)} {t.dg1.strafe ? <span className="fehler-tag">+{t.dg1.strafe}s</span> : null}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.g2)}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.dg2)}`}>
                     {fmtTime(t.dg2.zeit)} {t.dg2.strafe ? <span className="fehler-tag">+{t.dg2.strafe}s</span> : null}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{(t as any).punkte}</td>
                   <td>
                     {t.gastgeber ? (
                       <span className="badge-host">Außer Konkurrenz</span>
