@@ -32,8 +32,10 @@ export const seedTeams = () => {
       name,
       start: i + 1,
       gastgeber: i === 0, 
-      dg1: { zeit: +(base + Math.random() * 4).toFixed(2), strafe: randomStrafe() },
-      dg2: { zeit: +(base + Math.random() * 4 - 1).toFixed(2), strafe: randomStrafe() },
+      dg1: { zeit: null, strafe: null },
+      dg2: { zeit: null, strafe: null },
+      //dg1: { zeit: +(base + Math.random() * 4 - 1).toFixed(2), strafe: randomStrafe() },
+      //dg2: { zeit: +(base + Math.random() * 4 - 1).toFixed(2), strafe: randomStrafe() },
     };
   });
 };
@@ -41,6 +43,12 @@ export const seedTeams = () => {
 export function gesamt(run) {
   if (!run || run.zeit == null) return null;
   return run.zeit + (run.strafe || 0);
+}
+
+export function punkte(t) {
+  if (!gesamt(t.dg1) && !gesamt(t.dg2)) return 0
+  if (!gesamt(t.dg2)) return gesamt(t.dg1)
+  Math.min(gesamt(t.dg1), gesamt(t.dg2) ?? 0)
 }
 
 export const SEED_ORDER = [

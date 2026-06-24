@@ -1,0 +1,5 @@
+- parallel heats (done)
+- light mode
+- define teams, event management
+- Gemeindewertung
+- Tagesbestzeit (Top 3)

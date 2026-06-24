@@ -5,8 +5,11 @@ export interface RunData {
 
 export interface Team {
   id: string;
+  start: number;
   name: string;
   gastgeber?: boolean;
+  dg1: RunData;
+  dg2: RunData;
 }
 
 export interface Match {

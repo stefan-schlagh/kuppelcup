@@ -34,7 +34,7 @@ export default function Bestenliste({ ranked, top8Ids }) {
                   <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.g2)}`}>
                     {fmtTime(t.dg2.zeit)} {t.dg2.strafe ? <span className="fehler-tag">+{t.dg2.strafe}s</span> : null}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{fmtTime(t.punkte)}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
                   <td>
                     {t.gastgeber ? (
                       <span className="badge-host">Außer Konkurrenz</span>
