@@ -1,0 +1,450 @@
+/* Custom properties for theme colors */
+:root {
+  --bg-main: #1B1D21;
+  --bg-surface: #22242A;
+  --bg-row-alt: #24262B;
+  --border-color: #2E3138;
+  --text-main: #F2EFE9;
+  --text-muted: #8B8E94;
+  --text-footer: #5C5F66;
+  --color-primary: #C8102E;
+  --color-accent: #C99A3C;
+  --color-host: #7AA6C2;
+  --bg-host-dim: #2E4A5C;
+  --text-host-light: #9FCBE8;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base App Layout */
+.app-container {
+  min-height: 100vh;
+}
+
+.loading-screen {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.app-header {
+  padding: 20px 24px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hose-icon {
+  color: var(--color-primary);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -2px;
+}
+
+.brand-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.brand-year {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+/* Navigation Tabs */
+.nav-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.nav-btn:hover {
+  color: var(--text-main);
+}
+
+.nav-btn.active {
+  color: var(--text-main);
+  border-bottom: 2px solid var(--color-primary);
+}
+
+/* Main & Common Panel Grid */
+.main-content {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.panel-title {
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 18px;
+  color: var(--color-accent);
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+
+.hint-text {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 16px;
+  margin-top: 0;
+}
+
+/* Tables & Leaderboard */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bg-row-alt);
+}
+
+.td-rank {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text-muted);
+}
+
+.td-name {
+  font-weight: 500;
+}
+
+.td-mono {
+  font-family: 'IBM Plex Mono', monospace;
+  white-space: nowrap;
+}
+
+.td-best {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.row-qualified {
+  background: rgba(201, 154, 60, 0.08);
+}
+
+/* Badges and Tags */
+.host-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-host);
+  border: 1px solid var(--bg-host-dim);
+  border-radius: 4px;
+  padding: 1px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fehler-tag {
+  color: var(--color-primary);
+  font-size: 11px;
+  margin-left: 6px;
+}
+
+.badge-host {
+  background: var(--bg-host-dim);
+  color: var(--text-host-light);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badge-gold {
+  background: var(--color-accent);
+  color: var(--bg-main);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badge-muted {
+  background: var(--border-color);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Bracket Layout */
+.bracket-row {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+}
+
+.bracket-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  justify-content: center;
+  min-width: 200px;
+}
+
+.bracket-col-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.match-box {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.match-team {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.match-box button:last-child {
+  border-bottom: none;
+}
+
+.match-team.selectable {
+  cursor: pointer;
+}
+
+.match-team.selectable:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.match-winner {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Pin Box & Forms */
+.pin-box {
+  max-width: 280px;
+  margin: 60px auto;
+  text-align: center;
+}
+
+.pin-label {
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.pin-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.pin-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pin-error {
+  color: var(--color-primary);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* Admin Specific Elements */
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sub-tab {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sub-tab.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.input-field {
+  width: 90px;
+  padding: 6px 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-main);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.input-field-small {
+  width: 50px;
+  padding: 6px 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-main);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.app-footer {
+  text-align: center;
+  color: var(--text-footer);
+  font-size: 12px;
+  padding: 30px 20px;
+}
+
+.match-team-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  min-height: 34px;
+  gap: 12px;
+}
+
+.team-name-span {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+.match-divider-line {
+  height: 1px;
+  background-color: var(--border-color);
+}
+
+.bracket-inputs-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.bracket-input-time {
+  width: 65px;
+  padding: 4px 6px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-main);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  text-align: right;
+}
+
+.bracket-input-penalty {
+  width: 40px;
+  padding: 4px 6px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--color-primary);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+
+.bracket-time-display {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.bracket-penalty-badge {
+  color: var(--color-primary);
+}
+
+.bracket-total-score {
+  color: var(--color-accent);
+  margin-left: 2px;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
