@@ -34,9 +34,38 @@ _(none)_
 ## Open
 _(none)_
 
+## Ties — current behaviour & risks
+How equal scores are resolved today (there is **no explicit tie-break rule** anywhere):
+
+- **Base-round ranking** (`ranked`, `KuppelCup.tsx` → `byPunkte`): `punkte` is the
+  lower of the two run totals. Equal `punkte` returns `0` from `byPunkte`, so the
+  order falls back to JS's **stable sort** = the `teams` array order (insertion /
+  seed order). Tied teams therefore get an arbitrary but stable rank.
+- **Top-8 cutoff** (`eligible.slice(0, 8)`): the 8th/9th boundary is decided by that
+  same arbitrary order, so a tie on the qualification line silently favours whoever
+  happens to sit earlier in the array. This is the highest-impact case.
+- **K.O. matches** (`assembleMatch`): `winnerId = scoreA <= scoreB ? teamA : teamB`,
+  i.e. an exact tie advances **team A** (the higher-seeded / left side). Deterministic,
+  but only by seeding — no re-run/shootout.
+- **Gemeindewertung / Tagesbestzeit**: same `byPunkte` fallback as the base round.
+
+Potential issues to flag:
+- No sport-defined tie-break (e.g. faster single run, fewer penalties, count-back,
+  head-to-head, re-run). Ranks/qualification can hinge on array order, which also
+  **shifts if teams are re-ordered** (CSV import, add/remove).
+- **Inconsistent rounding:** displayed points use rounded `gesamt` (hundredths), but
+  K.O. `scoreA/scoreB` add `zeit + strafe` raw. So a K.O. "tie" is compared on
+  unrounded values — a winner can be picked on sub-millisecond float noise rather
+  than a real difference.
+- Ties are **invisible in the UI** — nothing marks two teams as equal or flags a
+  contested cutoff, so an arbitrary resolution looks authoritative.
+
 ## Backlog (not scheduled yet)
 - [ ] Tighten component prop types (replace `any` in AdminPanel, Bestenliste, Turnierbaum, …)
 - [ ] Replace the hardcoded client-side admin PIN with real auth (Firebase Auth) once the backend is wired, introduce support for multiple admins with their own events as well.
+- [ ] Define an explicit tie-break rule for base-round ranking + top-8 cutoff (see "Ties" above)
+- [ ] Make K.O. winner comparison use rounded totals (`gesamt`) for consistency; decide how exact ties resolve (re-run vs. seed)
+- [ ] Surface ties in the UI (mark equal ranks / flag a contested qualification line)
 
 ## Manual setup (you — before wiring the backend)
 - [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
