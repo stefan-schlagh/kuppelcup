@@ -412,6 +412,24 @@ body {
   font-family: 'IBM Plex Mono', monospace;
 }
 
+.backup-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.backup-btn {
+  width: auto;
+  padding: 10px 18px;
+}
+
+.backup-import {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
 .app-footer {
   text-align: center;
   color: var(--text-footer);

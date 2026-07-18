@@ -15,3 +15,5 @@
 - add backend (use firebase - or something similar for this)
 
 generally: keep things simple
+
+- Turnierbaum: use both sides (final in the middle)

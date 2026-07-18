@@ -219,6 +219,7 @@ export default function KuppelCup() {
             bracket={bracket}
             setWinner={updateKoRun}
             updateKoRun={updateKoRun}
+            onImportTeams={setTeams}
           />
           ) : (
             <div className="pin-box">

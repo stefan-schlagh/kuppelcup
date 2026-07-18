@@ -1,15 +1,38 @@
 import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS } from "../utils/helpers";
+import { teamsToCsv, csvToTeams, downloadCsv } from "../utils/backup";
 import type { Team} from '../types'
 
-export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGemeinde, bracket, /*setWinner,*/ updateKoRun }: any) {
+export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGemeinde, bracket, /*setWinner,*/ updateKoRun, onImportTeams }: any) {
   const [sub, setSub] = useState("ergebnisse");
+
+  const handleExport = () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`kuppelcup-backup-${stamp}.csv`, teamsToCsv(teams));
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = csvToTeams(String(reader.result ?? ""));
+      if (parsed.length === 0) {
+        alert("Keine Teams in der Datei gefunden.");
+      } else if (confirm(`${parsed.length} Teams importieren? Aktuelle Daten werden ersetzt.`)) {
+        onImportTeams?.(parsed);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
   return (
     <div>
       <div className="admin-tabs">
         <button onClick={() => setSub("ergebnisse")} className={`sub-tab ${sub === "ergebnisse" ? "active" : ""}`}>Grunddurchgang erfassen</button>
         <button onClick={() => setSub("ko")} className={`sub-tab ${sub === "ko" ? "active" : ""}`}>K.O.-Ergebnisse</button>
+        <button onClick={() => setSub("backup")} className={`sub-tab ${sub === "backup" ? "active" : ""}`}>Backup</button>
       </div>
 
       {sub === "ergebnisse" && (
@@ -52,6 +75,20 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGe
 
       {sub === "ko" && (
         <Turnierbaum bracket={bracket} editable={true} onUpdateRun={updateKoRun} /*{(matchId, teamId) => setWinner(matchId, teamId)}*/ />
+      )}
+
+      {sub === "backup" && (
+        <div className="backup-panel">
+          <p className="hint-text">Teams und Grunddurchgang-Ergebnisse als CSV sichern oder wiederherstellen.</p>
+          <div className="backup-actions">
+            <button className="pin-btn backup-btn" onClick={handleExport}>Export als CSV ⬇</button>
+            <label className="pin-btn backup-btn backup-import">
+              Import aus CSV ⬆
+              <input type="file" accept=".csv,text/csv" onChange={handleImport} hidden />
+            </label>
+          </div>
+          <p className="hint-text">Beim Import werden die vorhandenen Teams ersetzt (K.O.-Ergebnisse bleiben unberührt).</p>
+        </div>
       )}
     </div>
   );
