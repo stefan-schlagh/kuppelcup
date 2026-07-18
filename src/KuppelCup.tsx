@@ -9,6 +9,7 @@ import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
+import FullscreenPanel from "./components/FullscreenPanel";
 
 const numberOfParallelRounds = 2
 
@@ -164,14 +165,19 @@ export default function KuppelCup() {
             <button className="save-error-dismiss" onClick={dismissSaveError} aria-label="Schließen">✕</button>
           </div>
         )}
-        {tab === "liste" && <>
-          <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
-          <Gemeindewertung ranked={gemeinde} />
-          <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
-          </>
-        }
+        {tab === "liste" && (
+          <FullscreenPanel>
+            <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
+            <Gemeindewertung ranked={gemeinde} />
+            <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
+          </FullscreenPanel>
+        )}
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
-        {tab === "baum" && <Turnierbaum bracket={bracket} editable={false} />}
+        {tab === "baum" && (
+          <FullscreenPanel>
+            <Turnierbaum bracket={bracket} editable={false} />
+          </FullscreenPanel>
+        )}
         {tab === "urkunden" && authed && (
           <Urkunden
             ranked={ranked}
