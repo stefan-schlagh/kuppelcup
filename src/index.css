@@ -315,6 +315,22 @@ body {
   min-width: 200px;
 }
 
+/* Symmetric bracket: halves feed toward the final in the centre. */
+.bracket-symmetric {
+  justify-content: center;
+  align-items: center;
+}
+
+.bracket-col-final .bracket-col-label {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.bracket-col-final .match-box {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 18px rgba(201, 154, 60, 0.15);
+}
+
 .bracket-col-label {
   font-size: 12px;
   color: var(--text-muted);
