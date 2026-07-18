@@ -59,6 +59,11 @@ export default function KuppelCup() {
     scheduledTeams.forEach(t => queue.push({ team: t, round: "dg1" }));
     scheduledTeams.forEach(t => queue.push({ team: t, round: "dg2" }));
 
+    // No teams yet -> nothing to show, distinct from a finished round.
+    if (queue.length === 0) {
+      return { status: "empty" as const, former: [], current: [], next: [] };
+    }
+
     // Find the first runner profile that lacks a tracked running time
     const currentIndex = queue.findIndex(q => q.team[q.round].zeit === null);
 
@@ -66,7 +71,8 @@ export default function KuppelCup() {
     if (currentIndex === -1) {
       const lastChunkStart = Math.max(0, queue.length - numberOfParallelRounds);
       return {
-        former: queue.length > 0 ? queue.slice(lastChunkStart) : [],
+        status: "finished" as const,
+        former: queue.slice(lastChunkStart),
         current: [],
         next: [],
       };
@@ -81,6 +87,7 @@ export default function KuppelCup() {
     const nextEnd = nextStart + numberOfParallelRounds;
 
     return {
+      status: "running" as const,
       former: formerStart >= 0 ? queue.slice(formerStart, currentStart) : [],
       current: queue.slice(currentStart, currentEnd),
       next: nextStart < queue.length ? queue.slice(nextStart, nextEnd) : [],

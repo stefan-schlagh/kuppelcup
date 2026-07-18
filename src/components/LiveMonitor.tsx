@@ -10,6 +10,7 @@ type MonitorEntry = MonitorState | MonitorState[] | null;
 
 interface LiveMonitorProps {
   data: {
+    status?: "empty" | "running" | "finished";
     former: MonitorEntry;
     current: MonitorEntry;
     next: MonitorEntry;
@@ -72,6 +73,8 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
               </div>
             ))}
           </div>
+        ) : data.status === "empty" ? (
+          <h2 className="empty-msg giant-text">Noch keine Teams angemeldet</h2>
         ) : (
           <h2 className="empty-msg giant-text">Grunddurchgang beendet! 🎉</h2>
         )}
