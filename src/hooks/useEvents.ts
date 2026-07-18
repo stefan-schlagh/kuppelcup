@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { backend } from "../backend";
 import type { Account, EventDoc, EventMeta, EventPhase, KoState, Team } from "../types";
 
@@ -27,12 +27,16 @@ export function useEvents() {
   const [events, setEvents] = useState<EventMeta[]>([]);
   const [current, setCurrent] = useState<EventDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    let active = true;
+    // Run exactly once. A ref guard (not a per-effect cancel flag) is used so
+    // React StrictMode's double-invoke — and the interleaved async that would
+    // let two passes both find an empty list — can't create duplicate events.
+    if (initialized.current) return;
+    initialized.current = true;
     (async () => {
       const acc = backend.auth.currentAccount() ?? (await backend.auth.signIn());
-      if (!active) return;
       setAccount(acc);
       let list = await backend.listEvents(acc.id);
       if (list.length === 0) {
@@ -43,13 +47,11 @@ export function useEvents() {
       // shared and not in this admin's own list); otherwise use the first.
       const requested = requestedEventId();
       const doc = (requested && (await backend.getEvent(requested))) || (await backend.getEvent(list[0].id));
-      if (!active) return;
       setEvents(list);
       setCurrent(doc);
       if (doc) syncUrl(doc.id);
       setLoaded(true);
     })();
-    return () => { active = false; };
   }, []);
 
   const persist = useCallback(async (next: EventDoc) => {

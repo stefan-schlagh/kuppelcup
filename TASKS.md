@@ -31,7 +31,7 @@ _(none)_
 
 ## Backlog (not scheduled yet)
 - [ ] Tighten component prop types (replace `any` in AdminPanel, Bestenliste, Turnierbaum, …)
-- [ ] Replace the hardcoded client-side admin PIN with real auth (Firebase Auth) once the backend is wired
+- [ ] Replace the hardcoded client-side admin PIN with real auth (Firebase Auth) once the backend is wired, introduce support for multiple admins with their own events as well.
 
 ## Manual setup (you — before wiring the backend)
 - [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
