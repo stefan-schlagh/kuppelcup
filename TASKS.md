@@ -20,7 +20,7 @@ Working branch: `todo-items`. One commit per task.
 ## Code-quality fixes (in progress)
 - [x] Fix ranking comparator (tested `byPunkte` helper; no-result teams last)
 - [ ] Fix Tagesbestzeit: no state mutation in render, correct team B, fold K.O. runs; drop console.logs
-- [ ] Remove unused Vite-template files (`App.css`, template assets)
+- [x] Remove unused Vite-template files (`App.css`, template assets)
 - [ ] Fix Bestenliste tooltips passing `RunData` to `fmtTime` (→ `NaN:NaN`)
 
 ## In progress
