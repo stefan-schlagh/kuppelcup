@@ -209,17 +209,25 @@ export default function AdminPanel({
                 <tr>
                   <th>Start-Nr</th>
                   <th>Team</th>
+                  <th style={{ textAlign: "center" }}>Gastgeber<br />(außer Konkurrenz)</th>
+                  <th style={{ textAlign: "center" }}>Gemeindewertung</th>
                   {isAnmeldung && <th style={{ textAlign: "center" }}>Aktion</th>}
                 </tr>
               </thead>
               <tbody>
                 {teams.length === 0 && (
-                  <tr><td colSpan={isAnmeldung ? 3 : 2} className="hint-text">Noch keine Teams angemeldet.</td></tr>
+                  <tr><td colSpan={isAnmeldung ? 5 : 4} className="hint-text">Noch keine Teams angemeldet.</td></tr>
                 )}
                 {teams.map((t: Team) => (
                   <tr key={t.id}>
                     <td className="td-rank">{t.start}</td>
                     <td className="td-name">{t.name}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <input type="checkbox" disabled={locked} checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <input type="checkbox" disabled={locked} checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
+                    </td>
                     {isAnmeldung && (
                       <td style={{ textAlign: "center" }}>
                         <button className="remove-btn" onClick={() => removeTeam(t.id)} title="Team entfernen">✕</button>
@@ -246,8 +254,6 @@ export default function AdminPanel({
                   <th>DG1 Strafe (s)</th>
                   <th>DG2 Zeit (s)</th>
                   <th>DG2 Strafe (s)</th>
-                  <th style={{ textAlign: "center" }}>Gastgeber<br />(außer Konkurrenz)</th>
-                  <th style={{ textAlign: "center" }}>Gemeindewertung<br /></th>
                 </tr>
               </thead>
               <tbody>
@@ -258,12 +264,6 @@ export default function AdminPanel({
                     <td><input type="number" min="0" step="5" disabled={locked} value={t.dg1.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg1", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
                     <td><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
                     <td><input type="number" min="0" step="5" disabled={locked} value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
-                    <td style={{ textAlign: "center" }}>
-                      <input type="checkbox" disabled={locked} checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <input type="checkbox" disabled={locked} checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
-                    </td>
                   </tr>
                 ))}
               </tbody>
