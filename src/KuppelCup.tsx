@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
-import { seedTeams, gesamt, punkte, SEED_ORDER, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS, byPunkte } from "./utils/helpers";
-import type { Team, RunData, BracketData, EventPhase, KoState, MonitorRunner } from "./types";
+import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
+import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest } from "./utils/tournament";
+import type { Team, EventPhase, KoState } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
@@ -46,134 +47,13 @@ export default function KuppelCup() {
 
   
 
-  // --- a) FIXED ORDER FOR BASE ROUNDS ---
-  // Sorted strictly by starting number (Startreihenfolge)
-  const scheduledTeams = useMemo(() => {
-    return [...teams].sort((a, b) => a.start - b.start);
-  }, [teams]);
-
-  // Calculations for KO Brackets (unchanged from last iteration)...
-  const ranked = useMemo(() => {
-    return [...teams]
-      .map((t) => ({
-        ...t,
-        g1: gesamt(t.dg1),
-        g2: gesamt(t.dg2),
-        punkte: punkte(t),
-      }))
-      .sort(byPunkte);
-  }, [teams]);
-
-  const eligible = ranked.filter((t) => (!t.gastgeber && punkte(t as any) !== 0));
-  const top8 = eligible.slice(0, 8);
-  const bracket = useMemo<BracketData>(() => {
-    const defaultRun = () => ({ zeit: null, strafe: 0 });
-    const assembleMatch = (matchId: string, teamA: Team | null, teamB: Team | null) => {
-      const saved = ko[matchId] || {};
-      const runA = { ...defaultRun(), ...saved.runA };
-      const runB = { ...defaultRun(), ...saved.runB };
-      // TODO no Infinity
-      const scoreA = runA.zeit !== null ? runA.zeit + (runA.strafe ?? 0) : Infinity;
-      const scoreB = runB.zeit !== null ? runB.zeit + (runB.strafe ?? 0) : Infinity;
-      let winnerId: string | null = null;
-      if (scoreA < Infinity || scoreB < Infinity) {
-        winnerId = scoreA <= scoreB ? teamA?.id ?? null : teamB?.id ?? null;
-      }
-      return { id: matchId, teamA, teamB, runA, runB, winnerId };
-    };
-
-    const qf = SEED_ORDER.map(([a, b], i) => assembleMatch(`qf${i + 1}`, top8[a] || null, top8[b] || null));
-    const winnerOf = (mid: string) => {
-      const m = qf.find((x) => x.id === mid);
-      return m?.winnerId ? (m.winnerId === m.teamA?.id ? m.teamA : m.teamB) : null;
-    };
-    const sf = [
-      assembleMatch("sf1", winnerOf("qf1"), winnerOf("qf2")),
-      assembleMatch("sf2", winnerOf("qf3"), winnerOf("qf4")),
-    ];
-    const final = assembleMatch("final", sf[0].winnerId ? (sf[0].winnerId === sf[0].teamA?.id ? sf[0].teamA : sf[0].teamB) : null, sf[1].winnerId ? (sf[1].winnerId === sf[1].teamA?.id ? sf[1].teamA : sf[1].teamB) : null);
-    return { qf, sf, final };
-  }, [top8, ko]);
-
-  // --- LIVE MONITOR VIEW ENGINE ---
-  // One continuous queue of runs: every team's DG1, then DG2, then the K.O.
-  // phase (each assembled match with both teams becomes a heat of two). The
-  // "current" heat is the first run still missing a time.
-  const monitorData = useMemo(() => {
-    const runner = (t: Team, label: string, r: RunData): MonitorRunner => ({
-      name: t.name, start: t.start, label, zeit: r.zeit, strafe: r.strafe,
-    });
-    const koLabel = (id: string) =>
-      id.startsWith("qf") ? "Viertelfinale" : id.startsWith("sf") ? "Halbfinale" : "Finale";
-
-    const queue: MonitorRunner[] = [];
-    scheduledTeams.forEach((t) => queue.push(runner(t, "DG1", t.dg1)));
-    scheduledTeams.forEach((t) => queue.push(runner(t, "DG2", t.dg2)));
-    [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
-      if (m.teamA && m.teamB) {
-        queue.push(runner(m.teamA, koLabel(m.id), m.runA));
-        queue.push(runner(m.teamB, koLabel(m.id), m.runB));
-      }
-    });
-
-    // No teams yet -> nothing to show, distinct from a finished competition.
-    if (queue.length === 0) {
-      return { status: "empty" as const, former: [], current: [], next: [] };
-    }
-
-    const currentIndex = queue.findIndex((q) => q.zeit === null);
-
-    // Everything run -> no current/next, former = last heat that ran.
-    if (currentIndex === -1) {
-      const lastChunkStart = Math.max(0, queue.length - numberOfParallelRounds);
-      return {
-        status: "finished" as const,
-        former: queue.slice(lastChunkStart),
-        current: [],
-        next: [],
-      };
-    }
-
-    // Align heat boundaries to numberOfParallelRounds around currentIndex.
-    const chunkIndex = Math.floor(currentIndex / numberOfParallelRounds);
-    const currentStart = chunkIndex * numberOfParallelRounds;
-    const currentEnd = currentStart + numberOfParallelRounds;
-    const formerStart = currentStart - numberOfParallelRounds;
-    const nextStart = currentEnd;
-    const nextEnd = nextStart + numberOfParallelRounds;
-
-    return {
-      status: "running" as const,
-      former: formerStart >= 0 ? queue.slice(formerStart, currentStart) : [],
-      current: queue.slice(currentStart, currentEnd),
-      next: nextStart < queue.length ? queue.slice(nextStart, nextEnd) : [],
-    };
-  }, [scheduledTeams, bracket]);
-
-  const dailyBestTimes = useMemo(() => {
-    // A team's Tagesbestzeit is its lowest total across the Grunddurchgang
-    // and every K.O. run it took part in.
-    const koTotals = new Map<string, number[]>();
-    const addRun = (teamId: string, total: number | null) => {
-      if (total == null || total <= 0) return;
-      const arr = koTotals.get(teamId) ?? [];
-      arr.push(total);
-      koTotals.set(teamId, arr);
-    };
-    [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
-      if (m.teamA) addRun(m.teamA.id, gesamt(m.runA));
-      if (m.teamB) addRun(m.teamB.id, gesamt(m.runB));
-    });
-
-    return ranked
-      .map((t) => {
-        const candidates = [t.punkte, ...(koTotals.get(t.id) ?? [])].filter(
-          (v): v is number => v != null && v > 0,
-        );
-        return { ...t, punkte: candidates.length ? Math.min(...candidates) : 0 };
-      })
-      .sort(byPunkte);
-  }, [bracket, ranked]);
+  // --- TOURNAMENT DERIVED STATE (pure logic in utils/tournament.ts) ---
+  const scheduledTeams = useMemo(() => sortByStart(teams), [teams]);
+  const ranked = useMemo(() => rankTeams(teams), [teams]);
+  const top8 = useMemo(() => selectTop8(ranked), [ranked]);
+  const bracket = useMemo(() => buildBracket(top8, ko), [top8, ko]);
+  const monitorData = useMemo(() => buildMonitorQueue(scheduledTeams, bracket, numberOfParallelRounds), [scheduledTeams, bracket]);
+  const dailyBestTimes = useMemo(() => dailyBest(ranked, bracket), [ranked, bracket]);
 
   const gemeinde = ranked.filter((t) => t.gemeinde);
 
