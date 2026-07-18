@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER, makeTeam, withRandomResults, randomKoResults, KO_MATCH_IDS } from "./helpers";
+import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER, makeTeam, withRandomResults, randomKoResults, KO_MATCH_IDS, byPunkte } from "./helpers";
 import type { Team } from "../types";
 
 const teamWithRuns = (dg1: Team["dg1"], dg2: Team["dg2"]): Team => ({
@@ -106,6 +106,23 @@ describe("withRandomResults", () => {
     const teams = seedTeams();
     withRandomResults(teams);
     expect(teams[0].dg1.zeit).toBeNull();
+  });
+});
+
+describe("byPunkte", () => {
+  it("orders by punkte ascending with no-result teams last", () => {
+    const rows = [
+      { name: "no-result", punkte: 0 },
+      { name: "slow", punkte: 42 },
+      { name: "fast", punkte: 21 },
+      { name: "also-none", punkte: 0 },
+    ];
+    expect([...rows].sort(byPunkte).map((r) => r.name)).toEqual([
+      "fast",
+      "slow",
+      "no-result",
+      "also-none",
+    ]);
   });
 });
 

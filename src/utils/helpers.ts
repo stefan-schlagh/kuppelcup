@@ -47,6 +47,17 @@ export function gesamt(run: RunData) {
   return run.zeit + (run.strafe || 0);
 }
 
+// Sort ascending by punkte (lower is better). Teams without a result
+// (punkte 0) are pushed to the end rather than ranked first.
+export function byPunkte<T extends { punkte?: number }>(a: T, b: T): number {
+  const pa = a.punkte ?? 0;
+  const pb = b.punkte ?? 0;
+  if (pa === 0 && pb === 0) return 0;
+  if (pa === 0) return 1;
+  if (pb === 0) return -1;
+  return pa - pb;
+}
+
 export function punkte(t: Team): number {
   const g1 = gesamt(t.dg1);
   const g2 = gesamt(t.dg2);

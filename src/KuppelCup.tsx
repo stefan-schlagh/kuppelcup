@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
-import { seedTeams, gesamt, punkte, SEED_ORDER, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
+import { seedTeams, gesamt, punkte, SEED_ORDER, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS, byPunkte } from "./utils/helpers";
 import type { Team, BracketData, EventPhase, KoState } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
@@ -94,7 +94,7 @@ export default function KuppelCup() {
         g2: gesamt(t.dg2),
         punkte: punkte(t),
       }))
-      .sort((a, b) => b.punkte === 0 ? -1 : (a.punkte ?? 0) - (b.punkte ?? 0));
+      .sort(byPunkte);
   }, [teams]);
 
   const eligible = ranked.filter((t) => (!t.gastgeber && punkte(t as any) !== 0));
