@@ -234,13 +234,14 @@ export default function KuppelCup() {
           </div>
         </div>
         <nav className="nav-bar">
-          {[
+          {([
             ["liste", "Bestenliste"],
             ["monitor", "Live-Monitor 📺"],
             ["baum", "Turnierbaum"],
-            ["urkunden", "Urkunden 🖨"],
+            // Urkunden are only for the organiser
+            ...(authed ? [["urkunden", "Urkunden 🖨"]] : []),
             ["admin", "Admin"],
-          ].map(([key, label]) => (
+          ] as [string, string][]).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -261,7 +262,7 @@ export default function KuppelCup() {
         }
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
         {tab === "baum" && <Turnierbaum bracket={bracket} editable={false} />}
-        {tab === "urkunden" && (
+        {tab === "urkunden" && authed && (
           <Urkunden
             ranked={ranked}
             bracket={bracket}
