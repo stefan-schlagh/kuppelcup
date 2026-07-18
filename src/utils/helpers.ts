@@ -1,6 +1,6 @@
 import type { Team, RunData, EventPhase } from "../types";
 
-export const fmtTime = (s: any) => {
+export const fmtTime = (s: number | null | undefined) => {
   if (s == null || Number.isNaN(s)) return "–";
   const m = Math.floor(s / 60);
   const sec = (s - m * 60).toFixed(2).padStart(5, "0");

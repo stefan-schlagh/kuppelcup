@@ -71,7 +71,7 @@ Potential issues to flag:
   contested cutoff, so an arbitrary resolution looks authoritative.
 
 ## Backlog (not scheduled yet)
-- [ ] Tighten component prop types (replace `any` in AdminPanel, Bestenliste, Turnierbaum, …)
+- [x] Tighten component prop types (typed AdminPanel/Bestenliste props; typed fmtTime; no `any` left in src)
 - [ ] Replace the stubbed local admin login (no password) with real auth (Firebase Auth
       — passwords / provider sign-in) once the backend is wired. Multi-admin support with
       per-admin events is already in place (LocalBackend); Firebase methods are stubbed.

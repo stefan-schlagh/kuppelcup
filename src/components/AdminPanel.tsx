@@ -5,7 +5,34 @@ import { teamsToCsv, csvToTeams, downloadCsv } from "../utils/backup";
 import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
-import type { Team, EventPhase } from '../types'
+import type { Team, EventPhase, BracketData, Account, EventMeta, EventDoc } from '../types'
+
+type RunField = "zeit" | "strafe";
+
+interface AdminPanelProps {
+  teams: Team[];
+  updateRun: (teamId: string, dg: "dg1" | "dg2", field: RunField, value: number | null) => void;
+  toggleGastgeber: (id: string) => void;
+  toggleGemeinde: (id: string) => void;
+  bracket: BracketData;
+  updateKoRun: (matchId: string, side: "runA" | "runB", field: RunField, value: number | null) => void;
+  onImportTeams: (teams: Team[]) => void;
+  phase: EventPhase;
+  setPhase: (phase: EventPhase) => void;
+  locked: boolean;
+  addTeam: (name: string) => void;
+  removeTeam: (id: string) => void;
+  loadSampleTeams: () => void;
+  fillRandomResults: () => void;
+  account: Account | null;
+  events: EventMeta[];
+  current: EventDoc | null;
+  createEvent: (name: string) => void;
+  renameEvent: (id: string, name: string) => void;
+  deleteEvent: (id: string) => void;
+  selectEvent: (id: string) => void;
+  logout: () => void;
+}
 
 export default function AdminPanel({
   teams,
@@ -13,7 +40,6 @@ export default function AdminPanel({
   toggleGastgeber,
   toggleGemeinde,
   bracket,
-  /*setWinner,*/
   updateKoRun,
   onImportTeams,
   phase,
@@ -31,7 +57,7 @@ export default function AdminPanel({
   deleteEvent,
   selectEvent,
   logout,
-}: any) {
+}: AdminPanelProps) {
   const [sub, setSub] = useState("event");
   const [newName, setNewName] = useState("");
   const [newEventName, setNewEventName] = useState("");
@@ -120,7 +146,7 @@ export default function AdminPanel({
                 </tr>
               </thead>
               <tbody>
-                {(events ?? []).map((ev: any) => (
+                {events.map((ev) => (
                   <tr key={ev.id} className={current?.id === ev.id ? "row-qualified" : ""}>
                     <td className="td-name">{ev.name}</td>
                     <td>{PHASE_LABELS[ev.phase as EventPhase]}</td>
