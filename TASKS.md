@@ -26,6 +26,18 @@ _(none)_
 ## Backlog (not scheduled yet)
 _(none)_
 
+## Manual setup (you — before wiring the backend)
+- [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
+  - Create a Firebase project in the console
+  - Add a Web App and copy its config → paste into `firebaseConfig` in `src/config.ts`
+  - Enable **Firestore** (create the database)
+  - Enable **Authentication** (the sign-in provider you want, e.g. Google)
+  - Add Firestore security rules scoping events by owner
+    (`allow read/write if request.auth.uid == resource.data.ownerId`)
+  - Then hand back to wiring: `npm install firebase`, uncomment the SDK calls in
+    `src/backend/FirebaseBackend.ts`, set `BACKEND = "firebase"` and
+    `FIREBASE_WIRED = true` in `src/config.ts`
+
 ## Notes
 - Keep things simple.
 - Backend task: only prepare the connections to the endpoints, don't build a full backend.
