@@ -41,6 +41,10 @@ describe("gesamt", () => {
   it("treats a null penalty as zero", () => {
     expect(gesamt({ zeit: 20, strafe: null })).toBe(20);
   });
+
+  it("rounds to hundredths to avoid floating-point artifacts", () => {
+    expect(gesamt({ zeit: 21.37, strafe: 20 })).toBe(41.37);
+  });
 });
 
 describe("punkte", () => {

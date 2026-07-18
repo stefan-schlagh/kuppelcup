@@ -44,7 +44,9 @@ export const seedTeams = () => {
 
 export function gesamt(run: RunData) {
   if (!run || run.zeit == null) return null;
-  return run.zeit + (run.strafe || 0);
+  // Round to hundredths so floating-point artifacts (e.g. 21.37 + 20 =
+  // 41.370000000000005) don't leak into the displayed points.
+  return Math.round((run.zeit + (run.strafe || 0)) * 100) / 100;
 }
 
 // Sort ascending by punkte (lower is better). Teams without a result
