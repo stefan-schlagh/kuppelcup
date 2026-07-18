@@ -518,23 +518,23 @@ body {
   border-color: var(--color-accent);
 }
 
-.admin-account-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
+.logout-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--color-primary);
 }
 
-.logout-btn {
-  flex-shrink: 0;
+.logout-btn:hover {
+  border-color: var(--color-primary);
 }
 
 /* Admin Specific Elements */
 .admin-tabs {
   display: flex;
   gap: 8px;
+  row-gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
   margin-bottom: 16px;
 }
 

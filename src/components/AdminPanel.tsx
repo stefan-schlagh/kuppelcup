@@ -92,6 +92,10 @@ export default function AdminPanel({
     setQr({ name, url, dataUrl });
   };
 
+  const handleLogout = () => {
+    if (confirm("Als Admin abmelden?")) logout();
+  };
+
   return (
     <div>
       <div className="admin-tabs">
@@ -99,14 +103,12 @@ export default function AdminPanel({
         <button onClick={() => setSub("ergebnisse")} className={`sub-tab ${sub === "ergebnisse" ? "active" : ""}`}>Grunddurchgang erfassen</button>
         <button onClick={() => setSub("ko")} className={`sub-tab ${sub === "ko" ? "active" : ""}`}>K.O.-Ergebnisse</button>
         <button onClick={() => setSub("backup")} className={`sub-tab ${sub === "backup" ? "active" : ""}`}>Backup</button>
+        <button className="sub-tab logout-btn" onClick={handleLogout} title="Admin abmelden">Abmelden ({account?.name ?? "—"})</button>
       </div>
 
       {sub === "event" && (
         <div>
-          <div className="admin-account-row">
-            <h3 className="panel-title" style={{ margin: 0 }}>Meine Events</h3>
-            <button className="sub-tab logout-btn" onClick={logout}>Abmelden ({account?.name ?? "—"})</button>
-          </div>
+          <h3 className="panel-title">Meine Events</h3>
           <p className="hint-text">Events können angelegt, gewechselt und gelöscht werden.</p>
           <div className="table-wrap">
             <table className="data-table">
