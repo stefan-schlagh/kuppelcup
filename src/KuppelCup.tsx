@@ -22,6 +22,7 @@ export default function KuppelCup() {
     setPhase,
     selectEvent,
     createEvent,
+    renameEvent,
     deleteEvent,
   } = useEvents();
   const [tab, setTab] = useState<string>("liste");
@@ -292,6 +293,7 @@ export default function KuppelCup() {
             events={events}
             current={current}
             createEvent={createEvent}
+            renameEvent={renameEvent}
             deleteEvent={deleteEvent}
             selectEvent={selectEvent}
           />

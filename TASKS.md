@@ -11,19 +11,19 @@ Working branch: `todo-items`. One commit per task.
 - [x] Backend connection layer → **Firestore** target, **local placeholder** auth
   - [x] 6a: Multi-event support (Backend repository interface + LocalBackend; events owned by an admin account; create/switch/delete; legacy migration)
   - [x] 6b: Firebase adapter stub (prepared Firestore/Auth endpoints behind `BACKEND` switch in config.ts)
+- [x] Urkunden: restrict to admin only (hide the tab from public view)
+- [x] non-admins should not see the current lifecycle state
+- [x] events can be renamed after creating them
 
 ## In progress
-_(none — all TODO.md items done)_
+_(none)_
 
 ## Open
 _(none)_
 
 ## Backlog (not scheduled yet)
 - [ ] Turnierbaum: use both sides in the UI (final in the middle)
-- [x] Urkunden: restrict to admin only (hide the tab from public view)
-- [x] non-admins should not see the current lifecycle state
 - [ ] the event switcher should be removed. Instead users can access the events by URL only. admin should be able to generate a QR code for each event
-- [ ] events can be renamed after creating them
 
 ## Notes
 - Keep things simple.

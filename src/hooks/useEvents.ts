@@ -59,6 +59,17 @@ export function useEvents() {
     setCurrent(await backend.getEvent(meta.id));
   }, [account]);
 
+  const renameEvent = useCallback(async (id: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const doc = id === current?.id ? current : await backend.getEvent(id);
+    if (!doc) return;
+    const next = { ...doc, name: trimmed };
+    if (id === current?.id) setCurrent(next);
+    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, name: trimmed } : e)));
+    await backend.saveEvent(next);
+  }, [current]);
+
   const deleteEvent = useCallback(async (id: string) => {
     await backend.deleteEvent(id);
     const rest = events.filter((e) => e.id !== id);
@@ -78,6 +89,7 @@ export function useEvents() {
     setPhase,
     selectEvent,
     createEvent,
+    renameEvent,
     deleteEvent,
   };
 }

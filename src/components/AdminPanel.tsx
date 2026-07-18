@@ -25,6 +25,7 @@ export default function AdminPanel({
   events,
   current,
   createEvent,
+  renameEvent,
   deleteEvent,
   selectEvent,
 }: any) {
@@ -76,6 +77,11 @@ export default function AdminPanel({
     if (confirm(`Event „${name}" löschen? Alle Teams und Ergebnisse gehen verloren.`)) deleteEvent(id);
   };
 
+  const handleRenameEvent = (id: string, name: string) => {
+    const next = prompt("Neuer Event-Name:", name);
+    if (next && next.trim() && next.trim() !== name) renameEvent(id, next);
+  };
+
   return (
     <div>
       <div className="admin-tabs">
@@ -107,6 +113,7 @@ export default function AdminPanel({
                       {current?.id !== ev.id && (
                         <button className="remove-btn switch-btn" onClick={() => selectEvent(ev.id)} title="Zu diesem Event wechseln">Öffnen</button>
                       )}
+                      <button className="remove-btn switch-btn" onClick={() => handleRenameEvent(ev.id, ev.name)} title="Event umbenennen">Umbenennen</button>
                       <button className="remove-btn" onClick={() => handleDeleteEvent(ev.id, ev.name)} title="Event löschen">✕</button>
                     </td>
                   </tr>
