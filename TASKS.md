@@ -23,6 +23,9 @@ Working branch: `todo-items`. One commit per task.
 - [x] Surface save failures in the UI (dismissible banner) instead of swallowing them
 
 ## Code-quality fixes
+- [x] Extract tournament logic to `utils/tournament.ts` and unit-test it
+      (rankTeams, selectTop8, buildBracket incl. seeding/ties/propagation,
+      buildMonitorQueue incl. K.O. phase, dailyBest)
 - [x] Fix ranking comparator (tested `byPunkte` helper; no-result teams last)
 - [x] Fix Tagesbestzeit: no state mutation in render, correct team B, fold K.O. runs; drop console.logs
 - [x] Remove unused Vite-template files (`App.css`, template assets)
@@ -67,6 +70,7 @@ Potential issues to flag:
 - [ ] Make K.O. winner comparison use rounded totals (`gesamt`) for consistency; decide how exact ties resolve (re-run vs. seed)
 - [ ] Surface ties in the UI (mark equal ranks / flag a contested qualification line)
 - [ ] Visually distinguish K.O. heats in the Live-Monitor (phase badge or "vs." styling for the two opponents), rather than only the text label
+- [ ] fix UI for small screens, especially on the top
 
 ## Manual setup (you — before wiring the backend)
 - [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
