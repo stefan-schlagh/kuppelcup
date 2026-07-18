@@ -96,7 +96,9 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
             ))}
           </div>
         ) : (
-          <p className="empty-msg">Letztes Team läuft bereits</p>
+          <p className="empty-msg">
+            {data.status === "running" ? "Letztes Team läuft bereits" : "Keine weiteren Läufe"}
+          </p>
         )}
       </div>
     </div>
