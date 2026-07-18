@@ -12,12 +12,34 @@ function memStore(): KeyValueStore {
 }
 
 describe("LocalBackend", () => {
-  it("signs in a local admin and persists it", async () => {
+  it("seeds a default admin with a starter event and nobody signed in", async () => {
     const be = new LocalBackend(memStore());
     expect(be.auth.currentAccount()).toBeNull();
-    const acc = await be.auth.signIn();
-    expect(acc.id).toBe("local-admin");
+    const accounts = await be.auth.listAccounts();
+    expect(accounts.map((a) => a.id)).toEqual(["local-admin"]);
+    const landing = await be.landingEvent();
+    expect(landing?.name).toBe("1. Geissberg KUPPELCUP");
+    expect(landing?.ownerId).toBe("local-admin");
+  });
+
+  it("signs in as an existing admin and persists the session", async () => {
+    const be = new LocalBackend(memStore());
+    await expect(be.auth.signIn("nope")).rejects.toThrow();
+    const acc = await be.auth.signIn("local-admin");
+    expect(acc.name).toBe("Admin");
     expect(be.auth.currentAccount()?.id).toBe("local-admin");
+    await be.auth.signOut();
+    expect(be.auth.currentAccount()).toBeNull();
+  });
+
+  it("creates a new (empty) admin account", async () => {
+    const be = new LocalBackend(memStore());
+    const acc = await be.auth.createAccount("FF Neu");
+    expect(acc.name).toBe("FF Neu");
+    expect((await be.auth.listAccounts()).map((a) => a.name)).toEqual(["Admin", "FF Neu"]);
+    expect(await be.listEvents(acc.id)).toEqual([]); // starts with no events
+    const signed = await be.auth.signIn(acc.id);
+    expect(signed.id).toBe(acc.id);
   });
 
   it("creates, lists, loads, saves and deletes events scoped by owner", async () => {

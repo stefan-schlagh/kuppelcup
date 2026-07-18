@@ -8,10 +8,18 @@ export interface Backend {
   auth: {
     // The signed-in admin, or null if nobody is signed in yet.
     currentAccount(): Account | null;
-    // Sign in and return the admin account (local placeholder for now).
-    signIn(): Promise<Account>;
+    // All admin accounts (for the "log in as" picker).
+    listAccounts(): Promise<Account[]>;
+    // Sign in as an existing admin and return it.
+    signIn(accountId: string): Promise<Account>;
+    // Create a new (empty) admin account.
+    createAccount(name: string): Promise<Account>;
     signOut(): Promise<void>;
   };
+
+  // The event to show on the public landing page when nobody is signed in and
+  // no ?event=<id> is given (the default admin's first event), or null.
+  landingEvent(): Promise<EventDoc | null>;
 
   // Events owned by the given admin, newest first.
   listEvents(ownerId: string): Promise<EventMeta[]>;

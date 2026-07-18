@@ -23,10 +23,15 @@ const syncUrl = (id: string): void => {
 const requestedEventId = (): string | null =>
   new URLSearchParams(window.location.search).get("event");
 
+const clearUrl = (): void => {
+  window.history.replaceState(null, "", window.location.pathname);
+};
+
 // Loads the signed-in admin's events, tracks the selected one, and exposes
 // per-event mutators that persist through the backend.
 export function useEvents() {
   const [account, setAccount] = useState<Account | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [events, setEvents] = useState<EventMeta[]>([]);
   const [current, setCurrent] = useState<EventDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -42,18 +47,22 @@ export function useEvents() {
     if (initialized.current) return;
     initialized.current = true;
     (async () => {
-      const acc = backend.auth.currentAccount() ?? (await backend.auth.signIn());
+      const acc = backend.auth.currentAccount(); // persisted session, or null
       setAccount(acc);
-      let list = await backend.listEvents(acc.id);
-      if (list.length === 0) {
-        // Every admin starts with one empty event so the app is usable.
-        list = [await backend.createEvent("1. Geissberg KUPPELCUP", acc.id)];
-      }
-      // A URL like ?event=<id> deep-links to a specific event (which may be
-      // shared and not in this admin's own list); otherwise use the first.
-      const requested = requestedEventId();
-      const doc = (requested && (await backend.getEvent(requested))) || (await backend.getEvent(list[0].id));
+      setAccounts(await backend.auth.listAccounts());
+      const list = acc ? await backend.listEvents(acc.id) : [];
       setEvents(list);
+
+      // A URL like ?event=<id> deep-links to a specific event (which may be
+      // shared and not owned by this admin). Otherwise fall back to the
+      // signed-in admin's first event, or the public landing event.
+      const requested = requestedEventId();
+      let doc = requested ? await backend.getEvent(requested) : null;
+      if (!doc) {
+        doc = acc
+          ? (list[0] ? await backend.getEvent(list[0].id) : null)
+          : await backend.landingEvent();
+      }
       setCurrent(doc);
       if (doc) syncUrl(doc.id);
       setLoaded(true);
@@ -166,13 +175,50 @@ export function useEvents() {
     }
   }, [events, current, cancelPending, flush]);
 
+  // --- ADMIN ACCOUNTS ---
+  const login = useCallback(async (accountId: string) => {
+    const acc = await backend.auth.signIn(accountId);
+    setAccount(acc);
+    const list = await backend.listEvents(acc.id);
+    setEvents(list);
+    const doc = list[0] ? await backend.getEvent(list[0].id) : null;
+    setCurrent(doc);
+    if (doc) syncUrl(doc.id);
+    else clearUrl();
+  }, []);
+
+  const createAdmin = useCallback(async (name: string) => {
+    const acc = await backend.auth.createAccount(name);
+    setAccounts((prev) => [...prev, acc]);
+    await backend.auth.signIn(acc.id);
+    setAccount(acc);
+    setEvents([]); // a new admin starts empty
+    setCurrent(null);
+    clearUrl();
+  }, []);
+
+  const logout = useCallback(async () => {
+    flush();
+    await backend.auth.signOut();
+    setAccount(null);
+    setEvents([]);
+    const doc = await backend.landingEvent();
+    setCurrent(doc);
+    if (doc) syncUrl(doc.id);
+    else clearUrl();
+  }, [flush]);
+
   return {
     account,
+    accounts,
     events,
     current,
     loaded,
     saveError,
     dismissSaveError: () => setSaveError(null),
+    login,
+    createAdmin,
+    logout,
     patchEvent,
     setTeams,
     setKo,

@@ -21,6 +21,9 @@ Working branch: `todo-items`. One commit per task.
 - [x] Guard against duplicate default-event creation (init runs once; no StrictMode/async race)
 - [x] Debounce per-event writes (no full-document write per keystroke; flush on switch/unmount)
 - [x] Surface save failures in the UI (dismissible banner) instead of swallowing them
+- [x] Multiple admin accounts (backend stubs): Admin tab offers "log in as an admin"
+      (default admin seeded with a starter event) or "create a new admin account"
+      (starts empty); events stay owned per admin. Replaces the old admin PIN.
 
 ## Code-quality fixes
 - [x] Extract tournament logic to `utils/tournament.ts` and unit-test it
@@ -67,7 +70,9 @@ Potential issues to flag:
 
 ## Backlog (not scheduled yet)
 - [ ] Tighten component prop types (replace `any` in AdminPanel, Bestenliste, Turnierbaum, …)
-- [ ] Replace the hardcoded client-side admin PIN with real auth (Firebase Auth) once the backend is wired, introduce support for multiple admins with their own events as well.
+- [ ] Replace the stubbed local admin login (no password) with real auth (Firebase Auth
+      — passwords / provider sign-in) once the backend is wired. Multi-admin support with
+      per-admin events is already in place (LocalBackend); Firebase methods are stubbed.
 - [ ] Define an explicit tie-break rule for base-round ranking + top-8 cutoff (see "Ties" above)
 - [ ] Make K.O. winner comparison use rounded totals (`gesamt`) for consistency; decide how exact ties resolve (re-run vs. seed)
 - [ ] Surface ties in the UI (mark equal ranks / flag a contested qualification line)

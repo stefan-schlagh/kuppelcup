@@ -494,6 +494,43 @@ body {
   margin-top: 8px;
 }
 
+/* Admin login & accounts */
+.login-box {
+  max-width: 360px;
+  margin: 40px auto;
+}
+
+.login-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.login-account-btn {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.login-account-btn:hover {
+  border-color: var(--color-accent);
+}
+
+.admin-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.logout-btn {
+  flex-shrink: 0;
+}
+
 /* Admin Specific Elements */
 .admin-tabs {
   display: flex;

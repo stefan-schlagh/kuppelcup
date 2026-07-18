@@ -30,6 +30,7 @@ export default function AdminPanel({
   renameEvent,
   deleteEvent,
   selectEvent,
+  logout,
 }: any) {
   const [sub, setSub] = useState("event");
   const [newName, setNewName] = useState("");
@@ -102,8 +103,11 @@ export default function AdminPanel({
 
       {sub === "event" && (
         <div>
-          <h3 className="panel-title">Meine Events</h3>
-          <p className="hint-text">Angemeldet als <strong>{account?.name ?? "—"}</strong>. Events können angelegt, gewechselt und gelöscht werden.</p>
+          <div className="admin-account-row">
+            <h3 className="panel-title" style={{ margin: 0 }}>Meine Events</h3>
+            <button className="sub-tab logout-btn" onClick={logout}>Abmelden ({account?.name ?? "—"})</button>
+          </div>
+          <p className="hint-text">Events können angelegt, gewechselt und gelöscht werden.</p>
           <div className="table-wrap">
             <table className="data-table">
               <thead>

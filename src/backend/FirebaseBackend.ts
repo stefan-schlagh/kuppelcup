@@ -52,9 +52,23 @@ export class FirebaseBackend implements Backend {
       void firebaseConfig;
       return null;
     },
-    signIn: async (): Promise<Account> => {
+    listAccounts: async (): Promise<Account[]> => {
+      // With real auth each admin only ever "is" themselves; a picker of all
+      // accounts doesn't map onto Firebase Auth. Wire this to your own admins
+      // collection if you keep an explicit account list.
+      // const snap = await getDocs(collection(db, "admins"));
+      // return snap.docs.map((d) => ({ id: d.id, name: (d.data() as { name: string }).name }));
+      return notConfigured();
+    },
+    signIn: async (accountId: string): Promise<Account> => {
       // const cred = await signInWithPopup(fbAuth, new GoogleAuthProvider());
       // return { id: cred.user.uid, name: cred.user.displayName ?? cred.user.email ?? "Admin" };
+      void accountId;
+      return notConfigured();
+    },
+    createAccount: async (name: string): Promise<Account> => {
+      // Provisioned via the auth provider (e.g. createUserWithEmailAndPassword).
+      void name;
       return notConfigured();
     },
     signOut: async (): Promise<void> => {
@@ -62,6 +76,11 @@ export class FirebaseBackend implements Backend {
       return notConfigured();
     },
   };
+
+  async landingEvent(): Promise<EventDoc | null> {
+    // No implicit public landing event with Firebase — reach events by URL.
+    return null;
+  }
 
   async listEvents(ownerId: string): Promise<EventMeta[]> {
     // const q = query(collection(db, "events"), where("ownerId", "==", ownerId), orderBy("createdAt", "desc"));
