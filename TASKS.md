@@ -14,6 +14,8 @@ Working branch: `todo-items`. One commit per task.
 - [x] Urkunden: restrict to admin only (hide the tab from public view)
 - [x] non-admins should not see the current lifecycle state
 - [x] events can be renamed after creating them
+- [x] Turnierbaum: use both sides in the UI (final in the middle)
+- [x] Event access by URL only (`?event=<id>`); header switcher removed; admin QR code per event
 
 ## In progress
 _(none)_
@@ -21,10 +23,8 @@ _(none)_
 ## Open
 _(none)_
 
-- [x] Turnierbaum: use both sides in the UI (final in the middle)
-
 ## Backlog (not scheduled yet)
-- [ ] the event switcher should be removed. Instead users can access the events by URL only. admin should be able to generate a QR code for each event
+_(none)_
 
 ## Notes
 - Keep things simple.

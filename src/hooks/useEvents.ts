@@ -10,6 +10,16 @@ const metaOf = (d: EventDoc): EventMeta => ({
   createdAt: d.createdAt,
 });
 
+// Reflect the selected event in the URL (?event=<id>) so it is shareable
+// and survives a reload.
+const syncUrl = (id: string): void => {
+  const url = `${window.location.pathname}?event=${encodeURIComponent(id)}`;
+  window.history.replaceState(null, "", url);
+};
+
+const requestedEventId = (): string | null =>
+  new URLSearchParams(window.location.search).get("event");
+
 // Loads the signed-in admin's events, tracks the selected one, and exposes
 // per-event mutators that persist through the backend.
 export function useEvents() {
@@ -29,10 +39,14 @@ export function useEvents() {
         // Every admin starts with one empty event so the app is usable.
         list = [await backend.createEvent("1. Geissberg KUPPELCUP", acc.id)];
       }
-      const doc = await backend.getEvent(list[0].id);
+      // A URL like ?event=<id> deep-links to a specific event (which may be
+      // shared and not in this admin's own list); otherwise use the first.
+      const requested = requestedEventId();
+      const doc = (requested && (await backend.getEvent(requested))) || (await backend.getEvent(list[0].id));
       if (!active) return;
       setEvents(list);
       setCurrent(doc);
+      if (doc) syncUrl(doc.id);
       setLoaded(true);
     })();
     return () => { active = false; };
@@ -50,6 +64,7 @@ export function useEvents() {
 
   const selectEvent = useCallback(async (id: string) => {
     setCurrent(await backend.getEvent(id));
+    syncUrl(id);
   }, []);
 
   const createEvent = useCallback(async (name: string) => {
@@ -57,6 +72,7 @@ export function useEvents() {
     const meta = await backend.createEvent(name, account.id);
     setEvents((prev) => [meta, ...prev]);
     setCurrent(await backend.getEvent(meta.id));
+    syncUrl(meta.id);
   }, [account]);
 
   const renameEvent = useCallback(async (id: string, name: string) => {
@@ -76,6 +92,7 @@ export function useEvents() {
     setEvents(rest);
     if (current?.id === id) {
       setCurrent(rest.length ? await backend.getEvent(rest[0].id) : null);
+      if (rest.length) syncUrl(rest[0].id);
     }
   }, [events, current]);
 

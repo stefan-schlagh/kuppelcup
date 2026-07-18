@@ -211,18 +211,6 @@ export default function KuppelCup() {
           <div className="hose-icon">⊃⊂</div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
           <div className="header-right">
-            {events.length > 0 && (
-              <select
-                className="event-select"
-                value={current?.id ?? ""}
-                onChange={(e) => selectEvent(e.target.value)}
-                title="Event wählen"
-              >
-                {events.map((ev) => (
-                  <option key={ev.id} value={ev.id}>{ev.name}</option>
-                ))}
-              </select>
-            )}
             {authed && <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>}
             <button
               className="theme-toggle"

@@ -2,7 +2,9 @@ import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS, PHASES, PHASE_LABELS } from "../utils/helpers";
 import { teamsToCsv, csvToTeams, downloadCsv } from "../utils/backup";
+import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
+import { toDataURL } from "qrcode";
 import type { Team, EventPhase } from '../types'
 
 export default function AdminPanel({
@@ -32,6 +34,7 @@ export default function AdminPanel({
   const [sub, setSub] = useState("event");
   const [newName, setNewName] = useState("");
   const [newEventName, setNewEventName] = useState("");
+  const [qr, setQr] = useState<{ name: string; url: string; dataUrl: string } | null>(null);
 
   const isAnmeldung = phase === "anmeldung";
 
@@ -82,6 +85,12 @@ export default function AdminPanel({
     if (next && next.trim() && next.trim() !== name) renameEvent(id, next);
   };
 
+  const handleShowQr = async (id: string, name: string) => {
+    const url = eventUrl(id);
+    const dataUrl = await toDataURL(url, { width: 220, margin: 1 });
+    setQr({ name, url, dataUrl });
+  };
+
   return (
     <div>
       <div className="admin-tabs">
@@ -114,6 +123,7 @@ export default function AdminPanel({
                         <button className="remove-btn switch-btn" onClick={() => selectEvent(ev.id)} title="Zu diesem Event wechseln">Öffnen</button>
                       )}
                       <button className="remove-btn switch-btn" onClick={() => handleRenameEvent(ev.id, ev.name)} title="Event umbenennen">Umbenennen</button>
+                      <button className="remove-btn switch-btn" onClick={() => handleShowQr(ev.id, ev.name)} title="QR-Code / Link">QR</button>
                       <button className="remove-btn" onClick={() => handleDeleteEvent(ev.id, ev.name)} title="Event löschen">✕</button>
                     </td>
                   </tr>
@@ -121,6 +131,21 @@ export default function AdminPanel({
               </tbody>
             </table>
           </div>
+          {qr && (
+            <div className="qr-panel">
+              <div className="qr-panel-head">
+                <span>QR-Code — <strong>{qr.name}</strong></span>
+                <button className="remove-btn" onClick={() => setQr(null)} title="Schließen">✕</button>
+              </div>
+              <img className="qr-img" src={qr.dataUrl} alt={`QR-Code für ${qr.name}`} width={220} height={220} />
+              <div className="qr-url">
+                <code>{qr.url}</code>
+                <button className="sub-tab" onClick={() => navigator.clipboard?.writeText(qr.url)}>Link kopieren</button>
+              </div>
+              <p className="hint-text">Teilnehmer öffnen das Event über diesen Link bzw. QR-Code.</p>
+            </div>
+          )}
+
           <div className="add-team-row" style={{ marginTop: 12 }}>
             <input
               type="text"

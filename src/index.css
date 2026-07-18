@@ -114,18 +114,6 @@ body {
 .phase-badge.phase-durchfuehrung { color: var(--text-on-accent); border-color: var(--color-accent); background: var(--color-accent); }
 .phase-badge.phase-abgeschlossen { color: #fff; border-color: var(--color-primary); background: var(--color-primary); }
 
-.event-select {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 10px;
-  border-radius: 8px;
-  max-width: 220px;
-  cursor: pointer;
-}
-
 .theme-toggle {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -553,6 +541,46 @@ body {
 
 .switch-btn:hover {
   border-color: var(--color-accent);
+}
+
+.qr-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  max-width: 320px;
+}
+
+.qr-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.qr-img {
+  display: block;
+  background: #fff;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.qr-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.qr-url code {
+  font-size: 12px;
+  color: var(--text-muted);
+  word-break: break-all;
+  flex: 1;
+  min-width: 140px;
 }
 
 .backup-actions {
