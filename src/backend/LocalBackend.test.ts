@@ -15,31 +15,30 @@ describe("LocalBackend", () => {
   it("seeds a default admin with a starter event and nobody signed in", async () => {
     const be = new LocalBackend(memStore());
     expect(be.auth.currentAccount()).toBeNull();
-    const accounts = await be.auth.listAccounts();
-    expect(accounts.map((a) => a.id)).toEqual(["local-admin"]);
     const landing = await be.landingEvent();
     expect(landing?.name).toBe("1. Geissberg KUPPELCUP");
     expect(landing?.ownerId).toBe("local-admin");
   });
 
-  it("signs in as an existing admin and persists the session", async () => {
+  it("signs in with username + password and persists the session (no password leaked)", async () => {
     const be = new LocalBackend(memStore());
-    await expect(be.auth.signIn("nope")).rejects.toThrow();
-    const acc = await be.auth.signIn("local-admin");
-    expect(acc.name).toBe("Admin");
-    expect(be.auth.currentAccount()?.id).toBe("local-admin");
+    await expect(be.auth.signIn("admin", "wrong")).rejects.toThrow();
+    await expect(be.auth.signIn("nobody", "admin")).rejects.toThrow();
+    const acc = await be.auth.signIn("admin", "admin");
+    expect(acc).toEqual({ id: "local-admin", name: "admin" });
+    expect(be.auth.currentAccount()).toEqual({ id: "local-admin", name: "admin" });
     await be.auth.signOut();
     expect(be.auth.currentAccount()).toBeNull();
   });
 
-  it("creates a new (empty) admin account", async () => {
+  it("creates a new (empty) admin account and rejects duplicate usernames", async () => {
     const be = new LocalBackend(memStore());
-    const acc = await be.auth.createAccount("FF Neu");
-    expect(acc.name).toBe("FF Neu");
-    expect((await be.auth.listAccounts()).map((a) => a.name)).toEqual(["Admin", "FF Neu"]);
+    const acc = await be.auth.createAccount("ff-neu", "secret");
+    expect(acc.name).toBe("ff-neu");
     expect(await be.listEvents(acc.id)).toEqual([]); // starts with no events
-    const signed = await be.auth.signIn(acc.id);
-    expect(signed.id).toBe(acc.id);
+    await expect(be.auth.createAccount("ff-neu", "other")).rejects.toThrow();
+    // can sign in with the new credentials
+    expect((await be.auth.signIn("ff-neu", "secret")).id).toBe(acc.id);
   });
 
   it("creates, lists, loads, saves and deletes events scoped by owner", async () => {

@@ -15,7 +15,6 @@ const numberOfParallelRounds = 2
 export default function KuppelCup() {
   const {
     account,
-    accounts,
     events,
     current,
     loaded,
@@ -34,11 +33,26 @@ export default function KuppelCup() {
     deleteEvent,
   } = useEvents();
   const [tab, setTab] = useState<string>("liste");
-  const [newAdminName, setNewAdminName] = useState("");
+  const [loginUser, setLoginUser] = useState("");
+  const [loginPass, setLoginPass] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
   const [theme, setTheme] = useStorage<"dark" | "light">("kuppelcup:theme", "dark");
 
   // "Admin" features are unlocked while an admin account is signed in.
   const authed = !!account;
+
+  const runAuth = async (fn: () => Promise<void>) => {
+    try {
+      setAuthError(null);
+      await fn();
+      setLoginUser("");
+      setLoginPass("");
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  const handleLogin = () => runAuth(() => login(loginUser, loginPass));
+  const handleCreateAdmin = () => runAuth(() => createAdmin(loginUser, loginPass));
 
   // Current event's data (empty defaults until an event is loaded/selected).
   const teams: Team[] = current?.teams ?? [];
@@ -192,35 +206,28 @@ export default function KuppelCup() {
           ) : (
             <div className="login-box">
               <h2 className="panel-title">Admin-Anmeldung</h2>
-
-              <p className="pin-label">Als Admin anmelden</p>
-              <div className="login-accounts">
-                {accounts.length === 0 && <p className="hint-text">Noch keine Admin-Konten.</p>}
-                {accounts.map((a) => (
-                  <button key={a.id} className="pin-btn login-account-btn" onClick={() => login(a.id)}>
-                    {a.name}
-                  </button>
-                ))}
-              </div>
-
-              <p className="pin-label" style={{ marginTop: 20 }}>Neues Admin-Konto erstellen</p>
-              <div className="add-team-row">
-                <input
-                  type="text"
-                  value={newAdminName}
-                  placeholder="Name, z.B. FF Buchberg"
-                  onChange={(e) => setNewAdminName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newAdminName.trim()) { createAdmin(newAdminName); setNewAdminName(""); }
-                  }}
-                  className="pin-input add-team-input"
-                />
-                <button
-                  className="pin-btn add-team-btn"
-                  onClick={() => { if (newAdminName.trim()) { createAdmin(newAdminName); setNewAdminName(""); } }}
-                >
-                  Konto erstellen +
-                </button>
+              <p className="hint-text">Mit Benutzername und Passwort anmelden oder ein neues Admin-Konto anlegen.</p>
+              <input
+                type="text"
+                value={loginUser}
+                placeholder="Benutzername"
+                autoComplete="username"
+                onChange={(e) => setLoginUser(e.target.value)}
+                className="pin-input login-input"
+              />
+              <input
+                type="password"
+                value={loginPass}
+                placeholder="Passwort"
+                autoComplete="current-password"
+                onChange={(e) => setLoginPass(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                className="pin-input login-input"
+              />
+              {authError && <p className="pin-error">{authError}</p>}
+              <div className="login-actions">
+                <button className="pin-btn" onClick={handleLogin}>Anmelden</button>
+                <button className="pin-btn login-secondary" onClick={handleCreateAdmin}>Neues Konto erstellen</button>
               </div>
             </div>
           ))}

@@ -31,7 +31,6 @@ const clearUrl = (): void => {
 // per-event mutators that persist through the backend.
 export function useEvents() {
   const [account, setAccount] = useState<Account | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [events, setEvents] = useState<EventMeta[]>([]);
   const [current, setCurrent] = useState<EventDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -49,7 +48,6 @@ export function useEvents() {
     (async () => {
       const acc = backend.auth.currentAccount(); // persisted session, or null
       setAccount(acc);
-      setAccounts(await backend.auth.listAccounts());
       const list = acc ? await backend.listEvents(acc.id) : [];
       setEvents(list);
 
@@ -175,9 +173,8 @@ export function useEvents() {
     }
   }, [events, current, cancelPending, flush]);
 
-  // --- ADMIN ACCOUNTS ---
-  const login = useCallback(async (accountId: string) => {
-    const acc = await backend.auth.signIn(accountId);
+  // --- ADMIN ACCOUNTS --- (login/create reject on error; caller surfaces it)
+  const enterAccount = useCallback(async (acc: Account) => {
     setAccount(acc);
     const list = await backend.listEvents(acc.id);
     setEvents(list);
@@ -187,15 +184,15 @@ export function useEvents() {
     else clearUrl();
   }, []);
 
-  const createAdmin = useCallback(async (name: string) => {
-    const acc = await backend.auth.createAccount(name);
-    setAccounts((prev) => [...prev, acc]);
-    await backend.auth.signIn(acc.id);
-    setAccount(acc);
-    setEvents([]); // a new admin starts empty
-    setCurrent(null);
-    clearUrl();
-  }, []);
+  const login = useCallback(async (username: string, password: string) => {
+    await enterAccount(await backend.auth.signIn(username, password));
+  }, [enterAccount]);
+
+  const createAdmin = useCallback(async (username: string, password: string) => {
+    const acc = await backend.auth.createAccount(username, password);
+    await backend.auth.signIn(username, password);
+    await enterAccount(acc); // a new admin starts empty
+  }, [enterAccount]);
 
   const logout = useCallback(async () => {
     flush();
@@ -210,7 +207,6 @@ export function useEvents() {
 
   return {
     account,
-    accounts,
     events,
     current,
     loaded,

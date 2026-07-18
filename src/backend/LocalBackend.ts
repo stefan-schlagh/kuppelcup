@@ -28,8 +28,16 @@ const LEGACY_TEAMS = "kuppelcup:teams";
 const LEGACY_KO = "kuppelcup:ko";
 const LEGACY_PHASE = "kuppelcup:phase";
 
-const DEFAULT_ACCOUNT: Account = { id: "local-admin", name: "Admin" };
+// Stored account also holds the (local, plaintext — stub only) password.
+interface StoredAccount extends Account {
+  password: string;
+}
+
+// Built-in default admin. Credentials for local/dev sign-in: admin / admin.
+const DEFAULT_ADMIN: StoredAccount = { id: "local-admin", name: "admin", password: "admin" };
 const STARTER_EVENT_NAME = "1. Geissberg KUPPELCUP";
+
+const toPublic = (a: StoredAccount): Account => ({ id: a.id, name: a.name });
 
 // localStorage-backed Backend used until Firebase is wired up.
 export class LocalBackend implements Backend {
@@ -52,13 +60,13 @@ export class LocalBackend implements Backend {
     this.store.set(EVENTS_KEY, JSON.stringify(events));
   }
 
-  private readAccounts(): Account[] {
+  private readAccounts(): StoredAccount[] {
     const raw = this.store.get(ACCOUNTS_KEY);
     if (!raw) return [];
-    try { return JSON.parse(raw) as Account[]; } catch { return []; }
+    try { return JSON.parse(raw) as StoredAccount[]; } catch { return []; }
   }
 
-  private writeAccounts(accounts: Account[]): void {
+  private writeAccounts(accounts: StoredAccount[]): void {
     this.store.set(ACCOUNTS_KEY, JSON.stringify(accounts));
   }
 
@@ -67,14 +75,14 @@ export class LocalBackend implements Backend {
   // loads and freshly created admins are left untouched (new admins are empty).
   private ensureSeeded(): void {
     const firstRun = !this.store.get(ACCOUNTS_KEY);
-    if (firstRun) this.writeAccounts([DEFAULT_ACCOUNT]);
+    if (firstRun) this.writeAccounts([DEFAULT_ADMIN]);
     this.migrateLegacy();
     if (firstRun && this.readEvents().length === 0) {
       this.writeEvents([
         {
           id: `evt-${Date.now()}`,
           name: STARTER_EVENT_NAME,
-          ownerId: DEFAULT_ACCOUNT.id,
+          ownerId: DEFAULT_ADMIN.id,
           phase: "anmeldung",
           createdAt: Date.now(),
           teams: [],
@@ -97,7 +105,7 @@ export class LocalBackend implements Backend {
       const doc: EventDoc = {
         id: `evt-${Date.now()}`,
         name: this.legacyName,
-        ownerId: DEFAULT_ACCOUNT.id,
+        ownerId: DEFAULT_ADMIN.id,
         phase: JSON.parse(this.store.get(LEGACY_PHASE) ?? '"anmeldung"'),
         createdAt: Date.now(),
         teams: JSON.parse(teamsRaw),
@@ -113,21 +121,28 @@ export class LocalBackend implements Backend {
       if (!raw) return null;
       try { return JSON.parse(raw) as Account; } catch { return null; }
     },
-    listAccounts: async (): Promise<Account[]> => this.readAccounts(),
     // Local placeholder — TODO: replace with Firebase Auth sign-in.
-    signIn: async (accountId: string): Promise<Account> => {
-      const acc = this.readAccounts().find((a) => a.id === accountId);
-      if (!acc) throw new Error("Unbekanntes Admin-Konto");
-      this.store.set(ACCOUNT_KEY, JSON.stringify(acc));
-      return acc;
+    signIn: async (username: string, password: string): Promise<Account> => {
+      const acc = this.readAccounts().find((a) => a.name === username.trim() && a.password === password);
+      if (!acc) throw new Error("Falscher Benutzername oder Passwort");
+      const pub = toPublic(acc);
+      this.store.set(ACCOUNT_KEY, JSON.stringify(pub));
+      return pub;
     },
-    createAccount: async (name: string): Promise<Account> => {
-      const acc: Account = {
+    createAccount: async (username: string, password: string): Promise<Account> => {
+      const name = username.trim();
+      if (!name) throw new Error("Benutzername fehlt");
+      if (!password) throw new Error("Passwort fehlt");
+      if (this.readAccounts().some((a) => a.name === name)) {
+        throw new Error("Benutzername ist bereits vergeben");
+      }
+      const acc: StoredAccount = {
         id: `adm-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-        name: name.trim() || "Admin",
+        name,
+        password,
       };
       this.writeAccounts([...this.readAccounts(), acc]);
-      return acc;
+      return toPublic(acc);
     },
     signOut: async (): Promise<void> => {
       this.store.remove(ACCOUNT_KEY);
@@ -137,7 +152,7 @@ export class LocalBackend implements Backend {
   async landingEvent(): Promise<EventDoc | null> {
     // The default admin's first event powers the public landing page.
     const mine = this.readEvents()
-      .filter((e) => e.ownerId === DEFAULT_ACCOUNT.id)
+      .filter((e) => e.ownerId === DEFAULT_ADMIN.id)
       .sort((a, b) => b.createdAt - a.createdAt);
     return mine[0] ?? null;
   }

@@ -29,7 +29,8 @@ import { firebaseConfig } from "../config";
 //   query, where, orderBy,
 // } from "firebase/firestore";
 // import {
-//   getAuth, signInWithPopup, GoogleAuthProvider, signOut as fbSignOut,
+//   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+//   signOut as fbSignOut,
 // } from "firebase/auth";
 // const app = initializeApp(firebaseConfig);
 // const db = getFirestore(app);
@@ -52,23 +53,18 @@ export class FirebaseBackend implements Backend {
       void firebaseConfig;
       return null;
     },
-    listAccounts: async (): Promise<Account[]> => {
-      // With real auth each admin only ever "is" themselves; a picker of all
-      // accounts doesn't map onto Firebase Auth. Wire this to your own admins
-      // collection if you keep an explicit account list.
-      // const snap = await getDocs(collection(db, "admins"));
-      // return snap.docs.map((d) => ({ id: d.id, name: (d.data() as { name: string }).name }));
-      return notConfigured();
-    },
-    signIn: async (accountId: string): Promise<Account> => {
-      // const cred = await signInWithPopup(fbAuth, new GoogleAuthProvider());
+    signIn: async (username: string, password: string): Promise<Account> => {
+      // const cred = await signInWithEmailAndPassword(fbAuth, username, password);
       // return { id: cred.user.uid, name: cred.user.displayName ?? cred.user.email ?? "Admin" };
-      void accountId;
+      void username;
+      void password;
       return notConfigured();
     },
-    createAccount: async (name: string): Promise<Account> => {
-      // Provisioned via the auth provider (e.g. createUserWithEmailAndPassword).
-      void name;
+    createAccount: async (username: string, password: string): Promise<Account> => {
+      // const cred = await createUserWithEmailAndPassword(fbAuth, username, password);
+      // return { id: cred.user.uid, name: username };
+      void username;
+      void password;
       return notConfigured();
     },
     signOut: async (): Promise<void> => {

@@ -500,21 +500,29 @@ body {
   margin: 40px auto;
 }
 
-.login-accounts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.login-account-btn {
-  background: var(--bg-surface);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
+.login-input {
   text-align: left;
 }
 
-.login-account-btn:hover {
+.login-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.login-actions .pin-btn {
+  width: auto;
+  flex: 1;
+}
+
+.login-secondary {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+
+.login-secondary:hover {
   border-color: var(--color-accent);
 }
 
