@@ -47,10 +47,13 @@ export function gesamt(run: RunData) {
   return run.zeit + (run.strafe || 0);
 }
 
-export function punkte(t: Team) {
-  if (!gesamt(t.dg1) && !gesamt(t.dg2)) return 0
-  if (!gesamt(t.dg2)) return gesamt(t.dg1)
-  Math.min(gesamt(t.dg1) ?? 0, gesamt(t.dg2) ?? 0)
+export function punkte(t: Team): number {
+  const g1 = gesamt(t.dg1);
+  const g2 = gesamt(t.dg2);
+  if (g1 == null && g2 == null) return 0;
+  if (g1 == null) return g2!;
+  if (g2 == null) return g1;
+  return Math.min(g1, g2);
 }
 
 export const SEED_ORDER = [
