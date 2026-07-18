@@ -31,3 +31,28 @@ export interface BracketData {
   sf: Match[];
   final: Match;
 }
+
+// Per-match K.O. run times, keyed by match id (qf1..final).
+export type KoState = Record<string, { runA?: RunData; runB?: RunData }>;
+
+// An admin account that owns events. For now this is a local placeholder;
+// it maps onto a Firebase Auth user later.
+export interface Account {
+  id: string;
+  name: string;
+}
+
+// Lightweight event descriptor for lists / switching.
+export interface EventMeta {
+  id: string;
+  name: string;
+  ownerId: string;
+  phase: EventPhase;
+  createdAt: number;
+}
+
+// A full event document: metadata plus its competition data.
+export interface EventDoc extends EventMeta {
+  teams: Team[];
+  ko: KoState;
+}

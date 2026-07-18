@@ -114,6 +114,18 @@ body {
 .phase-badge.phase-durchfuehrung { color: var(--text-on-accent); border-color: var(--color-accent); background: var(--color-accent); }
 .phase-badge.phase-abgeschlossen { color: #fff; border-color: var(--color-primary); background: var(--color-primary); }
 
+.event-select {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 8px;
+  max-width: 220px;
+  cursor: pointer;
+}
+
 .theme-toggle {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -516,6 +528,15 @@ body {
 
 .remove-btn:hover {
   border-color: var(--color-primary);
+}
+
+.switch-btn {
+  color: var(--text-main);
+  margin-right: 6px;
+}
+
+.switch-btn:hover {
+  border-color: var(--color-accent);
 }
 
 .backup-actions {

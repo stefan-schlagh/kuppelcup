@@ -10,7 +10,9 @@ Working branch: `todo-items`. One commit per task.
 - [x] Event management + teams (Admin → Event & Teams: phase lifecycle, add/remove, seed, lock when abgeschlossen)
 
 ## In progress
-- [ ] Prepare backend connection layer (Firebase-style storage adapter / endpoints)
+- [ ] Backend connection layer → **Firestore** target, **local placeholder** auth
+  - [x] 6a: Multi-event support (Backend repository interface + LocalBackend; events owned by an admin account; create/switch/delete; legacy migration)
+  - [ ] 6b: Firebase adapter stub (prepared Firestore/Auth endpoints behind a config switch)
 
 ## Open
 _(none)_
@@ -18,6 +20,8 @@ _(none)_
 ## Backlog (not scheduled yet)
 - [ ] Turnierbaum: use both sides in the UI (final in the middle)
 - [ ] Urkunden: restrict to admin only (hide the tab from public view)
+- [ ] non-admins should not see the current lifecycle state
+- [ ] the event switcher should be removed. Instead users can access the events by URL only. admin should be able to generate a QR code for each event 
 
 ## Notes
 - Keep things simple.

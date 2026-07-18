@@ -21,10 +21,16 @@ export default function AdminPanel({
   removeTeam,
   loadSampleTeams,
   fillRandomResults,
-  startNewEvent,
+  account,
+  events,
+  current,
+  createEvent,
+  deleteEvent,
+  selectEvent,
 }: any) {
   const [sub, setSub] = useState("event");
   const [newName, setNewName] = useState("");
+  const [newEventName, setNewEventName] = useState("");
 
   const isAnmeldung = phase === "anmeldung";
 
@@ -60,8 +66,14 @@ export default function AdminPanel({
     setPhase(p);
   };
 
-  const handleNewEvent = () => {
-    if (confirm("Neues (leeres) Event anlegen? Alle Teams und Ergebnisse werden gelöscht.")) startNewEvent();
+  const handleCreateEvent = () => {
+    const name = newEventName.trim() || "Neues Event";
+    createEvent(name);
+    setNewEventName("");
+  };
+
+  const handleDeleteEvent = (id: string, name: string) => {
+    if (confirm(`Event „${name}" löschen? Alle Teams und Ergebnisse gehen verloren.`)) deleteEvent(id);
   };
 
   return (
@@ -75,7 +87,46 @@ export default function AdminPanel({
 
       {sub === "event" && (
         <div>
-          <h3 className="panel-title">Event-Phase</h3>
+          <h3 className="panel-title">Meine Events</h3>
+          <p className="hint-text">Angemeldet als <strong>{account?.name ?? "—"}</strong>. Events können angelegt, gewechselt und gelöscht werden.</p>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Phase</th>
+                  <th style={{ textAlign: "center" }}>Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(events ?? []).map((ev: any) => (
+                  <tr key={ev.id} className={current?.id === ev.id ? "row-qualified" : ""}>
+                    <td className="td-name">{ev.name}</td>
+                    <td>{PHASE_LABELS[ev.phase as EventPhase]}</td>
+                    <td style={{ textAlign: "center" }}>
+                      {current?.id !== ev.id && (
+                        <button className="remove-btn switch-btn" onClick={() => selectEvent(ev.id)} title="Zu diesem Event wechseln">Öffnen</button>
+                      )}
+                      <button className="remove-btn" onClick={() => handleDeleteEvent(ev.id, ev.name)} title="Event löschen">✕</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="add-team-row" style={{ marginTop: 12 }}>
+            <input
+              type="text"
+              value={newEventName}
+              placeholder="Neuer Event-Name, z.B. 2. Geissberg KUPPELCUP"
+              onChange={(e) => setNewEventName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreateEvent()}
+              className="pin-input add-team-input"
+            />
+            <button className="pin-btn add-team-btn" onClick={handleCreateEvent}>Event anlegen +</button>
+          </div>
+
+          <h3 className="panel-title" style={{ marginTop: 24 }}>Event-Phase</h3>
           <p className="hint-text">Anmeldung → Durchführung → Abgeschlossen. In der Anmeldung werden Teams verwaltet; nach dem Abschluss sind keine Änderungen mehr möglich.</p>
           <div className="phase-stepper">
             {PHASES.map((p: EventPhase) => (
@@ -87,10 +138,6 @@ export default function AdminPanel({
                 {PHASE_LABELS[p]}
               </button>
             ))}
-          </div>
-
-          <div className="event-actions">
-            <button className="sub-tab" onClick={handleNewEvent}>Neues Event (leer)</button>
           </div>
 
           {ENABLE_TEST_DATA && (

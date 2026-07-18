@@ -1,33 +1,40 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
+import { useEvents } from "./hooks/useEvents";
 import { seedTeams, gesamt, punkte, SEED_ORDER, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
-import type { RunData, Team, BracketData, EventPhase } from "./types";
+import type { Team, BracketData, EventPhase, KoState } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
 
-interface StorageMatchState {
-  runA?: RunData;
-  runB?: RunData;
-}
-interface StorageKoState {
-  [matchId: string]: StorageMatchState;
-}
-
-const competitionName = "1. Geissberg KUPPELCUP"
 const numberOfParallelRounds = 2
 
 export default function KuppelCup() {
-  const [teams, setTeams, teamsLoaded] = useStorage<Team[]>("kuppelcup:teams", seedTeams());
-  const [ko, setKo, koLoaded] = useStorage<StorageKoState>("kuppelcup:ko", {});
-  const [phase, setPhase, phaseLoaded] = useStorage<EventPhase>("kuppelcup:phase", "anmeldung");
+  const {
+    account,
+    events,
+    current,
+    loaded,
+    setTeams,
+    setKo,
+    setPhase,
+    selectEvent,
+    createEvent,
+    deleteEvent,
+  } = useEvents();
   const [tab, setTab] = useState<string>("liste");
   const [pin, setPin] = useState("");
   const [authed, setAuthed] = useState(false);
   const [theme, setTheme] = useStorage<"dark" | "light">("kuppelcup:theme", "dark");
   const ADMIN_PIN = "2024";
+
+  // Current event's data (empty defaults until an event is loaded/selected).
+  const teams: Team[] = current?.teams ?? [];
+  const ko: KoState = current?.ko ?? {};
+  const phase: EventPhase = current?.phase ?? "anmeldung";
+  const competitionName = current?.name ?? "KUPPELCUP";
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -167,9 +174,9 @@ export default function KuppelCup() {
 
   const updateKoRun = (matchId: string, side: "runA" | "runB", field: "zeit" | "strafe", value: number | null) => {
     if (locked) return;
-    const current = ko[matchId] || {};
-    const currentSide = current[side] || { zeit: null, strafe: 0 };
-    setKo({ ...ko, [matchId]: { ...current, [side]: { ...currentSide, [field]: value } } });
+    const slot = ko[matchId] || {};
+    const slotSide = slot[side] || { zeit: null, strafe: 0 };
+    setKo({ ...ko, [matchId]: { ...slot, [side]: { ...slotSide, [field]: value } } });
   };
 
   // Teams can only be added/removed during Anmeldung.
@@ -194,13 +201,7 @@ export default function KuppelCup() {
     setKo(randomKoResults(withResults));
   };
 
-  const startNewEvent = () => {
-    setTeams([]);
-    setKo({});
-    setPhase("anmeldung");
-  };
-
-  if (!teamsLoaded || !koLoaded || !phaseLoaded) return <div className="loading-screen">Lade Daten…</div>;
+  if (!loaded) return <div className="loading-screen">Lade Daten…</div>;
 
   return (
     <div className="app-container">
@@ -209,6 +210,18 @@ export default function KuppelCup() {
           <div className="hose-icon">⊃⊂</div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
           <div className="header-right">
+            {events.length > 0 && (
+              <select
+                className="event-select"
+                value={current?.id ?? ""}
+                onChange={(e) => selectEvent(e.target.value)}
+                title="Event wählen"
+              >
+                {events.map((ev) => (
+                  <option key={ev.id} value={ev.id}>{ev.name}</option>
+                ))}
+              </select>
+            )}
             <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>
             <button
               className="theme-toggle"
@@ -274,7 +287,12 @@ export default function KuppelCup() {
             removeTeam={removeTeam}
             loadSampleTeams={loadSampleTeams}
             fillRandomResults={fillRandomResults}
-            startNewEvent={startNewEvent}
+            account={account}
+            events={events}
+            current={current}
+            createEvent={createEvent}
+            deleteEvent={deleteEvent}
+            selectEvent={selectEvent}
           />
           ) : (
             <div className="pin-box">
