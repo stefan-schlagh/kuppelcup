@@ -142,6 +142,11 @@ body {
   margin-top: 4px;
   overflow-x: auto;
   scrollbar-width: none;
+  /* Subtle fade on the right edge hints at more tabs when they overflow.
+     On wide screens the tabs don't reach the edge, so the fade sits over
+     empty space and stays invisible. */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
 }
 
 .nav-bar::-webkit-scrollbar {
