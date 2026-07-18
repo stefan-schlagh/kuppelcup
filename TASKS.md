@@ -72,7 +72,7 @@ Potential issues to flag:
 - [ ] Make K.O. winner comparison use rounded totals (`gesamt`) for consistency; decide how exact ties resolve (re-run vs. seed)
 - [ ] Surface ties in the UI (mark equal ranks / flag a contested qualification line)
 - [ ] Visually distinguish K.O. heats in the Live-Monitor (phase badge or "vs." styling for the two opponents), rather than only the text label
-- [ ] fix UI for small screens, especially on the top
+- [x] fix UI for small screens, especially on the top (header brand row wraps, nav tabs scroll, tighter padding; Turnierbaum stacks — see earlier)
 
 ## Manual setup (you — before wiring the backend)
 - [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
