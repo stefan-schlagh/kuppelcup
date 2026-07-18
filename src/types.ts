@@ -35,6 +35,16 @@ export interface BracketData {
 // Per-match K.O. run times, keyed by match id (qf1..final).
 export type KoState = Record<string, { runA?: RunData; runB?: RunData }>;
 
+// One entry in the Live-Monitor queue — a team's single run in a given
+// phase (base round or a K.O. match), decoupled from where the time lives.
+export interface MonitorRunner {
+  name: string;
+  start: number;
+  label: string;
+  zeit: number | null;
+  strafe: number | null;
+}
+
 // An admin account that owns events. For now this is a local placeholder;
 // it maps onto a Firebase Auth user later.
 export interface Account {

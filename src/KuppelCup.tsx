@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
 import { seedTeams, gesamt, punkte, SEED_ORDER, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS, byPunkte } from "./utils/helpers";
-import type { Team, BracketData, EventPhase, KoState } from "./types";
+import type { Team, RunData, BracketData, EventPhase, KoState, MonitorRunner } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
@@ -52,49 +52,6 @@ export default function KuppelCup() {
     return [...teams].sort((a, b) => a.start - b.start);
   }, [teams]);
 
-  // --- b) LIVE MONITOR VIEW ENGINE ---
-  // Determine which team is up based on missing times in DG1 then DG2
-  const monitorData = useMemo(() => {
-    const queue: { team: Team; round: "dg1" | "dg2" }[] = [];
-    // Add all DG1 runs, then all DG2 runs in their fixed order
-    scheduledTeams.forEach(t => queue.push({ team: t, round: "dg1" }));
-    scheduledTeams.forEach(t => queue.push({ team: t, round: "dg2" }));
-
-    // No teams yet -> nothing to show, distinct from a finished round.
-    if (queue.length === 0) {
-      return { status: "empty" as const, former: [], current: [], next: [] };
-    }
-
-    // Find the first runner profile that lacks a tracked running time
-    const currentIndex = queue.findIndex(q => q.team[q.round].zeit === null);
-
-    // Everything finished -> no current/next, former = last chunk that ran
-    if (currentIndex === -1) {
-      const lastChunkStart = Math.max(0, queue.length - numberOfParallelRounds);
-      return {
-        status: "finished" as const,
-        former: queue.slice(lastChunkStart),
-        current: [],
-        next: [],
-      };
-    }
-
-    // Align chunk boundaries to numberOfParallelRounds, based on currentIndex
-    const chunkIndex = Math.floor(currentIndex / numberOfParallelRounds);
-    const currentStart = chunkIndex * numberOfParallelRounds;
-    const currentEnd = currentStart + numberOfParallelRounds;
-    const formerStart = currentStart - numberOfParallelRounds;
-    const nextStart = currentEnd;
-    const nextEnd = nextStart + numberOfParallelRounds;
-
-    return {
-      status: "running" as const,
-      former: formerStart >= 0 ? queue.slice(formerStart, currentStart) : [],
-      current: queue.slice(currentStart, currentEnd),
-      next: nextStart < queue.length ? queue.slice(nextStart, nextEnd) : [],
-    };
-  }, [scheduledTeams, numberOfParallelRounds]);
-
   // Calculations for KO Brackets (unchanged from last iteration)...
   const ranked = useMemo(() => {
     return [...teams]
@@ -137,7 +94,62 @@ export default function KuppelCup() {
     const final = assembleMatch("final", sf[0].winnerId ? (sf[0].winnerId === sf[0].teamA?.id ? sf[0].teamA : sf[0].teamB) : null, sf[1].winnerId ? (sf[1].winnerId === sf[1].teamA?.id ? sf[1].teamA : sf[1].teamB) : null);
     return { qf, sf, final };
   }, [top8, ko]);
-  
+
+  // --- LIVE MONITOR VIEW ENGINE ---
+  // One continuous queue of runs: every team's DG1, then DG2, then the K.O.
+  // phase (each assembled match with both teams becomes a heat of two). The
+  // "current" heat is the first run still missing a time.
+  const monitorData = useMemo(() => {
+    const runner = (t: Team, label: string, r: RunData): MonitorRunner => ({
+      name: t.name, start: t.start, label, zeit: r.zeit, strafe: r.strafe,
+    });
+    const koLabel = (id: string) =>
+      id.startsWith("qf") ? "Viertelfinale" : id.startsWith("sf") ? "Halbfinale" : "Finale";
+
+    const queue: MonitorRunner[] = [];
+    scheduledTeams.forEach((t) => queue.push(runner(t, "DG1", t.dg1)));
+    scheduledTeams.forEach((t) => queue.push(runner(t, "DG2", t.dg2)));
+    [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
+      if (m.teamA && m.teamB) {
+        queue.push(runner(m.teamA, koLabel(m.id), m.runA));
+        queue.push(runner(m.teamB, koLabel(m.id), m.runB));
+      }
+    });
+
+    // No teams yet -> nothing to show, distinct from a finished competition.
+    if (queue.length === 0) {
+      return { status: "empty" as const, former: [], current: [], next: [] };
+    }
+
+    const currentIndex = queue.findIndex((q) => q.zeit === null);
+
+    // Everything run -> no current/next, former = last heat that ran.
+    if (currentIndex === -1) {
+      const lastChunkStart = Math.max(0, queue.length - numberOfParallelRounds);
+      return {
+        status: "finished" as const,
+        former: queue.slice(lastChunkStart),
+        current: [],
+        next: [],
+      };
+    }
+
+    // Align heat boundaries to numberOfParallelRounds around currentIndex.
+    const chunkIndex = Math.floor(currentIndex / numberOfParallelRounds);
+    const currentStart = chunkIndex * numberOfParallelRounds;
+    const currentEnd = currentStart + numberOfParallelRounds;
+    const formerStart = currentStart - numberOfParallelRounds;
+    const nextStart = currentEnd;
+    const nextEnd = nextStart + numberOfParallelRounds;
+
+    return {
+      status: "running" as const,
+      former: formerStart >= 0 ? queue.slice(formerStart, currentStart) : [],
+      current: queue.slice(currentStart, currentEnd),
+      next: nextStart < queue.length ? queue.slice(nextStart, nextEnd) : [],
+    };
+  }, [scheduledTeams, bracket]);
+
   const dailyBestTimes = useMemo(() => {
     // A team's Tagesbestzeit is its lowest total across the Grunddurchgang
     // and every K.O. run it took part in.
