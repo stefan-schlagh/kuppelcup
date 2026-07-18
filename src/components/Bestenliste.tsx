@@ -1,4 +1,4 @@
-import { fmtTime } from "../utils/helpers";
+import { fmtTime, gesamt } from "../utils/helpers";
 import type { Team } from "../types";
 
 export default function Bestenliste({ ranked, top8Ids }: any) {
@@ -28,10 +28,10 @@ export default function Bestenliste({ ranked, top8Ids }: any) {
                     {t.name}
                     {t.gastgeber && <span className="host-tag">Gastgeber</span>}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.dg1)}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg1))}`}>
                     {fmtTime(t.dg1.zeit)} {t.dg1.strafe ? <span className="fehler-tag">+{t.dg1.strafe}s</span> : null}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.dg2)}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg2))}`}>
                     {fmtTime(t.dg2.zeit)} {t.dg2.strafe ? <span className="fehler-tag">+{t.dg2.strafe}s</span> : null}
                   </td>
                   <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{(t as any).punkte}</td>
