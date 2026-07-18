@@ -314,16 +314,17 @@ body {
 /* Bracket Layout */
 .bracket-row {
   display: flex;
-  gap: 24px;
+  gap: 14px;
   overflow-x: auto;
 }
 
 .bracket-col {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 14px;
   justify-content: center;
-  min-width: 200px;
+  min-width: 150px;
+  flex: 1;
 }
 
 /* Symmetric bracket: halves feed toward the final in the centre. */
@@ -633,19 +634,17 @@ body {
 
 .match-team-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  min-height: 34px;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 7px 10px;
+  gap: 3px;
 }
 
 .team-name-span {
   font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .match-divider-line {
@@ -660,6 +659,8 @@ body {
 }
 
 .bracket-input-time {
+  flex: 1;
+  min-width: 0;
   width: 65px;
   padding: 4px 6px;
   background: var(--bg-main);
@@ -683,6 +684,8 @@ body {
 }
 
 .bracket-time-display {
+  display: block;
+  text-align: right;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   white-space: nowrap;
