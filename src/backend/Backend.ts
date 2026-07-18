@@ -10,6 +10,9 @@ export interface Backend {
     currentAccount(): Account | null;
     // Sign in with username + password; rejects on bad credentials.
     signIn(username: string, password: string): Promise<Account>;
+    // Passwordless sign-in with just an email (Firebase email-link). Signs in
+    // the matching admin, creating an empty one if the email is new.
+    signInWithEmail(email: string): Promise<Account>;
     // Create a new (empty) admin account; rejects if the username is taken.
     createAccount(username: string, password: string): Promise<Account>;
     signOut(): Promise<void>;

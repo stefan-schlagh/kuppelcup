@@ -28,9 +28,11 @@ const LEGACY_TEAMS = "kuppelcup:teams";
 const LEGACY_KO = "kuppelcup:ko";
 const LEGACY_PHASE = "kuppelcup:phase";
 
-// Stored account also holds the (local, plaintext — stub only) password.
+// Stored account also holds the (local, plaintext — stub only) password and,
+// for email-link admins, the email used to sign in.
 interface StoredAccount extends Account {
   password: string;
+  email?: string;
 }
 
 // Built-in default admin. Credentials for local/dev sign-in: admin / admin.
@@ -125,6 +127,26 @@ export class LocalBackend implements Backend {
     signIn: async (username: string, password: string): Promise<Account> => {
       const acc = this.readAccounts().find((a) => a.name === username.trim() && a.password === password);
       if (!acc) throw new Error("Falscher Benutzername oder Passwort");
+      const pub = toPublic(acc);
+      this.store.set(ACCOUNT_KEY, JSON.stringify(pub));
+      return pub;
+    },
+    // Passwordless email sign-in (local stub of Firebase email-link): signs in
+    // the admin with this email, creating an empty one on first use.
+    signInWithEmail: async (email: string): Promise<Account> => {
+      const normalized = email.trim().toLowerCase();
+      if (!normalized.includes("@")) throw new Error("Ungültige E-Mail-Adresse");
+      const accounts = this.readAccounts();
+      let acc = accounts.find((a) => (a.email ?? a.name).toLowerCase() === normalized);
+      if (!acc) {
+        acc = {
+          id: `adm-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+          name: normalized,
+          email: normalized,
+          password: "",
+        };
+        this.writeAccounts([...accounts, acc]);
+      }
       const pub = toPublic(acc);
       this.store.set(ACCOUNT_KEY, JSON.stringify(pub));
       return pub;

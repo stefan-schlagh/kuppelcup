@@ -21,6 +21,7 @@ export default function KuppelCup() {
     saveError,
     dismissSaveError,
     login,
+    loginWithEmail,
     createAdmin,
     logout,
     setTeams,
@@ -35,6 +36,7 @@ export default function KuppelCup() {
   const [tab, setTab] = useState<string>("liste");
   const [loginUser, setLoginUser] = useState("");
   const [loginPass, setLoginPass] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [theme, setTheme] = useStorage<"dark" | "light">("kuppelcup:theme", "dark");
 
@@ -47,12 +49,14 @@ export default function KuppelCup() {
       await fn();
       setLoginUser("");
       setLoginPass("");
+      setLoginEmail("");
     } catch (e) {
       setAuthError(e instanceof Error ? e.message : String(e));
     }
   };
   const handleLogin = () => runAuth(() => login(loginUser, loginPass));
   const handleCreateAdmin = () => runAuth(() => createAdmin(loginUser, loginPass));
+  const handleEmailLogin = () => runAuth(() => loginWithEmail(loginEmail));
 
   // Current event's data (empty defaults until an event is loaded/selected).
   const teams: Team[] = current?.teams ?? [];
@@ -229,6 +233,20 @@ export default function KuppelCup() {
                 <button className="pin-btn" onClick={handleLogin}>Anmelden</button>
                 <button className="pin-btn login-secondary" onClick={handleCreateAdmin}>Neues Konto erstellen</button>
               </div>
+
+              <div className="login-divider">oder</div>
+
+              <p className="pin-label">Mit E-Mail anmelden</p>
+              <input
+                type="email"
+                value={loginEmail}
+                placeholder="E-Mail-Adresse"
+                autoComplete="email"
+                onChange={(e) => setLoginEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleEmailLogin()}
+                className="pin-input login-input"
+              />
+              <button className="pin-btn login-secondary" onClick={handleEmailLogin}>Link per E-Mail (passwortlos)</button>
             </div>
           ))}
         </main>

@@ -22,9 +22,10 @@ Working branch: `todo-items`. One commit per task.
 - [x] Debounce per-event writes (no full-document write per keystroke; flush on switch/unmount)
 - [x] Surface save failures in the UI (dismissible banner) instead of swallowing them
 - [x] Multiple admin accounts (backend stubs): Admin tab has a username+password login
-      (no account list shown) plus "create new admin account" (starts empty). Default
-      seeded admin credentials for local/dev: **admin / admin** (owns the starter event).
-      Events stay owned per admin. Replaces the old admin PIN.
+      (no account list shown), a passwordless **email login** (Firebase email-link;
+      local dev signs in / auto-creates by email), plus "create new admin account"
+      (starts empty). Default seeded admin credentials for local/dev: **admin / admin**
+      (owns the starter event). Events stay owned per admin. Replaces the old admin PIN.
 
 ## Code-quality fixes
 - [x] Extract tournament logic to `utils/tournament.ts` and unit-test it

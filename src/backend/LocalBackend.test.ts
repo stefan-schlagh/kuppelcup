@@ -31,6 +31,18 @@ describe("LocalBackend", () => {
     expect(be.auth.currentAccount()).toBeNull();
   });
 
+  it("signs in passwordless by email, creating the admin on first use", async () => {
+    const be = new LocalBackend(memStore());
+    await expect(be.auth.signInWithEmail("not-an-email")).rejects.toThrow();
+    const first = await be.auth.signInWithEmail("chef@ff-buchberg.at");
+    expect(first.name).toBe("chef@ff-buchberg.at");
+    expect(be.auth.currentAccount()?.id).toBe(first.id);
+    // same email signs into the same account (not a duplicate)
+    await be.auth.signOut();
+    const again = await be.auth.signInWithEmail("Chef@FF-Buchberg.at");
+    expect(again.id).toBe(first.id);
+  });
+
   it("creates a new (empty) admin account and rejects duplicate usernames", async () => {
     const be = new LocalBackend(memStore());
     const acc = await be.auth.createAccount("ff-neu", "secret");

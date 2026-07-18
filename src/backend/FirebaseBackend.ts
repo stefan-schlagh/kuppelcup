@@ -30,7 +30,7 @@ import { firebaseConfig } from "../config";
 // } from "firebase/firestore";
 // import {
 //   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-//   signOut as fbSignOut,
+//   sendSignInLinkToEmail, signInWithEmailLink, signOut as fbSignOut,
 // } from "firebase/auth";
 // const app = initializeApp(firebaseConfig);
 // const db = getFirestore(app);
@@ -58,6 +58,15 @@ export class FirebaseBackend implements Backend {
       // return { id: cred.user.uid, name: cred.user.displayName ?? cred.user.email ?? "Admin" };
       void username;
       void password;
+      return notConfigured();
+    },
+    signInWithEmail: async (email: string): Promise<Account> => {
+      // Passwordless email-link sign-in — a two-step flow:
+      //   1) await sendSignInLinkToEmail(fbAuth, email, { url: <redirect>, handleCodeInApp: true });
+      //      (persist the email locally to complete on return)
+      //   2) on the redirect: const cred = await signInWithEmailLink(fbAuth, email, window.location.href);
+      //      return { id: cred.user.uid, name: cred.user.email ?? "Admin" };
+      void email;
       return notConfigured();
     },
     createAccount: async (username: string, password: string): Promise<Account> => {

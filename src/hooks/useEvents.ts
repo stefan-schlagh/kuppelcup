@@ -188,6 +188,10 @@ export function useEvents() {
     await enterAccount(await backend.auth.signIn(username, password));
   }, [enterAccount]);
 
+  const loginWithEmail = useCallback(async (email: string) => {
+    await enterAccount(await backend.auth.signInWithEmail(email));
+  }, [enterAccount]);
+
   const createAdmin = useCallback(async (username: string, password: string) => {
     const acc = await backend.auth.createAccount(username, password);
     await backend.auth.signIn(username, password);
@@ -213,6 +217,7 @@ export function useEvents() {
     saveError,
     dismissSaveError: () => setSaveError(null),
     login,
+    loginWithEmail,
     createAdmin,
     logout,
     patchEvent,
