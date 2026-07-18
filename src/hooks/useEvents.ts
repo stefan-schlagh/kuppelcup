@@ -111,6 +111,10 @@ export function useEvents() {
     };
   }, [flush]);
 
+  // Apply several fields at once so callers that change more than one part of
+  // the event (e.g. teams + ko together) don't clobber each other via stale state.
+  const patchEvent = useCallback((partial: Partial<EventDoc>) => { if (current) applyLocal({ ...current, ...partial }); }, [current, applyLocal]);
+
   const setTeams = useCallback((teams: Team[]) => { if (current) applyLocal({ ...current, teams }); }, [current, applyLocal]);
   const setKo = useCallback((ko: KoState) => { if (current) applyLocal({ ...current, ko }); }, [current, applyLocal]);
   const setPhase = useCallback((phase: EventPhase) => { if (current) applyLocal({ ...current, phase }); }, [current, applyLocal]);
@@ -169,6 +173,7 @@ export function useEvents() {
     loaded,
     saveError,
     dismissSaveError: () => setSaveError(null),
+    patchEvent,
     setTeams,
     setKo,
     setPhase,

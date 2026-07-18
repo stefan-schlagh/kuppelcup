@@ -22,6 +22,7 @@ export default function KuppelCup() {
     setTeams,
     setKo,
     setPhase,
+    patchEvent,
     selectEvent,
     createEvent,
     renameEvent,
@@ -194,11 +195,11 @@ export default function KuppelCup() {
   const loadSampleTeams = () => phase === "anmeldung" && setTeams(seedTeams());
 
   // Test/showcase helper: fill both the Grunddurchgang and the K.O. phase.
+  // Both in one update so the ko write doesn't clobber the new teams.
   const fillRandomResults = () => {
     if (locked) return;
     const withResults = withRandomResults(teams);
-    setTeams(withResults);
-    setKo(randomKoResults(withResults));
+    patchEvent({ teams: withResults, ko: randomKoResults(withResults) });
   };
 
   if (!loaded) return <div className="loading-screen">Lade Daten…</div>;
