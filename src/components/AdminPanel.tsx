@@ -1,11 +1,32 @@
 import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
-import { PENALTY_OPTIONS } from "../utils/helpers";
+import { PENALTY_OPTIONS, PHASES, PHASE_LABELS } from "../utils/helpers";
 import { teamsToCsv, csvToTeams, downloadCsv } from "../utils/backup";
-import type { Team} from '../types'
+import { ENABLE_TEST_DATA } from "../config";
+import type { Team, EventPhase } from '../types'
 
-export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGemeinde, bracket, /*setWinner,*/ updateKoRun, onImportTeams }: any) {
-  const [sub, setSub] = useState("ergebnisse");
+export default function AdminPanel({
+  teams,
+  updateRun,
+  toggleGastgeber,
+  toggleGemeinde,
+  bracket,
+  /*setWinner,*/
+  updateKoRun,
+  onImportTeams,
+  phase,
+  setPhase,
+  locked,
+  addTeam,
+  removeTeam,
+  loadSampleTeams,
+  fillRandomResults,
+  startNewEvent,
+}: any) {
+  const [sub, setSub] = useState("event");
+  const [newName, setNewName] = useState("");
+
+  const isAnmeldung = phase === "anmeldung";
 
   const handleExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
@@ -27,16 +48,115 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGe
     reader.readAsText(file);
     e.target.value = "";
   };
+
+  const handleAddTeam = () => {
+    if (!newName.trim()) return;
+    addTeam(newName);
+    setNewName("");
+  };
+
+  const handlePhase = (p: EventPhase) => {
+    if (p === "abgeschlossen" && !confirm("Event abschließen? Danach sind keine Änderungen mehr möglich.")) return;
+    setPhase(p);
+  };
+
+  const handleNewEvent = () => {
+    if (confirm("Neues (leeres) Event anlegen? Alle Teams und Ergebnisse werden gelöscht.")) startNewEvent();
+  };
+
   return (
     <div>
       <div className="admin-tabs">
+        <button onClick={() => setSub("event")} className={`sub-tab ${sub === "event" ? "active" : ""}`}>Event &amp; Teams</button>
         <button onClick={() => setSub("ergebnisse")} className={`sub-tab ${sub === "ergebnisse" ? "active" : ""}`}>Grunddurchgang erfassen</button>
         <button onClick={() => setSub("ko")} className={`sub-tab ${sub === "ko" ? "active" : ""}`}>K.O.-Ergebnisse</button>
         <button onClick={() => setSub("backup")} className={`sub-tab ${sub === "backup" ? "active" : ""}`}>Backup</button>
       </div>
 
+      {sub === "event" && (
+        <div>
+          <h3 className="panel-title">Event-Phase</h3>
+          <p className="hint-text">Anmeldung → Durchführung → Abgeschlossen. In der Anmeldung werden Teams verwaltet; nach dem Abschluss sind keine Änderungen mehr möglich.</p>
+          <div className="phase-stepper">
+            {PHASES.map((p: EventPhase) => (
+              <button
+                key={p}
+                onClick={() => handlePhase(p)}
+                className={`phase-step ${phase === p ? "active" : ""}`}
+              >
+                {PHASE_LABELS[p]}
+              </button>
+            ))}
+          </div>
+
+          <div className="event-actions">
+            <button className="sub-tab" onClick={handleNewEvent}>Neues Event (leer)</button>
+          </div>
+
+          {ENABLE_TEST_DATA && (
+            <div className="dev-tools">
+              <span className="dev-tools-label">⚠ Testdaten — nur für Test / Vorführung</span>
+              <div className="event-actions">
+                {isAnmeldung && (
+                  <button className="sub-tab" onClick={loadSampleTeams}>Beispiel-Teams laden</button>
+                )}
+                {!locked && (
+                  <button className="sub-tab" onClick={fillRandomResults}>Zufallsergebnisse erzeugen (inkl. K.O.)</button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <h3 className="panel-title" style={{ marginTop: 24 }}>Teams ({teams.length})</h3>
+          {isAnmeldung ? (
+            <div className="add-team-row">
+              <input
+                type="text"
+                value={newName}
+                placeholder="Teamname, z.B. FF Buchberg"
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTeam()}
+                className="pin-input add-team-input"
+              />
+              <button className="pin-btn add-team-btn" onClick={handleAddTeam}>Hinzufügen +</button>
+            </div>
+          ) : (
+            <p className="hint-text">Teams können nur in der Anmeldungs-Phase hinzugefügt oder entfernt werden.</p>
+          )}
+
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Start-Nr</th>
+                  <th>Team</th>
+                  {isAnmeldung && <th style={{ textAlign: "center" }}>Aktion</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {teams.length === 0 && (
+                  <tr><td colSpan={isAnmeldung ? 3 : 2} className="hint-text">Noch keine Teams angemeldet.</td></tr>
+                )}
+                {teams.map((t: Team) => (
+                  <tr key={t.id}>
+                    <td className="td-rank">{t.start}</td>
+                    <td className="td-name">{t.name}</td>
+                    {isAnmeldung && (
+                      <td style={{ textAlign: "center" }}>
+                        <button className="remove-btn" onClick={() => removeTeam(t.id)} title="Team entfernen">✕</button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {sub === "ergebnisse" && (
         <div>
+          {locked && <p className="hint-text">Event abgeschlossen — Eingaben gesperrt.</p>}
           <p className="hint-text">Strafsekunden als Summe eintragen — Standardwerte sind {PENALTY_OPTIONS.filter(Boolean).join("s / ")}s, mehrere Strafen in einem Lauf werden addiert (z.B. 5+10 = 15).</p>
           <div className="table-wrap">
             <table className="data-table">
@@ -55,15 +175,15 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGe
                 {teams.map((t: Team) => (
                   <tr key={t.id}>
                     <td className="td-name">{t.name}</td>
-                    <td><input type="number" step="0.01" value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
-                    <td><input type="number" min="0" step="5" value={t.dg1.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg1", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
-                    <td><input type="number" step="0.01" value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
-                    <td><input type="number" min="0" step="5" value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
+                    <td><input type="number" step="0.01" disabled={locked} value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
+                    <td><input type="number" min="0" step="5" disabled={locked} value={t.dg1.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg1", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
+                    <td><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
+                    <td><input type="number" min="0" step="5" disabled={locked} value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
                     <td style={{ textAlign: "center" }}>
-                      <input type="checkbox" checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
+                      <input type="checkbox" disabled={locked} checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      <input type="checkbox" checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
+                      <input type="checkbox" disabled={locked} checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
                     </td>
                   </tr>
                 ))}
@@ -74,7 +194,10 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGe
       )}
 
       {sub === "ko" && (
-        <Turnierbaum bracket={bracket} editable={true} onUpdateRun={updateKoRun} /*{(matchId, teamId) => setWinner(matchId, teamId)}*/ />
+        <>
+          {locked && <p className="hint-text">Event abgeschlossen — Eingaben gesperrt.</p>}
+          <Turnierbaum bracket={bracket} editable={!locked} onUpdateRun={updateKoRun} /*{(matchId, teamId) => setWinner(matchId, teamId)}*/ />
+        </>
       )}
 
       {sub === "backup" && (

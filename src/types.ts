@@ -1,3 +1,5 @@
+export type EventPhase = "anmeldung" | "durchfuehrung" | "abgeschlossen";
+
 export interface RunData {
   zeit: number | null;
   strafe: number | null;

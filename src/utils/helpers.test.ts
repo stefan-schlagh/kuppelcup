@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER } from "./helpers";
+import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER, makeTeam, withRandomResults, randomKoResults, KO_MATCH_IDS } from "./helpers";
 import type { Team } from "../types";
 
-const makeTeam = (dg1: Team["dg1"], dg2: Team["dg2"]): Team => ({
+const teamWithRuns = (dg1: Team["dg1"], dg2: Team["dg2"]): Team => ({
   id: "t1",
   start: 1,
   name: "FF Test",
@@ -45,17 +45,17 @@ describe("gesamt", () => {
 
 describe("punkte", () => {
   it("is 0 when a team has no runs", () => {
-    expect(punkte(makeTeam({ zeit: null, strafe: null }, { zeit: null, strafe: null }))).toBe(0);
+    expect(punkte(teamWithRuns({ zeit: null, strafe: null }, { zeit: null, strafe: null }))).toBe(0);
   });
 
   it("uses the only completed run", () => {
-    expect(punkte(makeTeam({ zeit: 22, strafe: 5 }, { zeit: null, strafe: null }))).toBe(27);
-    expect(punkte(makeTeam({ zeit: null, strafe: null }, { zeit: 19, strafe: 0 }))).toBe(19);
+    expect(punkte(teamWithRuns({ zeit: 22, strafe: 5 }, { zeit: null, strafe: null }))).toBe(27);
+    expect(punkte(teamWithRuns({ zeit: null, strafe: null }, { zeit: 19, strafe: 0 }))).toBe(19);
   });
 
   it("takes the lower total of both runs", () => {
-    expect(punkte(makeTeam({ zeit: 22, strafe: 0 }, { zeit: 20, strafe: 5 }))).toBe(22);
-    expect(punkte(makeTeam({ zeit: 30, strafe: 0 }, { zeit: 21, strafe: 0 }))).toBe(21);
+    expect(punkte(teamWithRuns({ zeit: 22, strafe: 0 }, { zeit: 20, strafe: 5 }))).toBe(22);
+    expect(punkte(teamWithRuns({ zeit: 30, strafe: 0 }, { zeit: 21, strafe: 0 }))).toBe(21);
   });
 });
 
@@ -75,6 +75,53 @@ describe("seedTeams", () => {
     expect(teams[0].gastgeber).toBe(true);
     expect(teams.slice(1).some((t) => t.gastgeber)).toBe(false);
     expect(teams[0].dg1).toEqual({ zeit: null, strafe: null });
+  });
+});
+
+describe("makeTeam", () => {
+  it("creates an empty team with the given name and start and a unique id", () => {
+    const a = makeTeam("FF Neu", 5);
+    const b = makeTeam("FF Neu", 5);
+    expect(a.name).toBe("FF Neu");
+    expect(a.start).toBe(5);
+    expect(a.dg1).toEqual({ zeit: null, strafe: null });
+    expect(a.dg2).toEqual({ zeit: null, strafe: null });
+    expect(a.id).not.toBe(b.id);
+  });
+});
+
+describe("withRandomResults", () => {
+  it("fills every team's runs with numeric times and valid penalties", () => {
+    const filled = withRandomResults(seedTeams());
+    expect(filled).toHaveLength(20);
+    filled.forEach((t) => {
+      expect(typeof t.dg1.zeit).toBe("number");
+      expect(typeof t.dg2.zeit).toBe("number");
+      expect(t.dg1.strafe).toBeGreaterThanOrEqual(0);
+      expect(t.dg2.strafe).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  it("does not mutate the input teams", () => {
+    const teams = seedTeams();
+    withRandomResults(teams);
+    expect(teams[0].dg1.zeit).toBeNull();
+  });
+});
+
+describe("randomKoResults", () => {
+  it("produces runs for every bracket match when enough teams qualify", () => {
+    const ko = randomKoResults(withRandomResults(seedTeams()));
+    expect(Object.keys(ko).sort()).toEqual([...KO_MATCH_IDS].sort());
+    KO_MATCH_IDS.forEach((id) => {
+      expect(typeof ko[id].runA.zeit).toBe("number");
+      expect(typeof ko[id].runB.zeit).toBe("number");
+    });
+  });
+
+  it("returns an empty bracket when fewer than 8 teams have results", () => {
+    const few = withRandomResults(seedTeams().slice(0, 5));
+    expect(randomKoResults(few)).toEqual({});
   });
 });
 

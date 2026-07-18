@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
-import { seedTeams, gesamt, punkte, SEED_ORDER } from "./utils/helpers";
-import type { RunData, Team, BracketData } from "./types";
+import { seedTeams, gesamt, punkte, SEED_ORDER, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
+import type { RunData, Team, BracketData, EventPhase } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
@@ -22,6 +22,7 @@ const numberOfParallelRounds = 2
 export default function KuppelCup() {
   const [teams, setTeams, teamsLoaded] = useStorage<Team[]>("kuppelcup:teams", seedTeams());
   const [ko, setKo, koLoaded] = useStorage<StorageKoState>("kuppelcup:ko", {});
+  const [phase, setPhase, phaseLoaded] = useStorage<EventPhase>("kuppelcup:phase", "anmeldung");
   const [tab, setTab] = useState<string>("liste");
   const [pin, setPin] = useState("");
   const [authed, setAuthed] = useState(false);
@@ -156,17 +157,50 @@ export default function KuppelCup() {
 
   console.log(gemeinde)
 
+  // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
+  const locked = phase === "abgeschlossen"; // no changes possible once finished
+
   const updateRun = (teamId: string, dg: "dg1" | "dg2", field: "zeit" | "strafe", value: number | null) => {
+    if (locked) return;
     setTeams(teams.map((t) => (t.id === teamId ? { ...t, [dg]: { ...t[dg], [field]: value } } : t)));
   };
 
   const updateKoRun = (matchId: string, side: "runA" | "runB", field: "zeit" | "strafe", value: number | null) => {
+    if (locked) return;
     const current = ko[matchId] || {};
     const currentSide = current[side] || { zeit: null, strafe: 0 };
     setKo({ ...ko, [matchId]: { ...current, [side]: { ...currentSide, [field]: value } } });
   };
 
-  if (!teamsLoaded || !koLoaded) return <div className="loading-screen">Lade Daten…</div>;
+  // Teams can only be added/removed during Anmeldung.
+  const addTeam = (name: string) => {
+    if (phase !== "anmeldung") return;
+    const nextStart = teams.reduce((max, t) => Math.max(max, t.start), 0) + 1;
+    setTeams([...teams, makeTeam(name.trim(), nextStart)]);
+  };
+
+  const removeTeam = (id: string) => {
+    if (phase !== "anmeldung") return;
+    setTeams(teams.filter((t) => t.id !== id));
+  };
+
+  const loadSampleTeams = () => phase === "anmeldung" && setTeams(seedTeams());
+
+  // Test/showcase helper: fill both the Grunddurchgang and the K.O. phase.
+  const fillRandomResults = () => {
+    if (locked) return;
+    const withResults = withRandomResults(teams);
+    setTeams(withResults);
+    setKo(randomKoResults(withResults));
+  };
+
+  const startNewEvent = () => {
+    setTeams([]);
+    setKo({});
+    setPhase("anmeldung");
+  };
+
+  if (!teamsLoaded || !koLoaded || !phaseLoaded) return <div className="loading-screen">Lade Daten…</div>;
 
   return (
     <div className="app-container">
@@ -174,14 +208,17 @@ export default function KuppelCup() {
         <div className="brand-row">
           <div className="hose-icon">⊃⊂</div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
-          <button
-            className="theme-toggle"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            title="Hell/Dunkel wechseln"
-            aria-label="Hell/Dunkel wechseln"
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
+          <div className="header-right">
+            <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>
+            <button
+              className="theme-toggle"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              title="Hell/Dunkel wechseln"
+              aria-label="Hell/Dunkel wechseln"
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+          </div>
         </div>
         <nav className="nav-bar">
           {[
@@ -221,15 +258,23 @@ export default function KuppelCup() {
         )}
         {tab === "admin" && (
           authed ? (
-            <AdminPanel 
+            <AdminPanel
             teams={scheduledTeams} /* Passes Fixed Starter Sequence directly down to admin rows */
-            updateRun={updateRun} 
-            toggleGastgeber={(id: string) => setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
-            toggleGemeinde={(id: string) => setTeams(teams.map(t => t.id === id ? {...t, gemeinde: !t.gemeinde} : t))}
+            updateRun={updateRun}
+            toggleGastgeber={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
+            toggleGemeinde={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gemeinde: !t.gemeinde} : t))}
             bracket={bracket}
             setWinner={updateKoRun}
             updateKoRun={updateKoRun}
             onImportTeams={setTeams}
+            phase={phase}
+            setPhase={setPhase}
+            locked={locked}
+            addTeam={addTeam}
+            removeTeam={removeTeam}
+            loadSampleTeams={loadSampleTeams}
+            fillRandomResults={fillRandomResults}
+            startNewEvent={startNewEvent}
           />
           ) : (
             <div className="pin-box">
