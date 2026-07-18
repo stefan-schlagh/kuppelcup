@@ -66,6 +66,7 @@ Potential issues to flag:
 - [ ] Define an explicit tie-break rule for base-round ranking + top-8 cutoff (see "Ties" above)
 - [ ] Make K.O. winner comparison use rounded totals (`gesamt`) for consistency; decide how exact ties resolve (re-run vs. seed)
 - [ ] Surface ties in the UI (mark equal ranks / flag a contested qualification line)
+- [ ] Visually distinguish K.O. heats in the Live-Monitor (phase badge or "vs." styling for the two opponents), rather than only the text label
 
 ## Manual setup (you — before wiring the backend)
 - [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
