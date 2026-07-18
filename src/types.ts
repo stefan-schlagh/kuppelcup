@@ -8,8 +8,10 @@ export interface Team {
   start: number;
   name: string;
   gastgeber?: boolean;
+  gemeinde?: boolean;
   dg1: RunData;
   dg2: RunData;
+  punkte?: number;
 }
 
 export interface Match {

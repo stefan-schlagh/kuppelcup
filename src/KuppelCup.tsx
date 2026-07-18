@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { seedTeams, gesamt, punkte, SEED_ORDER } from "./utils/helpers";
 import type { RunData, Team, BracketData } from "./types";
-import Bestenliste from "./components/Bestenliste";
+import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
@@ -82,7 +82,7 @@ export default function KuppelCup() {
       .sort((a, b) => b.punkte === 0 ? -1 : (a.punkte ?? 0) - (b.punkte ?? 0));
   }, [teams]);
 
-  const eligible = ranked.filter((t) => (!t.gastgeber && punkte(t) !== 0));
+  const eligible = ranked.filter((t) => (!t.gastgeber && punkte(t as any) !== 0));
   const top8 = eligible.slice(0, 8);
   const bracket = useMemo<BracketData>(() => {
     const defaultRun = () => ({ zeit: null, strafe: 0 });
@@ -90,6 +90,7 @@ export default function KuppelCup() {
       const saved = ko[matchId] || {};
       const runA = { ...defaultRun(), ...saved.runA };
       const runB = { ...defaultRun(), ...saved.runB };
+      // TODO no Infinity
       const scoreA = runA.zeit !== null ? runA.zeit + (runA.strafe ?? 0) : Infinity;
       const scoreB = runB.zeit !== null ? runB.zeit + (runB.strafe ?? 0) : Infinity;
       let winnerId: string | null = null;
@@ -111,6 +112,43 @@ export default function KuppelCup() {
     const final = assembleMatch("final", sf[0].winnerId ? (sf[0].winnerId === sf[0].teamA?.id ? sf[0].teamA : sf[0].teamB) : null, sf[1].winnerId ? (sf[1].winnerId === sf[1].teamA?.id ? sf[1].teamA : sf[1].teamB) : null);
     return { qf, sf, final };
   }, [top8, ko]);
+  
+  const dailyBestTimes = useMemo(() => {
+    const runs = JSON.parse(JSON.stringify(ranked));
+
+    // 1. Gather all match objects into a single flat array
+    const allMatches = [
+      ...(bracket.qf || []),
+      ...(bracket.sf || []),
+      bracket.final ? [bracket.final] : []
+    ].flat();
+
+    // 2. Loop through every match and extract the runs
+    allMatches.forEach((match) => {
+      // Process Team A's run
+      if (match.teamA && match.runA) {
+        const team = teams.find((team) => team.id === (match.teamA as any).id);
+        const p = gesamt(match.runA) ?? 0
+        if (team && team.punkte && p != 0 && p < team.punkte) team.punkte = p
+      }
+
+      // Process Team B's run
+      if (match.teamB && match.runB) {
+        const team = teams.find((team) => team.id === (match.teamA as any).id);
+        const p = gesamt(match.runB) ?? 0
+        if (team && team.punkte && p != 0 && p < team.punkte) team.punkte = p
+      }
+    });
+
+    // 3. Sort runs from fastest to slowest (Ascending order for times)
+    return runs.sort((a: any, b: any) => b.punkte === 0 ? -1 : (a.punkte ?? 0) - (b.punkte ?? 0));
+  }, [bracket, ranked]);
+
+  console.log(dailyBestTimes)
+
+  const gemeinde = ranked.filter((t) => t.gemeinde);
+
+  console.log(gemeinde)
 
   const updateRun = (teamId: string, dg: "dg1" | "dg2", field: "zeit" | "strafe", value: number | null) => {
     setTeams(teams.map((t) => (t.id === teamId ? { ...t, [dg]: { ...t[dg], [field]: value } } : t)));
@@ -150,7 +188,12 @@ export default function KuppelCup() {
       </header>
 
       <main className="main-content">
-        {tab === "liste" && <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />}
+        {tab === "liste" && <>
+          <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
+          <Gemeindewertung ranked={gemeinde} />
+          <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
+          </>
+        }
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
         {tab === "baum" && <Turnierbaum bracket={bracket} editable={false} />}
         {tab === "admin" && (
@@ -159,6 +202,7 @@ export default function KuppelCup() {
             teams={scheduledTeams} /* Passes Fixed Starter Sequence directly down to admin rows */
             updateRun={updateRun} 
             toggleGastgeber={(id: string) => setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
+            toggleGemeinde={(id: string) => setTeams(teams.map(t => t.id === id ? {...t, gemeinde: !t.gemeinde} : t))}
             bracket={bracket}
             setWinner={updateKoRun}
             updateKoRun={updateKoRun}

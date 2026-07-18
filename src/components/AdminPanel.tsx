@@ -3,7 +3,7 @@ import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS } from "../utils/helpers";
 import type { Team} from '../types'
 
-export default function AdminPanel({ teams, updateRun, toggleGastgeber, bracket, /*setWinner,*/ updateKoRun }: any) {
+export default function AdminPanel({ teams, updateRun, toggleGastgeber, toggleGemeinde, bracket, /*setWinner,*/ updateKoRun }: any) {
   const [sub, setSub] = useState("ergebnisse");
   return (
     <div>
@@ -25,6 +25,7 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, bracket,
                   <th>DG2 Zeit (s)</th>
                   <th>DG2 Strafe (s)</th>
                   <th style={{ textAlign: "center" }}>Gastgeber<br />(außer Konkurrenz)</th>
+                  <th style={{ textAlign: "center" }}>Gemeindewertung<br /></th>
                 </tr>
               </thead>
               <tbody>
@@ -37,6 +38,9 @@ export default function AdminPanel({ teams, updateRun, toggleGastgeber, bracket,
                     <td><input type="number" min="0" step="5" value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
                     <td style={{ textAlign: "center" }}>
                       <input type="checkbox" checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      <input type="checkbox" checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
                     </td>
                   </tr>
                 ))}

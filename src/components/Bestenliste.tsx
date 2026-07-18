@@ -53,3 +53,68 @@ export default function Bestenliste({ ranked, top8Ids }: any) {
     </div>
   );
 }
+
+// TODO add all runs
+export function Gemeindewertung({ ranked }: any) {
+  return (
+    <div>
+      <h2 className="panel-title">Bestenliste — Gemeindewertung</h2>
+      <div className="table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Rang</th>
+              <th>Team</th>
+              <th>Punkte</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ranked.map((t: Team, i: number) => {
+              return (
+                <tr key={t.id}>
+                  <td className="td-rank">{i + 1}</td>
+                  <td className="td-name">
+                    {t.name}
+                  </td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{(t as any).punkte}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export function Tagesbestzeit({ ranked }: any) {
+  return (
+    <div>
+      <h2 className="panel-title">Bestenliste — Tagesbestzeit</h2>
+      <div className="table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Rang</th>
+              <th>Team</th>
+              <th>Punkte</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ranked.map((t: Team, i: number) => {
+              return (
+                <tr key={t.id}>
+                  <td className="td-rank">{i + 1}</td>
+                  <td className="td-name">
+                    {t.name}
+                  </td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{(t as any).punkte}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
