@@ -40,16 +40,18 @@ _(none)_
 ## Ties — current behaviour & risks
 How equal scores are resolved today (there is **no explicit tie-break rule** anywhere):
 
-- **Base-round ranking** (`ranked`, `KuppelCup.tsx` → `byPunkte`): `punkte` is the
+- **Base-round ranking** (`tournament.ts` → `rankTeams` → `byPunkte`): `punkte` is the
   lower of the two run totals. Equal `punkte` returns `0` from `byPunkte`, so the
   order falls back to JS's **stable sort** = the `teams` array order (insertion /
   seed order). Tied teams therefore get an arbitrary but stable rank.
-- **Top-8 cutoff** (`eligible.slice(0, 8)`): the 8th/9th boundary is decided by that
-  same arbitrary order, so a tie on the qualification line silently favours whoever
-  happens to sit earlier in the array. This is the highest-impact case.
-- **K.O. matches** (`assembleMatch`): `winnerId = scoreA <= scoreB ? teamA : teamB`,
-  i.e. an exact tie advances **team A** (the higher-seeded / left side). Deterministic,
-  but only by seeding — no re-run/shootout.
+- **Top-8 cutoff** (`tournament.ts` → `selectTop8`, `.slice(0, 8)`): the 8th/9th
+  boundary is decided by that same arbitrary order, so a tie on the qualification line
+  silently favours whoever happens to sit earlier in the array. This is the
+  highest-impact case.
+- **K.O. matches** (`tournament.ts` → `buildBracket` → `assembleMatch`):
+  `winnerId = scoreA <= scoreB ? teamA : teamB`, i.e. an exact tie advances **team A**
+  (the higher-seeded / left side). Deterministic, but only by seeding — no
+  re-run/shootout.
 - **Gemeindewertung / Tagesbestzeit**: same `byPunkte` fallback as the base round.
 
 Potential issues to flag:
