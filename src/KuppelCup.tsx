@@ -129,41 +129,31 @@ export default function KuppelCup() {
   }, [top8, ko]);
   
   const dailyBestTimes = useMemo(() => {
-    const runs = JSON.parse(JSON.stringify(ranked));
-
-    // 1. Gather all match objects into a single flat array
-    const allMatches = [
-      ...(bracket.qf || []),
-      ...(bracket.sf || []),
-      bracket.final ? [bracket.final] : []
-    ].flat();
-
-    // 2. Loop through every match and extract the runs
-    allMatches.forEach((match) => {
-      // Process Team A's run
-      if (match.teamA && match.runA) {
-        const team = teams.find((team) => team.id === (match.teamA as any).id);
-        const p = gesamt(match.runA) ?? 0
-        if (team && team.punkte && p != 0 && p < team.punkte) team.punkte = p
-      }
-
-      // Process Team B's run
-      if (match.teamB && match.runB) {
-        const team = teams.find((team) => team.id === (match.teamA as any).id);
-        const p = gesamt(match.runB) ?? 0
-        if (team && team.punkte && p != 0 && p < team.punkte) team.punkte = p
-      }
+    // A team's Tagesbestzeit is its lowest total across the Grunddurchgang
+    // and every K.O. run it took part in.
+    const koTotals = new Map<string, number[]>();
+    const addRun = (teamId: string, total: number | null) => {
+      if (total == null || total <= 0) return;
+      const arr = koTotals.get(teamId) ?? [];
+      arr.push(total);
+      koTotals.set(teamId, arr);
+    };
+    [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
+      if (m.teamA) addRun(m.teamA.id, gesamt(m.runA));
+      if (m.teamB) addRun(m.teamB.id, gesamt(m.runB));
     });
 
-    // 3. Sort runs from fastest to slowest (Ascending order for times)
-    return runs.sort((a: any, b: any) => b.punkte === 0 ? -1 : (a.punkte ?? 0) - (b.punkte ?? 0));
+    return ranked
+      .map((t) => {
+        const candidates = [t.punkte, ...(koTotals.get(t.id) ?? [])].filter(
+          (v): v is number => v != null && v > 0,
+        );
+        return { ...t, punkte: candidates.length ? Math.min(...candidates) : 0 };
+      })
+      .sort(byPunkte);
   }, [bracket, ranked]);
 
-  console.log(dailyBestTimes)
-
   const gemeinde = ranked.filter((t) => t.gemeinde);
-
-  console.log(gemeinde)
 
   // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
   const locked = phase === "abgeschlossen"; // no changes possible once finished
