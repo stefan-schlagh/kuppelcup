@@ -184,6 +184,29 @@ body {
   margin-top: 0;
 }
 
+.save-error-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  background: rgba(200, 16, 46, 0.12);
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.save-error-dismiss {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+}
+
 /* Tables & Leaderboard */
 .table-wrap {
   overflow-x: auto;

@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { backend } from "../backend";
 import type { Account, EventDoc, EventMeta, EventPhase, KoState, Team } from "../types";
 
+// Frequent edits are persisted on this debounce rather than per keystroke.
+const SAVE_DEBOUNCE_MS = 400;
+
 const metaOf = (d: EventDoc): EventMeta => ({
   id: d.id,
   name: d.name,
@@ -27,7 +30,10 @@ export function useEvents() {
   const [events, setEvents] = useState<EventMeta[]>([]);
   const [current, setCurrent] = useState<EventDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const initialized = useRef(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<EventDoc | null>(null);
 
   useEffect(() => {
     // Run exactly once. A ref guard (not a per-effect cancel flag) is used so
@@ -54,41 +60,99 @@ export function useEvents() {
     })();
   }, []);
 
-  const persist = useCallback(async (next: EventDoc) => {
+  const saveNow = useCallback(async (doc: EventDoc) => {
+    try {
+      await backend.saveEvent(doc);
+      setSaveError(null);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
+
+  // Discard any pending debounced write (used when the doc is about to be
+  // deleted or fully replaced by an immediate write).
+  const cancelPending = useCallback(() => {
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    pending.current = null;
+  }, []);
+
+  // Persist any pending debounced write immediately (used before switching
+  // events and on unmount / tab hide).
+  const flush = useCallback(() => {
+    const doc = pending.current;
+    cancelPending();
+    if (doc) void saveNow(doc);
+  }, [cancelPending, saveNow]);
+
+  // Frequent edits (result entry) update local state immediately and persist
+  // on a short debounce, so we don't write the whole document on every keystroke.
+  const applyLocal = useCallback((next: EventDoc) => {
     setCurrent(next);
     setEvents((prev) => prev.map((e) => (e.id === next.id ? metaOf(next) : e)));
-    await backend.saveEvent(next);
-  }, []);
+    pending.current = next;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      const doc = pending.current;
+      pending.current = null;
+      if (doc) void saveNow(doc);
+    }, SAVE_DEBOUNCE_MS);
+  }, [saveNow]);
 
-  const setTeams = useCallback((teams: Team[]) => { if (current) persist({ ...current, teams }); }, [current, persist]);
-  const setKo = useCallback((ko: KoState) => { if (current) persist({ ...current, ko }); }, [current, persist]);
-  const setPhase = useCallback((phase: EventPhase) => { if (current) persist({ ...current, phase }); }, [current, persist]);
+  // Flush a pending write when the tab is hidden or the hook unmounts.
+  useEffect(() => {
+    const onHide = () => flush();
+    window.addEventListener("beforeunload", onHide);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("beforeunload", onHide);
+      document.removeEventListener("visibilitychange", onHide);
+      flush();
+    };
+  }, [flush]);
+
+  const setTeams = useCallback((teams: Team[]) => { if (current) applyLocal({ ...current, teams }); }, [current, applyLocal]);
+  const setKo = useCallback((ko: KoState) => { if (current) applyLocal({ ...current, ko }); }, [current, applyLocal]);
+  const setPhase = useCallback((phase: EventPhase) => { if (current) applyLocal({ ...current, phase }); }, [current, applyLocal]);
 
   const selectEvent = useCallback(async (id: string) => {
+    flush();
     setCurrent(await backend.getEvent(id));
     syncUrl(id);
-  }, []);
+  }, [flush]);
 
   const createEvent = useCallback(async (name: string) => {
     if (!account) return;
+    flush();
     const meta = await backend.createEvent(name, account.id);
     setEvents((prev) => [meta, ...prev]);
     setCurrent(await backend.getEvent(meta.id));
     syncUrl(meta.id);
-  }, [account]);
+  }, [account, flush]);
 
   const renameEvent = useCallback(async (id: string, name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const doc = id === current?.id ? current : await backend.getEvent(id);
-    if (!doc) return;
-    const next = { ...doc, name: trimmed };
-    if (id === current?.id) setCurrent(next);
-    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, name: trimmed } : e)));
-    await backend.saveEvent(next);
-  }, [current]);
+    if (id === current?.id) {
+      // Renaming the current event: fold in any un-flushed edits and write now,
+      // dropping the stale pending save so it can't overwrite the new name.
+      const next = { ...current, name: trimmed };
+      cancelPending();
+      setCurrent(next);
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, name: trimmed } : e)));
+      await saveNow(next);
+    } else {
+      const doc = await backend.getEvent(id);
+      if (!doc) return;
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, name: trimmed } : e)));
+      await saveNow({ ...doc, name: trimmed });
+    }
+  }, [current, cancelPending, saveNow]);
 
   const deleteEvent = useCallback(async (id: string) => {
+    // Drop a pending write for this event so a late save can't resurrect it.
+    if (pending.current?.id === id) cancelPending();
+    else flush();
     await backend.deleteEvent(id);
     const rest = events.filter((e) => e.id !== id);
     setEvents(rest);
@@ -96,13 +160,15 @@ export function useEvents() {
       setCurrent(rest.length ? await backend.getEvent(rest[0].id) : null);
       if (rest.length) syncUrl(rest[0].id);
     }
-  }, [events, current]);
+  }, [events, current, cancelPending, flush]);
 
   return {
     account,
     events,
     current,
     loaded,
+    saveError,
+    dismissSaveError: () => setSaveError(null),
     setTeams,
     setKo,
     setPhase,

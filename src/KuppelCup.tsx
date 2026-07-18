@@ -17,6 +17,8 @@ export default function KuppelCup() {
     events,
     current,
     loaded,
+    saveError,
+    dismissSaveError,
     setTeams,
     setKo,
     setPhase,
@@ -233,6 +235,12 @@ export default function KuppelCup() {
       </header>
 
       <main className="main-content">
+        {saveError && (
+          <div className="save-error-bar" role="alert">
+            <span>Speichern fehlgeschlagen: {saveError}</span>
+            <button className="save-error-dismiss" onClick={dismissSaveError} aria-label="Schließen">✕</button>
+          </div>
+        )}
         {tab === "liste" && <>
           <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
           <Gemeindewertung ranked={gemeinde} />
