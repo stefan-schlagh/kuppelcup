@@ -222,7 +222,7 @@ export default function KuppelCup() {
                 ))}
               </select>
             )}
-            <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>
+            {authed && <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>}
             <button
               className="theme-toggle"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

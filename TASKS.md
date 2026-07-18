@@ -21,7 +21,7 @@ _(none)_
 ## Backlog (not scheduled yet)
 - [ ] Turnierbaum: use both sides in the UI (final in the middle)
 - [x] Urkunden: restrict to admin only (hide the tab from public view)
-- [ ] non-admins should not see the current lifecycle state
+- [x] non-admins should not see the current lifecycle state
 - [ ] the event switcher should be removed. Instead users can access the events by URL only. admin should be able to generate a QR code for each event
 - [ ] events can be renamed after creating them
 
