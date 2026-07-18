@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { seedTeams, gesamt, punkte, SEED_ORDER } from "./utils/helpers";
 import type { RunData, Team, BracketData } from "./types";
@@ -24,7 +24,12 @@ export default function KuppelCup() {
   const [tab, setTab] = useState<string>("liste");
   const [pin, setPin] = useState("");
   const [authed, setAuthed] = useState(false);
+  const [theme, setTheme] = useStorage<"dark" | "light">("kuppelcup:theme", "dark");
   const ADMIN_PIN = "2024";
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   
 
@@ -168,6 +173,14 @@ export default function KuppelCup() {
         <div className="brand-row">
           <div className="hose-icon">⊃⊂</div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
+          <button
+            className="theme-toggle"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title="Hell/Dunkel wechseln"
+            aria-label="Hell/Dunkel wechseln"
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
         </div>
         <nav className="nav-bar">
           {[

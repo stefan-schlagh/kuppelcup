@@ -1,5 +1,6 @@
-/* Custom properties for theme colors */
+/* Custom properties for theme colors — dark is the default */
 :root {
+  color-scheme: dark;
   --bg-main: #1B1D21;
   --bg-surface: #22242A;
   --bg-row-alt: #24262B;
@@ -12,6 +13,28 @@
   --color-host: #7AA6C2;
   --bg-host-dim: #2E4A5C;
   --text-host-light: #9FCBE8;
+  --text-on-accent: #1B1D21;
+  --card-dim-bg: #1e2025;
+  --badge-past-bg: #33363d;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-main: #F4F2ED;
+  --bg-surface: #FFFFFF;
+  --bg-row-alt: #F0EDE6;
+  --border-color: #DAD5C9;
+  --text-main: #1B1D21;
+  --text-muted: #6B6E74;
+  --text-footer: #9A9DA3;
+  --color-primary: #C8102E;
+  --color-accent: #9A7220;
+  --color-host: #3F7CA0;
+  --bg-host-dim: #D6E4EF;
+  --text-host-light: #2C5872;
+  --text-on-accent: #FFFFFF;
+  --card-dim-bg: #ECE9E1;
+  --badge-past-bg: #E2DED4;
 }
 
 body {
@@ -66,6 +89,24 @@ body {
 .brand-year {
   color: var(--color-accent);
   font-weight: 500;
+}
+
+.theme-toggle {
+  margin-left: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 18px;
+  line-height: 1;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.theme-toggle:hover {
+  border-color: var(--color-accent);
 }
 
 /* Navigation Tabs */
@@ -207,7 +248,7 @@ body {
 
 .badge-gold {
   background: var(--color-accent);
-  color: var(--bg-main);
+  color: var(--text-on-accent);
   font-size: 11px;
   font-weight: 700;
   padding: 3px 8px;
@@ -477,7 +518,7 @@ body {
 
 .card-dim {
   opacity: 0.65;
-  background: #1e2025;
+  background: var(--card-dim-bg);
 }
 
 .card-active {
@@ -497,7 +538,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-.badge-past { background: #33363d; color: var(--text-muted); }
+.badge-past { background: var(--badge-past-bg); color: var(--text-muted); }
 .badge-live { background: var(--color-primary); color: #fff; animation: pulse 2s infinite; }
 .badge-future { background: var(--bg-host-dim); color: var(--text-host-light); }
 
