@@ -16,4 +16,5 @@
 
 generally: keep things simple
 
-- Turnierbaum: use both sides (final in the middle)
+- Turnierbaum: use both sides in UI (final in the middle)
+- Urkunden: hide from view for everybody

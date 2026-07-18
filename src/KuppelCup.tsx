@@ -6,6 +6,7 @@ import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Besten
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
+import Urkunden from "./components/Urkunden";
 
 interface StorageMatchState {
   runA?: RunData;
@@ -187,6 +188,7 @@ export default function KuppelCup() {
             ["liste", "Bestenliste"],
             ["monitor", "Live-Monitor 📺"],
             ["baum", "Turnierbaum"],
+            ["urkunden", "Urkunden 🖨"],
             ["admin", "Admin"],
           ].map(([key, label]) => (
             <button
@@ -209,6 +211,14 @@ export default function KuppelCup() {
         }
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
         {tab === "baum" && <Turnierbaum bracket={bracket} editable={false} />}
+        {tab === "urkunden" && (
+          <Urkunden
+            ranked={ranked}
+            bracket={bracket}
+            competitionName={competitionName}
+            year={2026}
+          />
+        )}
         {tab === "admin" && (
           authed ? (
             <AdminPanel 
