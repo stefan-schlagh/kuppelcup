@@ -31,4 +31,10 @@ export interface Backend {
   // Upsert the full event document.
   saveEvent(doc: EventDoc): Promise<void>;
   deleteEvent(id: string): Promise<void>;
+
+  // Subscribe to live changes of one event: calls back with the current doc
+  // (or null once it is deleted) whenever it changes, and returns an
+  // unsubscribe function. Backed by cross-tab storage events locally and by
+  // Firestore onSnapshot once wired.
+  subscribeEvent(id: string, onChange: (doc: EventDoc | null) => void): () => void;
 }

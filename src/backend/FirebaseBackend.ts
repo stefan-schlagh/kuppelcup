@@ -26,7 +26,7 @@ import { firebaseConfig } from "../config";
 // import { initializeApp } from "firebase/app";
 // import {
 //   getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
-//   query, where, orderBy,
+//   onSnapshot, query, where, orderBy,
 // } from "firebase/firestore";
 // import {
 //   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
@@ -125,5 +125,15 @@ export class FirebaseBackend implements Backend {
     // await deleteDoc(doc(db, "events", id));
     void id;
     return notConfigured();
+  }
+
+  subscribeEvent(id: string, onChange: (doc: EventDoc | null) => void): () => void {
+    // Real-time via Firestore — this is the whole point of the Firebase backend:
+    // return onSnapshot(doc(db, "events", id), (snap) =>
+    //   onChange(snap.exists() ? (snap.data() as EventDoc) : null));
+    // No-op (not notConfigured) so mounting the app doesn't crash before wiring.
+    void id;
+    void onChange;
+    return () => {};
   }
 }

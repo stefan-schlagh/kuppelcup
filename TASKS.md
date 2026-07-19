@@ -21,6 +21,10 @@ Working branch: `todo-items`. One commit per task.
 - [x] Guard against duplicate default-event creation (init runs once; no StrictMode/async race)
 - [x] Debounce per-event writes (no full-document write per keystroke; flush on switch/unmount)
 - [x] Surface save failures in the UI (dismissible banner) instead of swallowing them
+- [x] Real-time updates: `Backend.subscribeEvent(id, cb)`; useEvents subscribes to the
+      current event so changes propagate live. LocalBackend uses cross-tab storage
+      events; FirebaseBackend maps to `onSnapshot` (stub → drop-in once wired). Own
+      writes / in-progress edits are guarded so snapshots don't stomp local entry.
 - [x] Multiple admin accounts (backend stubs): Admin tab has a username+password login
       (no account list shown), a passwordless **email login** (Firebase email-link;
       local dev signs in / auto-creates by email), plus "create new admin account"

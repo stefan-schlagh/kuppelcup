@@ -38,6 +38,7 @@ export function useEvents() {
   const initialized = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<EventDoc | null>(null);
+  const selfWriting = useRef(false); // true while our own write is in flight
 
   useEffect(() => {
     // Run exactly once. A ref guard (not a per-effect cancel flag) is used so
@@ -68,11 +69,14 @@ export function useEvents() {
   }, []);
 
   const saveNow = useCallback(async (doc: EventDoc) => {
+    selfWriting.current = true;
     try {
       await backend.saveEvent(doc);
       setSaveError(null);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
+    } finally {
+      selfWriting.current = false;
     }
   }, []);
 
@@ -117,6 +121,24 @@ export function useEvents() {
       flush();
     };
   }, [flush]);
+
+  // Live updates: reflect changes to the current event made elsewhere (other
+  // tabs now, other clients once Firebase is wired). Our own writes are skipped
+  // via selfWriting, and incoming updates are ignored while we have unsaved
+  // local edits so a remote snapshot can't stomp in-progress entry.
+  useEffect(() => {
+    const id = current?.id;
+    if (!id) return;
+    return backend.subscribeEvent(id, (doc) => {
+      if (selfWriting.current || pending.current?.id === id) return;
+      if (!doc) {
+        setCurrent((c) => (c?.id === id ? null : c));
+        return;
+      }
+      setCurrent((c) => (c && c.id === id ? doc : c));
+      setEvents((prev) => prev.map((e) => (e.id === id ? metaOf(doc) : e)));
+    });
+  }, [current?.id]);
 
   // Apply several fields at once so callers that change more than one part of
   // the event (e.g. teams + ko together) don't clobber each other via stale state.
@@ -164,7 +186,12 @@ export function useEvents() {
     // Drop a pending write for this event so a late save can't resurrect it.
     if (pending.current?.id === id) cancelPending();
     else flush();
-    await backend.deleteEvent(id);
+    selfWriting.current = true;
+    try {
+      await backend.deleteEvent(id);
+    } finally {
+      selfWriting.current = false;
+    }
     const rest = events.filter((e) => e.id !== id);
     setEvents(rest);
     if (current?.id === id) {
