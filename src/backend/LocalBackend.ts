@@ -45,6 +45,9 @@ const toPublic = (a: StoredAccount): Account => ({ id: a.id, name: a.name });
 export class LocalBackend implements Backend {
   private store: KeyValueStore;
   private legacyName: string;
+  // Per-event live subscribers (same-tab). Cross-tab updates arrive via the
+  // window "storage" event registered in subscribeEvent.
+  private subscribers = new Map<string, Set<(doc: EventDoc | null) => void>>();
 
   constructor(store: KeyValueStore = browserStore, legacyName = STARTER_EVENT_NAME) {
     this.store = store;
@@ -210,9 +213,34 @@ export class LocalBackend implements Backend {
     if (i >= 0) events[i] = doc;
     else events.push(doc);
     this.writeEvents(events);
+    this.notify(doc.id);
   }
 
   async deleteEvent(id: string): Promise<void> {
     this.writeEvents(this.readEvents().filter((e) => e.id !== id));
+    this.notify(id);
+  }
+
+  private notify(id: string): void {
+    const doc = this.readEvents().find((e) => e.id === id) ?? null;
+    this.subscribers.get(id)?.forEach((cb) => cb(doc));
+  }
+
+  subscribeEvent(id: string, onChange: (doc: EventDoc | null) => void): () => void {
+    let set = this.subscribers.get(id);
+    if (!set) { set = new Set(); this.subscribers.set(id, set); }
+    set.add(onChange);
+
+    // Cross-tab: another tab writing to localStorage fires a "storage" event.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === EVENTS_KEY) onChange(this.readEvents().find((ev) => ev.id === id) ?? null);
+    };
+    if (typeof window !== "undefined") window.addEventListener("storage", onStorage);
+
+    return () => {
+      set!.delete(onChange);
+      if (set!.size === 0) this.subscribers.delete(id);
+      if (typeof window !== "undefined") window.removeEventListener("storage", onStorage);
+    };
   }
 }

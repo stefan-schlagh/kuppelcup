@@ -73,6 +73,21 @@ describe("LocalBackend", () => {
     expect((await be.listEvents("owner-1")).map((e) => e.name)).toEqual(["Cup A"]);
   });
 
+  it("notifies subscribers on save/delete and stops after unsubscribe", async () => {
+    const be = new LocalBackend(memStore());
+    const meta = await be.createEvent("Cup", "o1");
+    const full = (await be.getEvent(meta.id))!;
+    const seen: (string | null)[] = [];
+    const unsub = be.subscribeEvent(meta.id, (doc) => seen.push(doc ? doc.name : null));
+
+    await be.saveEvent({ ...full, name: "Cup 2" });
+    await be.deleteEvent(meta.id);
+    unsub();
+    await be.saveEvent({ ...full, name: "Cup 3" }); // no callback after unsubscribe
+
+    expect(seen).toEqual(["Cup 2", null]);
+  });
+
   it("migrates legacy single-event keys into an event", async () => {
     const store = memStore();
     store.set(
