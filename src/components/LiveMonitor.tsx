@@ -1,48 +1,35 @@
-import type { Team } from "../types";
+import type { MonitorRunner } from "../types";
 import { fmtTime } from "../utils/helpers";
-
-interface MonitorState {
-  team: Team;
-  round: "dg1" | "dg2";
-}
-
-type MonitorEntry = MonitorState | MonitorState[] | null;
 
 interface LiveMonitorProps {
   data: {
-    former: MonitorEntry;
-    current: MonitorEntry;
-    next: MonitorEntry;
+    status?: "empty" | "running" | "finished";
+    former: MonitorRunner[];
+    current: MonitorRunner[];
+    next: MonitorRunner[];
   };
 }
 
-function toArray(entry: MonitorEntry): MonitorState[] {
-  if (!entry) return [];
-  return Array.isArray(entry) ? entry : [entry];
-}
-
 export default function LiveMonitor({ data }: LiveMonitorProps) {
-  const formerList = toArray(data.former);
-  const currentList = toArray(data.current);
-  const nextList = toArray(data.next);
+  const { former, current, next, status } = data;
 
   return (
     <div className="monitor-container">
       {/* 1. FORMER RUNNER(S) */}
       <div className="monitor-card card-dim">
         <span className="monitor-badge badge-past">Letzter Durchgang</span>
-        {formerList.length > 0 ? (
+        {former.length > 0 ? (
           <div className="monitor-parallel-group">
-            {formerList.map((entry, i) => (
+            {former.map((entry, i) => (
               <div key={i} className="monitor-entry">
-                <h3 className="monitor-team-name">{entry.team.name}</h3>
+                <h3 className="monitor-team-name">{entry.name}</h3>
                 <p className="monitor-meta">
-                  Start-Nr: {entry.team.start} | {entry.round.toUpperCase()}
+                  Start-Nr: {entry.start} | {entry.label}
                 </p>
                 <div className="monitor-time-box text-muted-color">
-                  {fmtTime(entry.team[entry.round].zeit)}
-                  {(entry.team[entry.round].strafe ?? 0) > 0 && (
-                    <span className="monitor-error-text"> (+{entry.team[entry.round].strafe}s)</span>
+                  {fmtTime(entry.zeit)}
+                  {(entry.strafe ?? 0) > 0 && (
+                    <span className="monitor-error-text"> (+{entry.strafe}s)</span>
                   )}
                 </div>
               </div>
@@ -56,44 +43,48 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
       {/* 2. CURRENT RUNNER(S) */}
       <div className="monitor-card card-active">
         <span className="monitor-badge badge-live">Am Start ⚡</span>
-        {currentList.length > 0 ? (
+        {current.length > 0 ? (
           <div
             className={`monitor-parallel-group${
-              currentList.length > 1 ? " monitor-parallel-current" : ""
+              current.length > 1 ? " monitor-parallel-current" : ""
             }`}
           >
-            {currentList.map((entry, i) => (
+            {current.map((entry, i) => (
               <div key={i} className="monitor-entry">
-                <h2 className="monitor-team-name giant-text">{entry.team.name}</h2>
+                <h2 className="monitor-team-name giant-text">{entry.name}</h2>
                 <p className="monitor-meta giant-meta">
-                  Startnummer: {entry.team.start} | Durchgang: {entry.round.toUpperCase()}
+                  Startnummer: {entry.start} | {entry.label}
                 </p>
                 <div className="monitor-live-pulse-box">Bereit auf der Bahn...</div>
               </div>
             ))}
           </div>
+        ) : status === "empty" ? (
+          <h2 className="empty-msg giant-text">Noch keine Teams angemeldet</h2>
         ) : (
-          <h2 className="empty-msg giant-text">Grunddurchgang beendet! 🎉</h2>
+          <h2 className="empty-msg giant-text">Wettkampf beendet! 🎉</h2>
         )}
       </div>
 
       {/* 3. NEXT RUNNER(S) */}
       <div className="monitor-card card-dim">
         <span className="monitor-badge badge-future">Nächster Aufruf</span>
-        {nextList.length > 0 ? (
+        {next.length > 0 ? (
           <div className="monitor-parallel-group">
-            {nextList.map((entry, i) => (
+            {next.map((entry, i) => (
               <div key={i} className="monitor-entry">
-                <h3 className="monitor-team-name">{entry.team.name}</h3>
+                <h3 className="monitor-team-name">{entry.name}</h3>
                 <p className="monitor-meta">
-                  Start-Nr: {entry.team.start} | {entry.round.toUpperCase()}
+                  Start-Nr: {entry.start} | {entry.label}
                 </p>
                 <div className="monitor-next-box">In Vorbereitung...</div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="empty-msg">Letztes Team läuft bereits</p>
+          <p className="empty-msg">
+            {status === "running" ? "Letztes Team läuft bereits" : "Keine weiteren Läufe"}
+          </p>
         )}
       </div>
     </div>

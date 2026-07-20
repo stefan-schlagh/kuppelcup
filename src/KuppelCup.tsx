@@ -1,166 +1,123 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
-import { seedTeams, gesamt, punkte, SEED_ORDER } from "./utils/helpers";
-import type { RunData, Team, BracketData } from "./types";
+import { useEvents } from "./hooks/useEvents";
+import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
+import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest } from "./utils/tournament";
+import type { Team, EventPhase, KoState } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
+import Urkunden from "./components/Urkunden";
 
-interface StorageMatchState {
-  runA?: RunData;
-  runB?: RunData;
-}
-interface StorageKoState {
-  [matchId: string]: StorageMatchState;
-}
-
-const competitionName = "1. Geissberg KUPPELCUP"
 const numberOfParallelRounds = 2
 
 export default function KuppelCup() {
-  const [teams, setTeams, teamsLoaded] = useStorage<Team[]>("kuppelcup:teams", seedTeams());
-  const [ko, setKo, koLoaded] = useStorage<StorageKoState>("kuppelcup:ko", {});
+  const {
+    account,
+    events,
+    current,
+    loaded,
+    saveError,
+    dismissSaveError,
+    login,
+    loginWithEmail,
+    createAdmin,
+    logout,
+    setTeams,
+    setKo,
+    setPhase,
+    patchEvent,
+    selectEvent,
+    createEvent,
+    renameEvent,
+    deleteEvent,
+  } = useEvents();
   const [tab, setTab] = useState<string>("liste");
-  const [pin, setPin] = useState("");
-  const [authed, setAuthed] = useState(false);
-  const ADMIN_PIN = "2024";
+  const [loginUser, setLoginUser] = useState("");
+  const [loginPass, setLoginPass] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [theme, setTheme] = useStorage<"dark" | "light">("kuppelcup:theme", "dark");
 
-  
+  // "Admin" features are unlocked while an admin account is signed in.
+  const authed = !!account;
 
-  // --- a) FIXED ORDER FOR BASE ROUNDS ---
-  // Sorted strictly by starting number (Startreihenfolge)
-  const scheduledTeams = useMemo(() => {
-    return [...teams].sort((a, b) => a.start - b.start);
-  }, [teams]);
-
-  // --- b) LIVE MONITOR VIEW ENGINE ---
-  // Determine which team is up based on missing times in DG1 then DG2
-  const monitorData = useMemo(() => {
-    const queue: { team: Team; round: "dg1" | "dg2" }[] = [];
-    // Add all DG1 runs, then all DG2 runs in their fixed order
-    scheduledTeams.forEach(t => queue.push({ team: t, round: "dg1" }));
-    scheduledTeams.forEach(t => queue.push({ team: t, round: "dg2" }));
-
-    // Find the first runner profile that lacks a tracked running time
-    const currentIndex = queue.findIndex(q => q.team[q.round].zeit === null);
-
-    // Everything finished -> no current/next, former = last chunk that ran
-    if (currentIndex === -1) {
-      const lastChunkStart = Math.max(0, queue.length - numberOfParallelRounds);
-      return {
-        former: queue.length > 0 ? queue.slice(lastChunkStart) : [],
-        current: [],
-        next: [],
-      };
+  const runAuth = async (fn: () => Promise<void>) => {
+    try {
+      setAuthError(null);
+      await fn();
+      setLoginUser("");
+      setLoginPass("");
+      setLoginEmail("");
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : String(e));
     }
+  };
+  const handleLogin = () => runAuth(() => login(loginUser, loginPass));
+  const handleCreateAdmin = () => runAuth(() => createAdmin(loginUser, loginPass));
+  const handleEmailLogin = () => runAuth(() => loginWithEmail(loginEmail));
 
-    // Align chunk boundaries to numberOfParallelRounds, based on currentIndex
-    const chunkIndex = Math.floor(currentIndex / numberOfParallelRounds);
-    const currentStart = chunkIndex * numberOfParallelRounds;
-    const currentEnd = currentStart + numberOfParallelRounds;
-    const formerStart = currentStart - numberOfParallelRounds;
-    const nextStart = currentEnd;
-    const nextEnd = nextStart + numberOfParallelRounds;
+  // Current event's data (empty defaults until an event is loaded/selected).
+  const teams: Team[] = current?.teams ?? [];
+  const ko: KoState = current?.ko ?? {};
+  const phase: EventPhase = current?.phase ?? "anmeldung";
+  const competitionName = current?.name ?? "KUPPELCUP";
 
-    return {
-      former: formerStart >= 0 ? queue.slice(formerStart, currentStart) : [],
-      current: queue.slice(currentStart, currentEnd),
-      next: nextStart < queue.length ? queue.slice(nextStart, nextEnd) : [],
-    };
-  }, [scheduledTeams, numberOfParallelRounds]);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
-  // Calculations for KO Brackets (unchanged from last iteration)...
-  const ranked = useMemo(() => {
-    return [...teams]
-      .map((t) => ({
-        ...t,
-        g1: gesamt(t.dg1),
-        g2: gesamt(t.dg2),
-        punkte: punkte(t),
-      }))
-      .sort((a, b) => b.punkte === 0 ? -1 : (a.punkte ?? 0) - (b.punkte ?? 0));
-  }, [teams]);
-
-  const eligible = ranked.filter((t) => (!t.gastgeber && punkte(t as any) !== 0));
-  const top8 = eligible.slice(0, 8);
-  const bracket = useMemo<BracketData>(() => {
-    const defaultRun = () => ({ zeit: null, strafe: 0 });
-    const assembleMatch = (matchId: string, teamA: Team | null, teamB: Team | null) => {
-      const saved = ko[matchId] || {};
-      const runA = { ...defaultRun(), ...saved.runA };
-      const runB = { ...defaultRun(), ...saved.runB };
-      // TODO no Infinity
-      const scoreA = runA.zeit !== null ? runA.zeit + (runA.strafe ?? 0) : Infinity;
-      const scoreB = runB.zeit !== null ? runB.zeit + (runB.strafe ?? 0) : Infinity;
-      let winnerId: string | null = null;
-      if (scoreA < Infinity || scoreB < Infinity) {
-        winnerId = scoreA <= scoreB ? teamA?.id ?? null : teamB?.id ?? null;
-      }
-      return { id: matchId, teamA, teamB, runA, runB, winnerId };
-    };
-
-    const qf = SEED_ORDER.map(([a, b], i) => assembleMatch(`qf${i + 1}`, top8[a] || null, top8[b] || null));
-    const winnerOf = (mid: string) => {
-      const m = qf.find((x) => x.id === mid);
-      return m?.winnerId ? (m.winnerId === m.teamA?.id ? m.teamA : m.teamB) : null;
-    };
-    const sf = [
-      assembleMatch("sf1", winnerOf("qf1"), winnerOf("qf2")),
-      assembleMatch("sf2", winnerOf("qf3"), winnerOf("qf4")),
-    ];
-    const final = assembleMatch("final", sf[0].winnerId ? (sf[0].winnerId === sf[0].teamA?.id ? sf[0].teamA : sf[0].teamB) : null, sf[1].winnerId ? (sf[1].winnerId === sf[1].teamA?.id ? sf[1].teamA : sf[1].teamB) : null);
-    return { qf, sf, final };
-  }, [top8, ko]);
   
-  const dailyBestTimes = useMemo(() => {
-    const runs = JSON.parse(JSON.stringify(ranked));
 
-    // 1. Gather all match objects into a single flat array
-    const allMatches = [
-      ...(bracket.qf || []),
-      ...(bracket.sf || []),
-      bracket.final ? [bracket.final] : []
-    ].flat();
-
-    // 2. Loop through every match and extract the runs
-    allMatches.forEach((match) => {
-      // Process Team A's run
-      if (match.teamA && match.runA) {
-        const team = teams.find((team) => team.id === (match.teamA as any).id);
-        const p = gesamt(match.runA) ?? 0
-        if (team && team.punkte && p != 0 && p < team.punkte) team.punkte = p
-      }
-
-      // Process Team B's run
-      if (match.teamB && match.runB) {
-        const team = teams.find((team) => team.id === (match.teamA as any).id);
-        const p = gesamt(match.runB) ?? 0
-        if (team && team.punkte && p != 0 && p < team.punkte) team.punkte = p
-      }
-    });
-
-    // 3. Sort runs from fastest to slowest (Ascending order for times)
-    return runs.sort((a: any, b: any) => b.punkte === 0 ? -1 : (a.punkte ?? 0) - (b.punkte ?? 0));
-  }, [bracket, ranked]);
-
-  console.log(dailyBestTimes)
+  // --- TOURNAMENT DERIVED STATE (pure logic in utils/tournament.ts) ---
+  const scheduledTeams = useMemo(() => sortByStart(teams), [teams]);
+  const ranked = useMemo(() => rankTeams(teams), [teams]);
+  const top8 = useMemo(() => selectTop8(ranked), [ranked]);
+  const bracket = useMemo(() => buildBracket(top8, ko), [top8, ko]);
+  const monitorData = useMemo(() => buildMonitorQueue(scheduledTeams, bracket, numberOfParallelRounds), [scheduledTeams, bracket]);
+  const dailyBestTimes = useMemo(() => dailyBest(ranked, bracket), [ranked, bracket]);
 
   const gemeinde = ranked.filter((t) => t.gemeinde);
 
-  console.log(gemeinde)
+  // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
+  const locked = phase === "abgeschlossen"; // no changes possible once finished
 
   const updateRun = (teamId: string, dg: "dg1" | "dg2", field: "zeit" | "strafe", value: number | null) => {
+    if (locked) return;
     setTeams(teams.map((t) => (t.id === teamId ? { ...t, [dg]: { ...t[dg], [field]: value } } : t)));
   };
 
   const updateKoRun = (matchId: string, side: "runA" | "runB", field: "zeit" | "strafe", value: number | null) => {
-    const current = ko[matchId] || {};
-    const currentSide = current[side] || { zeit: null, strafe: 0 };
-    setKo({ ...ko, [matchId]: { ...current, [side]: { ...currentSide, [field]: value } } });
+    if (locked) return;
+    const slot = ko[matchId] || {};
+    const slotSide = slot[side] || { zeit: null, strafe: 0 };
+    setKo({ ...ko, [matchId]: { ...slot, [side]: { ...slotSide, [field]: value } } });
   };
 
-  if (!teamsLoaded || !koLoaded) return <div className="loading-screen">Lade Daten…</div>;
+  // Teams can only be added/removed during Anmeldung.
+  const addTeam = (name: string) => {
+    if (phase !== "anmeldung") return;
+    const nextStart = teams.reduce((max, t) => Math.max(max, t.start), 0) + 1;
+    setTeams([...teams, makeTeam(name.trim(), nextStart)]);
+  };
+
+  const removeTeam = (id: string) => {
+    if (phase !== "anmeldung") return;
+    setTeams(teams.filter((t) => t.id !== id));
+  };
+
+  const loadSampleTeams = () => phase === "anmeldung" && setTeams(seedTeams());
+
+  // Test/showcase helper: fill both the Grunddurchgang and the K.O. phase.
+  // Both in one update so the ko write doesn't clobber the new teams.
+  const fillRandomResults = () => {
+    if (locked) return;
+    const withResults = withRandomResults(teams);
+    patchEvent({ teams: withResults, ko: randomKoResults(withResults) });
+  };
+
+  if (!loaded) return <div className="loading-screen">Lade Daten…</div>;
 
   return (
     <div className="app-container">
@@ -168,14 +125,27 @@ export default function KuppelCup() {
         <div className="brand-row">
           <div className="hose-icon">⊃⊂</div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
+          <div className="header-right">
+            {authed && <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>}
+            <button
+              className="theme-toggle"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              title="Hell/Dunkel wechseln"
+              aria-label="Hell/Dunkel wechseln"
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+          </div>
         </div>
         <nav className="nav-bar">
-          {[
+          {([
             ["liste", "Bestenliste"],
             ["monitor", "Live-Monitor 📺"],
             ["baum", "Turnierbaum"],
+            // Urkunden are only for the organiser
+            ...(authed ? [["urkunden", "Urkunden 🖨"]] : []),
             ["admin", "Admin"],
-          ].map(([key, label]) => (
+          ] as [string, string][]).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -188,6 +158,12 @@ export default function KuppelCup() {
       </header>
 
       <main className="main-content">
+        {saveError && (
+          <div className="save-error-bar" role="alert">
+            <span>Speichern fehlgeschlagen: {saveError}</span>
+            <button className="save-error-dismiss" onClick={dismissSaveError} aria-label="Schließen">✕</button>
+          </div>
+        )}
         {tab === "liste" && <>
           <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
           <Gemeindewertung ranked={gemeinde} />
@@ -196,34 +172,80 @@ export default function KuppelCup() {
         }
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
         {tab === "baum" && <Turnierbaum bracket={bracket} editable={false} />}
+        {tab === "urkunden" && authed && (
+          <Urkunden
+            ranked={ranked}
+            bracket={bracket}
+            competitionName={competitionName}
+            year={2026}
+          />
+        )}
         {tab === "admin" && (
           authed ? (
-            <AdminPanel 
+            <AdminPanel
             teams={scheduledTeams} /* Passes Fixed Starter Sequence directly down to admin rows */
-            updateRun={updateRun} 
-            toggleGastgeber={(id: string) => setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
-            toggleGemeinde={(id: string) => setTeams(teams.map(t => t.id === id ? {...t, gemeinde: !t.gemeinde} : t))}
+            updateRun={updateRun}
+            toggleGastgeber={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
+            toggleGemeinde={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gemeinde: !t.gemeinde} : t))}
             bracket={bracket}
-            setWinner={updateKoRun}
             updateKoRun={updateKoRun}
+            onImportTeams={setTeams}
+            phase={phase}
+            setPhase={setPhase}
+            locked={locked}
+            addTeam={addTeam}
+            removeTeam={removeTeam}
+            loadSampleTeams={loadSampleTeams}
+            fillRandomResults={fillRandomResults}
+            account={account}
+            events={events}
+            current={current}
+            createEvent={createEvent}
+            renameEvent={renameEvent}
+            deleteEvent={deleteEvent}
+            selectEvent={selectEvent}
+            logout={logout}
           />
           ) : (
-            <div className="pin-box">
-              <p className="pin-label">Admin-PIN eingeben</p>
+            <div className="login-box">
+              <h2 className="panel-title">Admin-Anmeldung</h2>
+              <p className="hint-text">Mit Benutzername und Passwort anmelden oder ein neues Admin-Konto anlegen.</p>
+              <input
+                type="text"
+                value={loginUser}
+                placeholder="Benutzername"
+                autoComplete="username"
+                onChange={(e) => setLoginUser(e.target.value)}
+                className="pin-input login-input"
+              />
               <input
                 type="password"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                className="pin-input"
-                onKeyDown={(e) => e.key === "Enter" && pin === ADMIN_PIN && setAuthed(true)}
+                value={loginPass}
+                placeholder="Passwort"
+                autoComplete="current-password"
+                onChange={(e) => setLoginPass(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                className="pin-input login-input"
               />
-              <button
-                className="pin-btn"
-                onClick={() => setAuthed(pin === ADMIN_PIN)}
-              >
-                Anmelden
-              </button>
-              {pin && pin !== ADMIN_PIN && <p className="pin-error">Falscher PIN</p>}
+              {authError && <p className="pin-error">{authError}</p>}
+              <div className="login-actions">
+                <button className="pin-btn" onClick={handleLogin}>Anmelden</button>
+                <button className="pin-btn login-secondary" onClick={handleCreateAdmin}>Neues Konto erstellen</button>
+              </div>
+
+              <div className="login-divider">oder</div>
+
+              <p className="pin-label">Mit E-Mail anmelden</p>
+              <input
+                type="email"
+                value={loginEmail}
+                placeholder="E-Mail-Adresse"
+                autoComplete="email"
+                onChange={(e) => setLoginEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleEmailLogin()}
+                className="pin-input login-input"
+              />
+              <button className="pin-btn login-secondary" onClick={handleEmailLogin}>Link per E-Mail (passwortlos)</button>
             </div>
           ))}
         </main>

@@ -73,25 +73,38 @@ interface TurnierbaumProps {
 }
 
 export default function Turnierbaum({ bracket, editable = false, onUpdateRun }: TurnierbaumProps) {
+  const box = (m: Match) => <MatchBox key={m.id} match={m} editable={editable} onUpdateRun={onUpdateRun} />;
+
+  // Symmetric bracket: left half feeds in from the left, right half from the
+  // right, with the final in the middle.
+  const [qfL1, qfL2, qfR1, qfR2] = bracket.qf;
+  const [sfL, sfR] = bracket.sf;
+
   return (
     <div>
       <h2 className="panel-title">Turnierbaum — Top 8</h2>
-      <div className="bracket-row">
+      <div className="bracket-row bracket-symmetric">
         <div className="bracket-col">
           <div className="bracket-col-label">Viertelfinale</div>
-          {bracket.qf.map((m) => (
-            <MatchBox key={m.id} match={m} editable={editable} onUpdateRun={onUpdateRun} />
-          ))}
+          {qfL1 && box(qfL1)}
+          {qfL2 && box(qfL2)}
         </div>
         <div className="bracket-col">
           <div className="bracket-col-label">Halbfinale</div>
-          {bracket.sf.map((m) => (
-            <MatchBox key={m.id} match={m} editable={editable} onUpdateRun={onUpdateRun} />
-          ))}
+          {sfL && box(sfL)}
+        </div>
+        <div className="bracket-col bracket-col-final">
+          <div className="bracket-col-label">Finale</div>
+          {box(bracket.final)}
         </div>
         <div className="bracket-col">
-          <div className="bracket-col-label">Finale</div>
-          <MatchBox match={bracket.final} editable={editable} onUpdateRun={onUpdateRun} />
+          <div className="bracket-col-label">Halbfinale</div>
+          {sfR && box(sfR)}
+        </div>
+        <div className="bracket-col">
+          <div className="bracket-col-label">Viertelfinale</div>
+          {qfR1 && box(qfR1)}
+          {qfR2 && box(qfR2)}
         </div>
       </div>
     </div>

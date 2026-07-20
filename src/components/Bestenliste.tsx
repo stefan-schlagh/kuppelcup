@@ -1,7 +1,12 @@
-import { fmtTime } from "../utils/helpers";
-import type { Team } from "../types";
+import { fmtTime, gesamt } from "../utils/helpers";
+import type { RankedTeam } from "../utils/tournament";
 
-export default function Bestenliste({ ranked, top8Ids }: any) {
+interface BestenlisteProps {
+  ranked: RankedTeam[];
+  top8Ids: Set<string>;
+}
+
+export default function Bestenliste({ ranked, top8Ids }: BestenlisteProps) {
   return (
     <div>
       <h2 className="panel-title">Bestenliste — Grunddurchgang</h2>
@@ -19,7 +24,7 @@ export default function Bestenliste({ ranked, top8Ids }: any) {
             </tr>
           </thead>
           <tbody>
-            {ranked.map((t: Team, i: number) => {
+            {ranked.map((t, i) => {
               const qualified = top8Ids.has(t.id);
               return (
                 <tr key={t.id} className={qualified ? "row-qualified" : ""}>
@@ -28,13 +33,13 @@ export default function Bestenliste({ ranked, top8Ids }: any) {
                     {t.name}
                     {t.gastgeber && <span className="host-tag">Gastgeber</span>}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.dg1)}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg1))}`}>
                     {fmtTime(t.dg1.zeit)} {t.dg1.strafe ? <span className="fehler-tag">+{t.dg1.strafe}s</span> : null}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(t.dg2)}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg2))}`}>
                     {fmtTime(t.dg2.zeit)} {t.dg2.strafe ? <span className="fehler-tag">+{t.dg2.strafe}s</span> : null}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{(t as any).punkte}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
                   <td>
                     {t.gastgeber ? (
                       <span className="badge-host">Außer Konkurrenz</span>
@@ -55,7 +60,7 @@ export default function Bestenliste({ ranked, top8Ids }: any) {
 }
 
 // TODO add all runs
-export function Gemeindewertung({ ranked }: any) {
+export function Gemeindewertung({ ranked }: { ranked: RankedTeam[] }) {
   return (
     <div>
       <h2 className="panel-title">Bestenliste — Gemeindewertung</h2>
@@ -69,14 +74,14 @@ export function Gemeindewertung({ ranked }: any) {
             </tr>
           </thead>
           <tbody>
-            {ranked.map((t: Team, i: number) => {
+            {ranked.map((t, i) => {
               return (
                 <tr key={t.id}>
                   <td className="td-rank">{i + 1}</td>
                   <td className="td-name">
                     {t.name}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{(t as any).punkte}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
                 </tr>
               );
             })}
@@ -87,7 +92,7 @@ export function Gemeindewertung({ ranked }: any) {
   );
 }
 
-export function Tagesbestzeit({ ranked }: any) {
+export function Tagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
   return (
     <div>
       <h2 className="panel-title">Bestenliste — Tagesbestzeit</h2>
@@ -101,14 +106,14 @@ export function Tagesbestzeit({ ranked }: any) {
             </tr>
           </thead>
           <tbody>
-            {ranked.map((t: Team, i: number) => {
+            {ranked.map((t, i) => {
               return (
                 <tr key={t.id}>
                   <td className="td-rank">{i + 1}</td>
                   <td className="td-name">
                     {t.name}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{(t as any).punkte}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
                 </tr>
               );
             })}

@@ -15,3 +15,6 @@
 - add backend (use firebase - or something similar for this)
 
 generally: keep things simple
+
+- Turnierbaum: use both sides in UI (final in the middle)
+- Urkunden: hide from view for everybody
