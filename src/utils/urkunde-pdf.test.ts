@@ -13,6 +13,15 @@ describe("buildUrkundenDoc", () => {
     expect(doc.getNumberOfPages()).toBe(3);
   });
 
+  it("uses A4 portrait (Hochformat) pages", () => {
+    const doc = buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
+    const w = doc.internal.pageSize.getWidth();
+    const h = doc.internal.pageSize.getHeight();
+    expect(Math.round(w)).toBe(210);
+    expect(Math.round(h)).toBe(297);
+    expect(w).toBeLessThan(h);
+  });
+
   it("produces a non-empty PDF blob", () => {
     const doc = buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
     const bytes = doc.output("arraybuffer");
