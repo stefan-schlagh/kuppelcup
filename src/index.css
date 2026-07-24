@@ -10,6 +10,7 @@
   --text-footer: #5C5F66;
   --color-primary: #C8102E;
   --color-accent: #C99A3C;
+  --color-accent-alt: #f5cc79;
   --color-host: #7AA6C2;
   --bg-host-dim: #2E4A5C;
   --text-host-light: #9FCBE8;
@@ -27,8 +28,9 @@
   --text-main: #1B1D21;
   --text-muted: #6B6E74;
   --text-footer: #9A9DA3;
-  --color-primary: #C8102E;
-  --color-accent: #9A7220;
+  /* --color-primary: #C8102E; */ /* ! redundant with in root predeclared color-primary-variable */
+  /* --color-accent: #9A7220; */ /* ! redundant with in root predeclared color-accent-variable */
+  --color-accent-alt: #966c19;
   --color-host: #3F7CA0;
   --bg-host-dim: #D6E4EF;
   --text-host-light: #2C5872;
@@ -69,12 +71,13 @@ body {
   gap: 10px;
   row-gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  /*margin-bottom: 16px;*/ /* * More compact header layout */
 }
 
 .hose-icon {
   color: var(--color-primary);
-  font-size: 22px;
+  /* font-size: 22px; */ /* ? Why is it smaller than the brand title? */
+  font-size: 26px;
   font-weight: 700;
   letter-spacing: -2px;
 }
@@ -128,6 +131,10 @@ body {
   height: 38px;
   border-radius: 8px;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   transition: border-color 0.2s, background 0.2s;
 }
 
@@ -166,6 +173,9 @@ body {
   transition: color 0.2s, border-color 0.2s;
   flex-shrink: 0;
   white-space: nowrap;
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
 }
 
 .nav-btn:hover {
@@ -175,6 +185,19 @@ body {
 .nav-btn.active {
   color: var(--text-main);
   border-bottom: 2px solid var(--color-primary);
+  background: rgba(200, 16, 46, 0.2);
+  border-radius: 15px 15px 0 0
+}
+
+.nav-icon svg{
+  height: 14px;
+  width: 14px;
+}
+
+span.nav-icon{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Main & Common Panel Grid */
@@ -1143,5 +1166,63 @@ body {
   }
   .no-print {
     display: none !important;
+  }
+}
+
+
+/* *Smartphone-Layout */
+@media screen and (min-width: 0) and (max-width: 768px) {  
+  nav.nav-bar{
+    width: 95%;
+    position: fixed;
+    bottom: 10px;
+    left: 2.5%;
+    margin-top: 0;
+    z-index: 100000;
+    background: var(--bg-surface);
+    opacity: 0.98;
+    box-shadow: inset 0 -10px 20px var(--text-muted), 0 20px 0 var(--bg-main);
+    border-radius: 30px;
+    justify-content: space-evenly;
+    align-items: center;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .nav-btn{
+    margin: 10px 0px;
+    width: 60px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    position: relative;
+  }
+
+  .nav-btn:first-child{
+    margin-left: 10px;
+  }
+
+  .nav-btn:last-child{
+    margin-right: 10px;
+  }
+
+  .nav-btn.active{
+    border-bottom: none;
+    background: var(--bg-main);
+    box-shadow: inset 0 5px 10px var(--text-muted);
+    border-radius: 20px;
+  }
+
+  .nav-icon svg{
+    height: 30px;
+    width: 30px;
+  }
+
+  .nav-label{
+    display: none;
+  }
+
+  .main-content {
+    margin-bottom: 100px;
   }
 }
