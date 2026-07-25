@@ -331,7 +331,7 @@ span.nav-icon{
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 15px;
 }
 
 .data-table {
@@ -542,7 +542,7 @@ span.nav-icon{
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 15px;
   border: 1px solid var(--border-color);
   background: var(--bg-surface);
   color: var(--text-main);
@@ -554,7 +554,7 @@ span.nav-icon{
 .pin-btn {
   width: 100%;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 15px;
   border: none;
   background: var(--color-primary);
   color: #fff;
@@ -565,7 +565,9 @@ span.nav-icon{
 .pin-error {
   color: var(--color-primary);
   font-size: 13px;
-  margin-top: 8px;
+  font-weight: 600;
+  text-align: center;
+  margin: 8px 0 16px;
 }
 
 /* Admin login & accounts */
@@ -621,12 +623,23 @@ span.nav-icon{
 
 .logout-btn {
   margin-left: auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
-  color: var(--color-primary);
+}
+
+.logout-btn svg{
+  height: 13px;
+  width: 13px;
 }
 
 .logout-btn:hover {
+  background: #C8102E20;
   border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 /* Admin Specific Elements */
@@ -644,7 +657,7 @@ span.nav-icon{
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 8px 14px;
-  border-radius: 6px;
+  border-radius: 15px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
@@ -661,7 +674,7 @@ span.nav-icon{
   padding: 6px 8px;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 5px;
   color: var(--text-main);
   font-family: 'IBM Plex Mono', monospace;
 }
@@ -671,7 +684,7 @@ span.nav-icon{
   padding: 6px 8px;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 5px;
   color: var(--text-main);
   font-family: 'IBM Plex Mono', monospace;
 }
@@ -691,17 +704,33 @@ span.nav-icon{
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 12px 14px;
-  border-radius: 6px;
+  border-radius: 15px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
 }
 
-.phase-step.active {
-  border-color: var(--color-accent);
-  color: var(--text-main);
-  box-shadow: inset 0 -3px 0 var(--color-accent);
+.phase-step:first-child.active {
+  border-color: var(--text-host-light);
+  color: var(--text-host-light);
+  background: var(--bg-host-dim);
+  box-shadow: inset 0 -3px 0 var(--text-host-light);
 }
+
+.phase-step:nth-child(2).active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: inset 0 -3px 0 var(--color-accent);
+  background: #C99A3C20;
+}
+
+.phase-step:last-child.active{
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: inset 0 -3px 0 var(--color-primary);
+  background: #C8102E20;
+}
+
 
 .event-actions {
   display: flex;
@@ -712,8 +741,8 @@ span.nav-icon{
 .dev-tools {
   margin-top: 12px;
   padding: 12px;
-  border: 1px dashed var(--color-accent);
-  border-radius: 6px;
+  border: 2px dashed var(--color-accent);
+  border-radius: 15px;
 }
 
 .dev-tools-label {
@@ -739,11 +768,13 @@ span.nav-icon{
   min-width: 200px;
   margin-bottom: 0;
   text-align: left;
+  border-radius: 15px;
 }
 
 .add-team-btn {
   width: auto;
   padding: 10px 18px;
+  border-radius: 15px;
 }
 
 .remove-btn {
@@ -770,20 +801,34 @@ span.nav-icon{
 }
 
 .qr-panel {
+  position: relative;
   margin-top: 16px;
   padding: 16px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 15px;
   background: var(--bg-surface);
-  max-width: 320px;
 }
 
 .qr-panel-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   margin-bottom: 12px;
   font-size: 14px;
+}
+
+.qr-panel-head .remove-btn{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+@media screen and (min-width: 0px) and (max-width: 360px){
+  .qr-panel-head .remove-btn{
+    position: relative;
+    top: 0;
+    right: 0;
+  }
 }
 
 .qr-img {
@@ -791,12 +836,17 @@ span.nav-icon{
   background: #fff;
   border-radius: 6px;
   padding: 8px;
+  margin: auto;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
 }
 
 .qr-url {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   flex-wrap: wrap;
   margin-top: 12px;
 }
@@ -809,6 +859,11 @@ span.nav-icon{
   min-width: 140px;
 }
 
+.qr-panel .hint-text{
+  text-align: center;
+  margin: 16px auto 0;
+}
+
 .backup-actions {
   display: flex;
   gap: 12px;
@@ -819,6 +874,7 @@ span.nav-icon{
 .backup-btn {
   width: auto;
   padding: 10px 18px;
+  font-size: clamp(12px, 3vw, 16px);
 }
 
 .backup-import {
@@ -1178,8 +1234,10 @@ span.nav-icon{
 
 /* *Smartphone-Layout */
 @media screen and (min-width: 0) and (max-width: 768px) {
+  /* *App-Header */
   .brand-row{
     flex-wrap: wrap;
+    margin-bottom: 12px;
   }
 
   .hose-icon{
@@ -1265,6 +1323,7 @@ span.nav-icon{
     display: none;
   }
 
+  /* *Content */
   .main-content {
     margin-bottom: 100px;
   }
@@ -1273,6 +1332,7 @@ span.nav-icon{
     margin-bottom: 150px;
   }
 
+  /* *Fullscreen Overlay */
   .fs-toggle {
   height: 50px;
   width: 50px;
@@ -1372,4 +1432,66 @@ span.nav-icon{
   .urkunde-sig{
     min-width: 100px;
   }
+
+  /* *Admin-Overlay */
+  .admin-tabs{
+    display: grid;
+    grid-template-columns: auto;
+    grid-auto-rows: 50%;
+    grid-template-areas:
+    "btn-1 btn-1 btn-1 btn-2 btn-2 btn-2 btn-5 btn-5"
+    "btn-3 btn-3 btn-3 btn-4 btn-4 btn-4 btn-5 btn-5";
+    align-items: stretch;
+  }
+
+  .sub-tab{
+    font-size: 12px;
+  } 
+
+  .sub-tab:nth-child(1){
+    grid-area: btn-1; 
+  }
+
+  .sub-tab:nth-child(2){
+    grid-area: btn-2; 
+  }
+
+  .sub-tab:nth-child(3){
+    grid-area: btn-3; 
+  }
+
+  .sub-tab:nth-child(4){
+    grid-area: btn-4; 
+  }
+
+  .sub-tab:nth-child(5){
+    grid-area: btn-5; 
+  }
+
+  .logout-btn{
+    font-size: 0;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    background: #C8102E20;
+    margin: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 15px;
+  }
+  
+  .logout-btn svg{
+    display: block;
+    height: 15.2px;
+    width: 15.2px;
+  }
+
+  /* Backup-Menu */
+  .backup-actions {
+  flex-direction: row;
+  justify-content: space-evenly;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
 }
