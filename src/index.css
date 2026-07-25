@@ -10,7 +10,6 @@
   --text-footer: #5C5F66;
   --color-primary: #C8102E;
   --color-accent: #C99A3C;
-  --color-accent-alt: #f5cc79;
   --color-host: #7AA6C2;
   --bg-host-dim: #2E4A5C;
   --text-host-light: #9FCBE8;
@@ -29,8 +28,7 @@
   --text-muted: #6B6E74;
   --text-footer: #9A9DA3;
   /* --color-primary: #C8102E; */ /* ! redundant with in root predeclared color-primary-variable */
-  /* --color-accent: #9A7220; */ /* ! redundant with in root predeclared color-accent-variable */
-  --color-accent-alt: #966c19;
+  --color-accent: #9A7220;
   --color-host: #3F7CA0;
   --bg-host-dim: #D6E4EF;
   --text-host-light: #2C5872;
@@ -1184,6 +1182,11 @@ span.nav-icon{
     flex-wrap: wrap;
   }
 
+  .hose-icon{
+    font-size: clamp(19px, 6vw, 24px);
+    max-width: 10%;
+  }
+
   .brand-title{
     font-size: clamp(19px, 6vw, 24px);
     max-width: 90%;
@@ -1311,5 +1314,62 @@ span.nav-icon{
   .fs-panel.is-fullscreen .fs-toggle div svg{
     stroke: var(--color-accent);
   }
+  
+  /* *Urkunden */
+  .urkunden-toolbar{
+    flex-direction: column;
+    gap: 8px;
+  }
 
+  .urkunden .hint-text{
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+  }
+  
+  .urkunde{
+    width: 90%;
+  }
+
+  .urkunde-inner{
+    padding: 32px 24px;
+  }
+
+  .urkunde-hose{
+    font-size: clamp(26px, 4vw, 34px);
+  }
+
+  .urkunde-title{
+    font-size: clamp(32px, 5vw, 40px);
+  }
+
+  .urkunde-event{
+    font-size: clamp(12px, 2vw, 15px);
+  }
+
+  .urkunde-rule{
+    min-width: 100px;
+    width: 50%;
+    max-width: 120px;
+  }
+
+  .urkunde-wertung{
+    font-size: clamp(13px, 2vw, 16px);
+  }
+
+  .urkunde-platz{
+    font-size: clamp(11px, 2vw, 14px);
+  }
+
+  .urkunde-team{
+    font-size: clamp(22px, 4vw, 30px)
+  }
+
+  .urkunde-signatures{
+    gap: 12px;
+  }
+
+  .urkunde-sig{
+    min-width: 100px;
+  }
 }
