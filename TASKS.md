@@ -174,7 +174,15 @@ TODO 20260804
   "Gleichstand" badge in Bestenliste. A tie straddling the 8th/9th place is
   left in place and flagged `cutoffContested` (own badge) instead of being
   guessed at, since that decides who actually qualifies)
-- Gemeindewertung shall be in the same order as gesamtwertung (place 1-8 from tournament tree, rest from base heats)
+- [x] Gemeindewertung shall be in the same order as gesamtwertung (place 1-8 from tournament tree, rest from base heats)
+  (new `gesamtwertung()` in `utils/tournament.ts`: champion, runner-up, SF
+  losers, QF losers — decided matches only, so it firms up as K.O. results
+  come in; teams eliminated in the same round never played each other, so
+  there's no rule to rank them by, they're ordered by base-round punkte as
+  a display tie-break. Everyone outside the K.O. bracket keeps their
+  base-round rank. Gemeindewertung now filters this instead of raw
+  `ranked`; e2e-tested since it needed real K.O. + Admin UI interaction)
+- add a single test script that tests everything, include this in CI workflow
 
 if there is something not clear: ask
 when you add new logic, add test cases for it

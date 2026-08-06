@@ -75,3 +75,33 @@ test("a base-round tie within places 1-7 is flagged as Gleichstand", async ({ pa
   await expect(page.getByText("Gleichstand")).toHaveCount(2);
   await expect(page.getByText("Stechlauf", { exact: true })).toHaveCount(0);
 });
+
+test("Gemeindewertung follows the overall (K.O.-aware) standings, not raw base rank", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  // Read the actual K.O. champion (random data, so read it back rather than
+  // assuming a name) and the worst base-round team.
+  await page.getByRole("button", { name: "Turnierbaum", exact: true }).click();
+  const championName = await page.locator(".bracket-col-final .match-winner .team-name-span").innerText();
+
+  await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
+  const lastRowName = await page.locator(".data-table").first().locator("tbody tr").last().locator(".td-name").innerText();
+
+  // Mark both as Gemeinde teams.
+  await page.getByRole("button", { name: "Admin" }).click();
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+  for (const name of [championName, lastRowName]) {
+    await page.locator("tr", { hasText: name }).locator('input[type="checkbox"]').nth(1).check();
+  }
+
+  await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
+  const gemeindeSection = page.locator("h2", { hasText: "Bestenliste — Gemeindewertung" }).locator("xpath=..");
+  const rows = gemeindeSection.locator(".data-table tbody tr");
+  await expect(rows).toHaveCount(2);
+  // The K.O. champion outranks the worst base-round team in Gemeindewertung
+  // even though base rank alone would put it last — proof this reflects
+  // gesamtwertung, not ranked.filter(gemeinde).
+  await expect(rows.first().locator(".td-name")).toHaveText(championName);
+  await expect(rows.last().locator(".td-name")).toHaveText(lastRowName);
+});

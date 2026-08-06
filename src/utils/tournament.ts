@@ -155,6 +155,44 @@ export function buildBracket(top8: Team[], ko: KoState): BracketData {
   return { qf, sf, final };
 }
 
+// Overall final standings: places 1-8 come from how far each team got in
+// the K.O. bracket (champion, runner-up, semi-final losers, quarter-final
+// losers) — decided matches only, so this firms up as K.O. results come in.
+// Teams eliminated in the same round never played each other, so there's no
+// rule to rank them by; they're ordered by base-round punkte as a display
+// tie-break. Everyone else (no K.O. slot, or a match still undecided) keeps
+// their base-round rank.
+export function gesamtwertung(ranked: RankedTeam[], bracket: BracketData): RankedTeam[] {
+  const byId = new Map(ranked.map((t) => [t.id, t]));
+  const placed = new Set<string>();
+  const rows: RankedTeam[] = [];
+
+  const loserOf = (m: Match): string | null =>
+    m.winnerId ? (m.winnerId === m.teamA?.id ? (m.teamB?.id ?? null) : (m.teamA?.id ?? null)) : null;
+
+  const place = (id: string | null | undefined) => {
+    if (!id || placed.has(id) || !byId.has(id)) return;
+    placed.add(id);
+    rows.push(byId.get(id)!);
+  };
+
+  const placeGroup = (ids: (string | null)[]) => {
+    ids
+      .filter((id): id is string => !!id && !placed.has(id) && byId.has(id))
+      .map((id) => byId.get(id)!)
+      .sort(byPunkte)
+      .forEach((t) => place(t.id));
+  };
+
+  place(bracket.final.winnerId);
+  place(loserOf(bracket.final));
+  placeGroup(bracket.sf.map(loserOf));
+  placeGroup(bracket.qf.map(loserOf));
+  ranked.forEach((t) => place(t.id));
+
+  return rows;
+}
+
 const koLabel = (id: string): string =>
   id.startsWith("qf") ? "Viertelfinale" : id.startsWith("sf") ? "Halbfinale" : "Finale";
 

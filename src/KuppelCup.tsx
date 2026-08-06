@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
 import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
-import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest } from "./utils/tournament";
+import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest, gesamtwertung } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
@@ -79,8 +79,11 @@ export default function KuppelCup() {
   const bracket = useMemo(() => buildBracket(top8, ko), [top8, ko]);
   const monitorData = useMemo(() => buildMonitorQueue(scheduledTeams, bracket, numberOfParallelRounds), [scheduledTeams, bracket]);
   const dailyBestTimes = useMemo(() => dailyBest(ranked, bracket), [ranked, bracket]);
+  const gesamt = useMemo(() => gesamtwertung(ranked, bracket), [ranked, bracket]);
 
-  const gemeinde = ranked.filter((t) => t.gemeinde);
+  // Gemeindewertung follows the overall standings (K.O. placement for the
+  // top 8, base-round rank for the rest), not raw base-round order.
+  const gemeinde = gesamt.filter((t) => t.gemeinde);
 
   // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
   const locked = phase === "abgeschlossen"; // no changes possible once finished

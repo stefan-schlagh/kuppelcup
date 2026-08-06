@@ -6,6 +6,7 @@ import {
   buildBracket,
   buildMonitorQueue,
   dailyBest,
+  gesamtwertung,
 } from "./tournament";
 import type { Team, KoState } from "../types";
 
@@ -281,5 +282,49 @@ describe("dailyBest", () => {
     expect(result.map((t) => [t.id, t.punkte])).toEqual([["a", 25], ["b", 40]]);
     // ranked must be untouched (guards the earlier state-mutation bug)
     expect(ranked.find((t) => t.id === "a")?.punkte).toBe(30);
+  });
+});
+
+describe("gesamtwertung", () => {
+  // 10 teams: t0..t7 qualify for K.O. (ascending base punkte, t0 fastest),
+  // t8/t9 don't. K.O. results consistently favour the lower-numbered team.
+  const teams10 = Array.from({ length: 10 }, (_, i) => team(`t${i}`, i + 1, [20 + i, 0], [20 + i, 0]));
+  const decisive: KoState = {
+    qf1: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 30, strafe: 0 } }, // t0 beats t7
+    qf2: { runA: { zeit: 23, strafe: 0 }, runB: { zeit: 33, strafe: 0 } }, // t3 beats t4
+    qf3: { runA: { zeit: 21, strafe: 0 }, runB: { zeit: 31, strafe: 0 } }, // t1 beats t6
+    qf4: { runA: { zeit: 22, strafe: 0 }, runB: { zeit: 32, strafe: 0 } }, // t2 beats t5
+    sf1: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 30, strafe: 0 } }, // t0 beats t3
+    sf2: { runA: { zeit: 21, strafe: 0 }, runB: { zeit: 31, strafe: 0 } }, // t1 beats t2
+    final: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 30, strafe: 0 } }, // t0 beats t1
+  };
+
+  it("orders 1-8 by how far each team got in the bracket, then the rest by base rank", () => {
+    const ranked = rankTeams(teams10);
+    const bracket = buildBracket(selectTop8(ranked), decisive);
+    const result = gesamtwertung(ranked, bracket);
+    // 1: champion, 2: runner-up, 3-4: SF losers (t2 < t3 on base punkte),
+    // 5-8: QF losers (t4 < t5 < t6 < t7 on base punkte), 9-10: never in K.O.
+    expect(result.map((t) => t.id)).toEqual(["t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"]);
+  });
+
+  it("falls back to base-round order for anyone not yet decided in the bracket", () => {
+    const ranked = rankTeams(teams10);
+    // Only the quarter-finals are in — semis/final are still unplayed.
+    const bracket = buildBracket(selectTop8(ranked), {
+      qf1: decisive.qf1, qf2: decisive.qf2, qf3: decisive.qf3, qf4: decisive.qf4,
+    });
+    const result = gesamtwertung(ranked, bracket);
+    // The 4 QF losers are decided and placed first...
+    expect(result.slice(0, 4).map((t) => t.id)).toEqual(["t4", "t5", "t6", "t7"]);
+    // ...everyone else (QF winners still alive in an undecided SF, plus
+    // teams that never qualified) falls back to base rank.
+    expect(result.slice(4).map((t) => t.id)).toEqual(["t0", "t1", "t2", "t3", "t8", "t9"]);
+  });
+
+  it("is a no-op reshuffle when there's no bracket at all", () => {
+    const ranked = rankTeams(teams10);
+    const result = gesamtwertung(ranked, buildBracket([], {}));
+    expect(result.map((t) => t.id)).toEqual(ranked.map((t) => t.id));
   });
 });
