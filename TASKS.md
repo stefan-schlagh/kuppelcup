@@ -120,9 +120,28 @@ TODO 20260804
 - in parallel heats: only do teams that are in the same DG
   - write tests for that
 - some interactivity that shows an action has been registered
-- does firebase allow user + pw login
+- [x] does firebase allow user + pw login — yes, the Email/Password provider is
+  already enabled (`firebase.json` → `auth.providers.emailPassword`) and
+  `FirebaseBackend.auth.signIn`/`createAccount` already call
+  `signInWithEmailAndPassword`/`createUserWithEmailAndPassword`. The catch:
+  Firebase's Email/Password provider requires the identifier to actually be
+  an **email address** — unlike `LocalBackend`, which accepts any string
+  (the local dev seed is literally `admin`/`admin`). The login form's
+  "Benutzername" field didn't reflect that; relabeled it to "E-Mail-Adresse"
+  (`type="email"`) so real (Firebase) admins sign up with a real email —
+  local dev is unaffected since `LocalBackend.signIn` does plain string
+  comparison, no format is enforced.
 - complete email only login
-- firebase: do i have to switch on account merging (if e.g. same email used with different login methods)
+- [x] firebase: do i have to switch on account merging (if e.g. same email
+  used with different login methods) — no, not for what's here today.
+  Firebase Auth's Email/Password sign-in and Email Link (passwordless)
+  sign-in are the **same provider** (`providerId: "password"`); signing in
+  with either one for a given email always resolves to the same Firebase
+  Auth user, so there's nothing to merge. Account linking only becomes
+  relevant if a *different* provider (e.g. Google Sign-In) is added later —
+  then enabling "One account per email address" in Firebase console →
+  Authentication → Settings avoids duplicate accounts for the same email
+  across providers.
 - do tests what happens in tournament tree if there are < 8 participants (for 3 only 2 were added to the tree)
   - then: the teams getting no competitor in their heat should automatically advance
 - all times (+ gemeindewertung + best times) and turnament tree should be printable as a pdf, gesamtwertung as well

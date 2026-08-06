@@ -217,12 +217,12 @@ export default function KuppelCup() {
           ) : (
             <div className="login-box">
               <h2 className="panel-title">Admin-Anmeldung</h2>
-              <p className="hint-text">Mit Benutzername und Passwort anmelden oder ein neues Admin-Konto anlegen.</p>
+              <p className="hint-text">Mit E-Mail und Passwort anmelden oder ein neues Admin-Konto anlegen.</p>
               <input
-                type="text"
+                type="email"
                 value={loginUser}
-                placeholder="Benutzername"
-                autoComplete="username"
+                placeholder="E-Mail-Adresse"
+                autoComplete="email"
                 onChange={(e) => setLoginUser(e.target.value)}
                 className="pin-input login-input"
               />
