@@ -117,8 +117,12 @@ TODO 20260804
 - [x] adapt FirebaseBackend tests (mock the Firebase SDK so they're fast,
   offline unit tests of the adapter logic; also dropped dead stub code left
   over from wiring)
-- in parallel heats: only do teams that are in the same DG
+- [x] in parallel heats: only do teams that are in the same DG
   - write tests for that
+  (`buildMonitorQueue` flattened DG1+DG2 into one array and chunked it by
+  index; with an odd team count that paired the last DG1 runner with the
+  first DG2 runner in the same "parallel" heat. Now DG1/DG2/each K.O. match
+  are chunked as separate phases so a heat never mixes them)
 - some interactivity that shows an action has been registered
 - [x] does firebase allow user + pw login — yes, the Email/Password provider is
   already enabled (`firebase.json` → `auth.providers.emailPassword`) and

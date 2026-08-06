@@ -140,6 +140,32 @@ describe("buildMonitorQueue", () => {
     expect(view.status).toBe("running");
     expect(view.current.map((r) => r.label)).toEqual(["Viertelfinale", "Viertelfinale"]);
   });
+
+  it("with an odd team count, a heat never mixes DG1 and DG2 runners", () => {
+    // 3 teams, parallel=2: DG1 heats are [a,b] then [c] alone. Naively
+    // flattening DG1+DG2 into one array and chunking by index would have
+    // paired c's DG1 run with a's DG2 run in the same "parallel" heat.
+    const a = team("a", 1, [20, 0], [null, null]);
+    const b = team("b", 2, [21, 0], [null, null]);
+    const c = team("c", 3, [22, 0], [null, null]); // DG1 done for all three, DG2 untouched
+    const view = buildMonitorQueue([a, b, c], emptyBracket, 2);
+    expect(view.status).toBe("running");
+    // c ran DG1 solo (odd one out) — that heat is fully done, so the queue
+    // has already moved on to DG2's first heat (a, b), not a DG1/DG2 mix.
+    expect(view.former.map((r) => [r.name, r.label])).toEqual([["FF c", "DG1"]]);
+    expect(view.current.map((r) => [r.name, r.label])).toEqual([["FF a", "DG2"], ["FF b", "DG2"]]);
+    expect(view.next.map((r) => [r.name, r.label])).toEqual([["FF c", "DG2"]]);
+  });
+
+  it("with an odd team count, the last team in a phase runs alone rather than joining the next phase", () => {
+    const a = team("a", 1, [20, 0], [null, null]);
+    const b = team("b", 2, [21, 0], [null, null]);
+    const c = team("c", 3, [null, null], [null, null]); // c hasn't run DG1 yet
+    const view = buildMonitorQueue([a, b, c], emptyBracket, 2);
+    expect(view.status).toBe("running");
+    expect(view.current.map((r) => [r.name, r.label])).toEqual([["FF c", "DG1"]]);
+    expect(view.next.map((r) => [r.name, r.label])).toEqual([["FF a", "DG2"], ["FF b", "DG2"]]);
+  });
 });
 
 describe("dailyBest", () => {

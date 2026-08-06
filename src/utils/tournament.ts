@@ -72,46 +72,48 @@ export function buildBracket(top8: Team[], ko: KoState): BracketData {
 const koLabel = (id: string): string =>
   id.startsWith("qf") ? "Viertelfinale" : id.startsWith("sf") ? "Halbfinale" : "Finale";
 
+// Split one phase's runners into heats of at most `parallel` teams. Kept
+// per-phase (not sliced across the whole queue) so an odd team count can't
+// pair a team's DG1 run with another team's DG2 run in the same heat — the
+// two lanes running "in parallel" must always be the same Durchgang.
+function chunkHeats(entries: MonitorRunner[], parallel: number): MonitorRunner[][] {
+  const heats: MonitorRunner[][] = [];
+  for (let i = 0; i < entries.length; i += parallel) heats.push(entries.slice(i, i + parallel));
+  return heats;
+}
+
 // Build the Live-Monitor queue: every team's DG1, then DG2, then the K.O.
-// matches (each match with both teams becomes a heat of two). The "current"
-// heat is the one containing the first run still missing a time.
+// matches (each match is its own heat of two). The "current" heat is the
+// one containing the first run still missing a time.
 export function buildMonitorQueue(scheduledTeams: Team[], bracket: BracketData, parallel: number): MonitorView {
   const runner = (t: Team, label: string, r: RunData): MonitorRunner => ({
     name: t.name, start: t.start, label, zeit: r.zeit, strafe: r.strafe,
   });
 
-  const queue: MonitorRunner[] = [];
-  scheduledTeams.forEach((t) => queue.push(runner(t, "DG1", t.dg1)));
-  scheduledTeams.forEach((t) => queue.push(runner(t, "DG2", t.dg2)));
+  const heats: MonitorRunner[][] = [
+    ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG1", t.dg1)), parallel),
+    ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG2", t.dg2)), parallel),
+  ];
   [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
     if (m.teamA && m.teamB) {
-      queue.push(runner(m.teamA, koLabel(m.id), m.runA));
-      queue.push(runner(m.teamB, koLabel(m.id), m.runB));
+      heats.push([runner(m.teamA, koLabel(m.id), m.runA), runner(m.teamB, koLabel(m.id), m.runB)]);
     }
   });
 
-  if (queue.length === 0) {
+  if (heats.length === 0) {
     return { status: "empty", former: [], current: [], next: [] };
   }
 
-  const currentIndex = queue.findIndex((q) => q.zeit === null);
-  if (currentIndex === -1) {
-    const lastChunkStart = Math.max(0, queue.length - parallel);
-    return { status: "finished", former: queue.slice(lastChunkStart), current: [], next: [] };
+  const currentHeatIndex = heats.findIndex((h) => h.some((r) => r.zeit === null));
+  if (currentHeatIndex === -1) {
+    return { status: "finished", former: heats[heats.length - 1], current: [], next: [] };
   }
-
-  const chunkIndex = Math.floor(currentIndex / parallel);
-  const currentStart = chunkIndex * parallel;
-  const currentEnd = currentStart + parallel;
-  const formerStart = currentStart - parallel;
-  const nextStart = currentEnd;
-  const nextEnd = nextStart + parallel;
 
   return {
     status: "running",
-    former: formerStart >= 0 ? queue.slice(formerStart, currentStart) : [],
-    current: queue.slice(currentStart, currentEnd),
-    next: nextStart < queue.length ? queue.slice(nextStart, nextEnd) : [],
+    former: currentHeatIndex > 0 ? heats[currentHeatIndex - 1] : [],
+    current: heats[currentHeatIndex],
+    next: currentHeatIndex + 1 < heats.length ? heats[currentHeatIndex + 1] : [],
   };
 }
 
