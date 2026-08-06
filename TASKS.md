@@ -86,17 +86,17 @@ Potential issues to flag:
 - [ ] Visually distinguish K.O. heats in the Live-Monitor (phase badge or "vs." styling for the two opponents), rather than only the text label
 - [x] fix UI for small screens, especially on the top (header brand row wraps, nav tabs scroll, tighter padding; Turnierbaum stacks — see earlier)
 
-## Manual setup (you — before wiring the backend)
-- [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
-  - Create a Firebase project in the console
-  - Add a Web App and copy its config → paste into `firebaseConfig` in `src/config.ts`
-  - Enable **Firestore** (create the database)
-  - Enable **Authentication** (the sign-in provider you want, e.g. Google)
-  - Add Firestore security rules scoping events by owner
-    (`allow read/write if request.auth.uid == resource.data.ownerId`)
-  - Then hand back to wiring: `npm install firebase`, uncomment the SDK calls in
-    `src/backend/FirebaseBackend.ts`, set `BACKEND = "firebase"` and
-    `FIREBASE_WIRED = true` in `src/config.ts`
+## Manual setup (you)
+- [x] Firebase is wired (`BACKEND = "firebase"`, `FIREBASE_WIRED = true` in `src/config.ts`).
+  Local dev needs project credentials in `.env.local` (gitignored, not the same file as
+  `.env.example`) — copy `.env.example` to `.env.local` and fill in the `VITE_FIREBASE_*`
+  values from the Firebase console (Project settings → your Web App). `src/firebaseConfig.ts`
+  reads these via `import.meta.env`, so it's tracked and `npm run build`/`npm test` work
+  even with no `.env.local` present (e.g. on CI, which doesn't need a real project).
+- [ ] Deploy `firestore.rules` when they change: `firebase deploy --only firestore:rules`
+  (requires `firebase login` once). Run `npm run test:rules` first — it exercises the rules
+  against the Firestore emulator (needs Java; the emulator jar downloads once via `firebase
+  emulators:start` on first use).
 
 ## Notes
 - Keep things simple.
@@ -107,3 +107,32 @@ Potential issues to flag:
   and `FIREBASE_WIRED`. While `FIREBASE_WIRED` is false the app stays on
   LocalBackend (localStorage) even if BACKEND is "firebase" — frontend-only dev
   never hits the unwired Firebase stub.
+
+TODO 20260804
+
+- [x] use database rules that make sense and are secure, write tests for them
+  (`firestore.rules`: split public `get`-by-id from owner-only `list`/write +
+  schema validation; emulator-backed tests in `tests/rules/`, run via
+  `npm run test:rules`)
+- [x] adapt FirebaseBackend tests (mock the Firebase SDK so they're fast,
+  offline unit tests of the adapter logic; also dropped dead stub code left
+  over from wiring)
+- in parallel heats: only do teams that are in the same DG
+  - write tests for that
+- some interactivity that shows an action has been registered
+- does firebase allow user + pw login
+- complete email only login
+- firebase: do i have to switch on account merging (if e.g. same email used with different login methods)
+- do tests what happens in tournament tree if there are < 8 participants (for 3 only 2 were added to the tree)
+  - then: the teams getting no competitor in their heat should automatically advance
+- all times (+ gemeindewertung + best times) and turnament tree should be printable as a pdf, gesamtwertung as well
+- use a libary like react-pdf so that (potential) previews and the pdf itself can be the same code
+  - pdfs shall only be in "light mode"
+- conflict resolution for tie breaks:
+  - in turnament mode: another run
+  - for base heats: if at 1-7 assign place (relevant on where to start in turnament tree) randomly
+  - if 8 and 9 are tied: another run
+- Gemeindewertung shall be in the same order as gesamtwertung (place 1-8 from tournament tree, rest from base heats)
+
+if there is something not clear: ask
+when you add new logic, add test cases for it

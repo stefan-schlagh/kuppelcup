@@ -9,9 +9,11 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:rules": "firebase emulators:exec --project demo-kuppelcup --only firestore \"vitest run --config vitest.rules.config.ts\"",
     "preview": "vite preview"
   },
   "dependencies": {
+    "firebase": "^12.17.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.26.0",
     "qrcode": "^1.5.4",
@@ -19,6 +21,7 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@types/node": "^24.13.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.17",

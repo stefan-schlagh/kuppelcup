@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /events/{eventId} {
+      function isOwner(uid) {
+        return request.auth != null && request.auth.uid == uid;
+      }
+
+      function isValidEvent(data) {
+        return data.id == eventId
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+          && data.ownerId is string && data.ownerId.size() > 0
+          && data.phase in ['anmeldung', 'durchfuehrung', 'abgeschlossen']
+          && data.createdAt is number
+          && data.teams is list
+          && data.ko is map;
+      }
+
+      // 1. PUBLIC GET: anyone (logged in or not) can fetch a single event by
+      // its id — this is the "?event=<id>" spectator link. Deliberately not
+      // `allow read`, which would also grant `list` and let anyone dump the
+      // whole collection instead of just the one event they were given.
+      allow get: if true;
+
+      // 2. LIST: only an owner querying their own events (Admin → "your
+      // events"). FirebaseBackend.listEvents() always filters by ownerId, so
+      // this requires that filter to match the caller — Firestore rejects
+      // the whole query if it can't prove every possible result satisfies
+      // the rule, so an unfiltered or mismatched-owner query is denied.
+      allow list: if isOwner(resource.data.ownerId);
+
+      // 3. CREATE: must be logged in, own the new event, and the document
+      // must match the expected shape (id lines up with the doc path, phase
+      // is a real phase, etc.) so malformed writes can't reach other clients
+      // subscribed to it.
+      allow create: if isOwner(request.resource.data.ownerId)
+                    && isValidEvent(request.resource.data);
+
+      // 4. UPDATE: must be the current owner, the new document must still be
+      // well-formed, and ownership can't be transferred via a write (no
+      // `saveEvent` call sets ownerId, so a change here would only ever be
+      // an attempted hijack).
+      allow update: if isOwner(resource.data.ownerId)
+                    && isValidEvent(request.resource.data)
+                    && request.resource.data.ownerId == resource.data.ownerId;
+
+      // 5. DELETE: must be the current owner.
+      allow delete: if isOwner(resource.data.ownerId);
+    }
+
+  }
+}

@@ -8,20 +8,9 @@ export type BackendKind = "local" | "firebase";
 
 // Which backend the app talks to. Stays "local" (localStorage) until
 // Firebase is configured; switch to "firebase" to use Firestore/Auth.
-export const BACKEND: BackendKind = "local";
+export const BACKEND: BackendKind = "firebase";
 
 // Safety toggle for frontend-only development: while false, the app uses
 // LocalBackend even if BACKEND is "firebase", so the unwired Firebase stub
 // never throws. Flip to true only once FirebaseBackend is actually wired up.
-export const FIREBASE_WIRED = false;
-
-// Firebase project config — fill these in to enable the "firebase" backend.
-// Then: `npm install firebase` and wire up src/backend/FirebaseBackend.ts.
-export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-};
+export const FIREBASE_WIRED = true;
