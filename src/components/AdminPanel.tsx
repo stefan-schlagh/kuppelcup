@@ -6,6 +6,7 @@ import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
 import type { Team, EventPhase, BracketData, Account, EventMeta, EventDoc } from '../types'
+import { LogOut } from 'lucide-react';
 
 type RunField = "zeit" | "strafe";
 
@@ -129,7 +130,7 @@ export default function AdminPanel({
         <button onClick={() => setSub("ergebnisse")} className={`sub-tab ${sub === "ergebnisse" ? "active" : ""}`}>Grunddurchgang erfassen</button>
         <button onClick={() => setSub("ko")} className={`sub-tab ${sub === "ko" ? "active" : ""}`}>K.O.-Ergebnisse</button>
         <button onClick={() => setSub("backup")} className={`sub-tab ${sub === "backup" ? "active" : ""}`}>Backup</button>
-        <button className="sub-tab logout-btn" onClick={handleLogout} title="Admin abmelden">Abmelden ({account?.name ?? "—"})</button>
+        <button className="sub-tab logout-btn" onClick={handleLogout} title="Admin abmelden"><LogOut />Abmelden ({account?.name ?? "—"})</button>
       </div>
 
       {sub === "event" && (

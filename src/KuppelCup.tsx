@@ -10,6 +10,7 @@ import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
+import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText } from 'lucide-react';
 
 const numberOfParallelRounds = 2
 
@@ -134,25 +135,26 @@ export default function KuppelCup() {
               title="Hell/Dunkel wechseln"
               aria-label="Hell/Dunkel wechseln"
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              {theme === "dark" ? <Sun /> : <Moon />}
             </button>
           </div>
         </div>
         <nav className="nav-bar">
           {([
-            ["liste", "Bestenliste"],
-            ["monitor", "Live-Monitor 📺"],
-            ["baum", "Turnierbaum"],
+            ["liste", "Bestenliste", <ListOrdered />],
+            ["monitor", "Live-Monitor", <TvMinimalPlay />],
+            ["baum", "Turnierbaum", <Network />],
             // Urkunden are only for the organiser
-            ...(authed ? [["urkunden", "Urkunden 🖨"]] : []),
-            ["admin", "Admin"],
-          ] as [string, string][]).map(([key, label]) => (
+            ...(authed ? [["urkunden", "Urkunden", <ScrollText />]] : []),
+            ["admin", "Admin", <User />],
+          ] as [string, string, React.ReactNode][]).map(([key, label, icon]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={`nav-btn ${tab === key ? "active" : ""}`}
             >
-              {label}
+              {icon && <span className="nav-icon">{icon}</span>}
+              {label && <span className="nav-label">{label}</span>}
             </button>
           ))}
         </nav>
