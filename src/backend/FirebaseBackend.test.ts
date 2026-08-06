@@ -1,18 +1,174 @@
-import { describe, it, expect } from "vitest";
-import { FirebaseBackend } from "./FirebaseBackend";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { EventDoc } from "../types";
 
-// The stub must fail loudly (rather than silently no-op) until it is wired
-// up, so a misconfigured BACKEND switch is obvious.
-describe("FirebaseBackend (stub)", () => {
-  const be = new FirebaseBackend();
+// FirebaseBackend talks to the real Firebase SDK at module load (initializeApp/
+// getFirestore/getAuth) and needs `../firebaseConfig`, which is gitignored and
+// not present on every checkout. Mock the SDK + config so these stay fast,
+// offline unit tests of the *adapter* logic (argument mapping, doc <-> Account/
+// EventDoc shaping) — not an integration test against a real project. That is
+// what the emulator-backed firestore.rules tests (tests/rules/) are for.
+vi.mock("../firebaseConfig", () => ({ firebaseConfig: {} }));
+vi.mock("firebase/app", () => ({ initializeApp: vi.fn(() => ({})) }));
 
-  it("has no current account until sign-in is wired up", () => {
-    expect(be.auth.currentAccount()).toBeNull();
+const mockAuthInstance: { currentUser: unknown } = { currentUser: null };
+
+vi.mock("firebase/auth", () => ({
+  getAuth: vi.fn(() => mockAuthInstance),
+  signInWithEmailAndPassword: vi.fn(),
+  createUserWithEmailAndPassword: vi.fn(),
+  signOut: vi.fn(),
+}));
+
+vi.mock("firebase/firestore", () => ({
+  getFirestore: vi.fn(() => ({})),
+  collection: vi.fn((_db, path) => ({ __kind: "collection", path })),
+  doc: vi.fn((...args: unknown[]) =>
+    args.length === 1
+      ? { __kind: "doc", id: "generated-id" } // doc(collectionRef) — auto id
+      : { __kind: "doc", id: args[2] }, // doc(db, "events", id)
+  ),
+  getDoc: vi.fn(),
+  getDocs: vi.fn(),
+  setDoc: vi.fn(),
+  deleteDoc: vi.fn(),
+  onSnapshot: vi.fn(),
+  query: vi.fn((...args: unknown[]) => ({ __kind: "query", args })),
+  where: vi.fn((field: string, op: string, value: unknown) => ({ __kind: "where", field, op, value })),
+  orderBy: vi.fn((field: string, dir: string) => ({ __kind: "orderBy", field, dir })),
+}));
+
+const { FirebaseBackend } = await import("./FirebaseBackend");
+const { getDoc, getDocs, setDoc, deleteDoc, onSnapshot } = await import("firebase/firestore");
+const { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } = await import("firebase/auth");
+
+const sampleEvent: EventDoc = {
+  id: "e1",
+  name: "Kuppelcup",
+  ownerId: "owner-1",
+  phase: "anmeldung",
+  createdAt: 1000,
+  teams: [],
+  ko: {},
+};
+
+describe("FirebaseBackend", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthInstance.currentUser = null;
   });
 
-  // it("throws a clear not-configured error for data calls", async () => {
-  //   await expect(be.listEvents("owner-1")).rejects.toThrow(/not configured/i);
-  //   await expect(be.createEvent("Cup", "owner-1")).rejects.toThrow(/not configured/i);
-  //   await expect(be.getEvent("x")).rejects.toThrow(/not configured/i);
-  // });
+  describe("auth", () => {
+    it("has no current account until sign-in", () => {
+      const be = new FirebaseBackend();
+      expect(be.auth.currentAccount()).toBeNull();
+    });
+
+    it("maps the signed-in Firebase user to an Account", () => {
+      mockAuthInstance.currentUser = { uid: "u1", displayName: "Alice", email: "a@x.com" };
+      const be = new FirebaseBackend();
+      expect(be.auth.currentAccount()).toEqual({ id: "u1", name: "Alice" });
+    });
+
+    it("falls back to email, then \"Admin\", when displayName is missing", () => {
+      mockAuthInstance.currentUser = { uid: "u1", displayName: null, email: "a@x.com" };
+      expect(new FirebaseBackend().auth.currentAccount()).toEqual({ id: "u1", name: "a@x.com" });
+
+      mockAuthInstance.currentUser = { uid: "u1", displayName: null, email: null };
+      expect(new FirebaseBackend().auth.currentAccount()).toEqual({ id: "u1", name: "Admin" });
+    });
+
+    it("signs in with username + password via signInWithEmailAndPassword", async () => {
+      vi.mocked(signInWithEmailAndPassword).mockResolvedValueOnce({
+        user: { uid: "u1", displayName: "Alice", email: "a@x.com" },
+      } as never);
+      const be = new FirebaseBackend();
+      const acc = await be.auth.signIn("a@x.com", "secret");
+      expect(signInWithEmailAndPassword).toHaveBeenCalledWith(mockAuthInstance, "a@x.com", "secret");
+      expect(acc).toEqual({ id: "u1", name: "Alice" });
+    });
+
+    it("rejects sign-in when the SDK rejects", async () => {
+      vi.mocked(signInWithEmailAndPassword).mockRejectedValueOnce(new Error("wrong password"));
+      await expect(new FirebaseBackend().auth.signIn("a@x.com", "bad")).rejects.toThrow("wrong password");
+    });
+
+    it("signInWithEmail is not implemented yet and fails loudly", async () => {
+      await expect(new FirebaseBackend().auth.signInWithEmail("a@x.com")).rejects.toThrow(/not implemented/i);
+    });
+
+    it("creates an account via createUserWithEmailAndPassword, named by username", async () => {
+      vi.mocked(createUserWithEmailAndPassword).mockResolvedValueOnce({
+        user: { uid: "u2" },
+      } as never);
+      const acc = await new FirebaseBackend().auth.createAccount("newadmin", "pw");
+      expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(mockAuthInstance, "newadmin", "pw");
+      expect(acc).toEqual({ id: "u2", name: "newadmin" });
+    });
+
+    it("signs out via the SDK", async () => {
+      await new FirebaseBackend().auth.signOut();
+      expect(signOut).toHaveBeenCalledWith(mockAuthInstance);
+    });
+  });
+
+  it("has no implicit landing event (Firebase is reached by URL only)", async () => {
+    await expect(new FirebaseBackend().landingEvent()).resolves.toBeNull();
+  });
+
+  it("lists events owned by the given account, mapped to EventMeta", async () => {
+    vi.mocked(getDocs).mockResolvedValueOnce({
+      docs: [{ data: () => sampleEvent }],
+    } as never);
+    const metas = await new FirebaseBackend().listEvents("owner-1");
+    expect(metas).toEqual([
+      { id: "e1", name: "Kuppelcup", ownerId: "owner-1", phase: "anmeldung", createdAt: 1000 },
+    ]);
+  });
+
+  it("creates an empty event owned by the caller, in phase 'anmeldung'", async () => {
+    const meta = await new FirebaseBackend().createEvent("New Cup", "owner-1");
+    expect(meta.id).toBe("generated-id");
+    expect(meta).toMatchObject({ name: "New Cup", ownerId: "owner-1", phase: "anmeldung" });
+    expect(setDoc).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "generated-id" }),
+      expect.objectContaining({ ...meta, teams: [], ko: {} }),
+    );
+  });
+
+  it("gets an event by id, or null if it doesn't exist", async () => {
+    vi.mocked(getDoc).mockResolvedValueOnce({ exists: () => true, data: () => sampleEvent } as never);
+    await expect(new FirebaseBackend().getEvent("e1")).resolves.toEqual(sampleEvent);
+
+    vi.mocked(getDoc).mockResolvedValueOnce({ exists: () => false } as never);
+    await expect(new FirebaseBackend().getEvent("missing")).resolves.toBeNull();
+  });
+
+  it("saves the full event document", async () => {
+    await new FirebaseBackend().saveEvent(sampleEvent);
+    expect(setDoc).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }), sampleEvent);
+  });
+
+  it("deletes an event by id", async () => {
+    await new FirebaseBackend().deleteEvent("e1");
+    expect(deleteDoc).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }));
+  });
+
+  it("subscribes to live changes, mapping snapshots to EventDoc | null", () => {
+    let capturedCallback: ((snap: unknown) => void) | undefined;
+    const unsubscribe = vi.fn();
+    vi.mocked(onSnapshot).mockImplementation(((_ref: unknown, cb: (snap: unknown) => void) => {
+      capturedCallback = cb;
+      return unsubscribe;
+    }) as never);
+
+    const onChange = vi.fn();
+    const returnedUnsubscribe = new FirebaseBackend().subscribeEvent("e1", onChange);
+    expect(returnedUnsubscribe).toBe(unsubscribe);
+
+    capturedCallback?.({ exists: () => true, data: () => sampleEvent });
+    expect(onChange).toHaveBeenCalledWith(sampleEvent);
+
+    capturedCallback?.({ exists: () => false });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
 });

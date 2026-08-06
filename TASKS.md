@@ -86,17 +86,17 @@ Potential issues to flag:
 - [ ] Visually distinguish K.O. heats in the Live-Monitor (phase badge or "vs." styling for the two opponents), rather than only the text label
 - [x] fix UI for small screens, especially on the top (header brand row wraps, nav tabs scroll, tighter padding; Turnierbaum stacks — see earlier)
 
-## Manual setup (you — before wiring the backend)
-- [ ] **Set up Firebase** (prerequisite for activating FirebaseBackend):
-  - Create a Firebase project in the console
-  - Add a Web App and copy its config → paste into `firebaseConfig` in `src/config.ts`
-  - Enable **Firestore** (create the database)
-  - Enable **Authentication** (the sign-in provider you want, e.g. Google)
-  - Add Firestore security rules scoping events by owner
-    (`allow read/write if request.auth.uid == resource.data.ownerId`)
-  - Then hand back to wiring: `npm install firebase`, uncomment the SDK calls in
-    `src/backend/FirebaseBackend.ts`, set `BACKEND = "firebase"` and
-    `FIREBASE_WIRED = true` in `src/config.ts`
+## Manual setup (you)
+- [x] Firebase is wired (`BACKEND = "firebase"`, `FIREBASE_WIRED = true` in `src/config.ts`).
+  Local dev needs project credentials in `.env.local` (gitignored, not the same file as
+  `.env.example`) — copy `.env.example` to `.env.local` and fill in the `VITE_FIREBASE_*`
+  values from the Firebase console (Project settings → your Web App). `src/firebaseConfig.ts`
+  reads these via `import.meta.env`, so it's tracked and `npm run build`/`npm test` work
+  even with no `.env.local` present (e.g. on CI, which doesn't need a real project).
+- [ ] Deploy `firestore.rules` when they change: `firebase deploy --only firestore:rules`
+  (requires `firebase login` once). Run `npm run test:rules` first — it exercises the rules
+  against the Firestore emulator (needs Java; the emulator jar downloads once via `firebase
+  emulators:start` on first use).
 
 ## Notes
 - Keep things simple.
@@ -110,8 +110,13 @@ Potential issues to flag:
 
 TODO 20260804
 
-- use database rules that make sense and are secure, write tests for them
-- adapt FirebaseBackend tests
+- [x] use database rules that make sense and are secure, write tests for them
+  (`firestore.rules`: split public `get`-by-id from owner-only `list`/write +
+  schema validation; emulator-backed tests in `tests/rules/`, run via
+  `npm run test:rules`)
+- [x] adapt FirebaseBackend tests (mock the Firebase SDK so they're fast,
+  offline unit tests of the adapter logic; also dropped dead stub code left
+  over from wiring)
 - in parallel heats: only do teams that are in the same DG
   - write tests for that
 - some interactivity that shows an action has been registered
