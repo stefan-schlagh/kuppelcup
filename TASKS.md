@@ -139,7 +139,21 @@ TODO 20260804
   (`type="email"`) so real (Firebase) admins sign up with a real email —
   local dev is unaffected since `LocalBackend.signIn` does plain string
   comparison, no format is enforced.
-- complete email only login
+- [x] complete email only login
+  (`FirebaseBackend.auth.signInWithEmail` now sends a real Firebase email
+  link via `sendSignInLinkToEmail`; since nobody can sign in until the user
+  clicks that link, it rejects with a new `AuthNotice` — a non-error the UI
+  renders as a blue notice, not a red one — instead of returning an Account.
+  `completeEmailLinkSignIn()` (new optional `Backend.auth` method, called
+  once on startup in `useEvents`) finishes the sign-in when the user comes
+  back via the emailed link, using the email persisted in localStorage
+  across that round trip, falling back to a prompt if it's missing.
+  **Manual step**: enable "Email link (passwordless sign-in)" under
+  Authentication → Sign-in method → Email/Password in the Firebase console
+  — it's a separate toggle from plain Email/Password, and unlike that one
+  `firebase.json`'s `auth.providers` config can't turn it on for you. Also
+  add the production domain under Authentication → Settings → Authorized
+  domains once deployed, or the emailed link will be rejected.)
 - [x] firebase: do i have to switch on account merging (if e.g. same email
   used with different login methods) — no, not for what's here today.
   Firebase Auth's Email/Password sign-in and Email Link (passwordless)

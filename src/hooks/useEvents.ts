@@ -47,6 +47,9 @@ export function useEvents() {
     if (initialized.current) return;
     initialized.current = true;
     (async () => {
+      // If the user just followed an emailed sign-in link back into the
+      // app, complete it before reading currentAccount() (no-op otherwise).
+      await backend.auth.completeEmailLinkSignIn?.();
       const acc = backend.auth.currentAccount(); // persisted session, or null
       setAccount(acc);
       const list = acc ? await backend.listEvents(acc.id) : [];

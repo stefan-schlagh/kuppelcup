@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
+import { AuthNotice } from "./backend";
 import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
 import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest, gesamtwertung } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
@@ -40,6 +41,7 @@ export default function KuppelCup() {
   const [loginPass, setLoginPass] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [theme, setTheme] = useStorage<"dark" | "light">("kuppelcup:theme", "dark");
 
   // "Admin" features are unlocked while an admin account is signed in.
@@ -48,12 +50,19 @@ export default function KuppelCup() {
   const runAuth = async (fn: () => Promise<void>) => {
     try {
       setAuthError(null);
+      setAuthNotice(null);
       await fn();
       setLoginUser("");
       setLoginPass("");
       setLoginEmail("");
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : String(e));
+      if (e instanceof AuthNotice) {
+        // Not a failure -- e.g. "check your email for the sign-in link".
+        setAuthNotice(e.message);
+        setLoginEmail("");
+      } else {
+        setAuthError(e instanceof Error ? e.message : String(e));
+      }
     }
   };
   const handleLogin = () => runAuth(() => login(loginUser, loginPass));
@@ -257,6 +266,7 @@ export default function KuppelCup() {
                 className="pin-input login-input"
               />
               <button className="pin-btn login-secondary" onClick={handleEmailLogin}>Link per E-Mail (passwortlos)</button>
+              {authNotice && <p className="pin-notice">{authNotice}</p>}
             </div>
           ))}
         </main>

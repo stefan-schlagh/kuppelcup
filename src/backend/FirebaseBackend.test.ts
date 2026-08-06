@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { EventDoc } from "../types";
+import { AuthNotice } from "./Backend";
 
 // FirebaseBackend talks to the real Firebase SDK at module load (initializeApp/
 // getFirestore/getAuth) and needs `../firebaseConfig`, which is gitignored and
@@ -17,6 +18,9 @@ vi.mock("firebase/auth", () => ({
   signInWithEmailAndPassword: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
   signOut: vi.fn(),
+  sendSignInLinkToEmail: vi.fn(),
+  signInWithEmailLink: vi.fn(),
+  isSignInWithEmailLink: vi.fn(),
 }));
 
 vi.mock("firebase/firestore", () => ({
@@ -39,7 +43,28 @@ vi.mock("firebase/firestore", () => ({
 
 const { FirebaseBackend } = await import("./FirebaseBackend");
 const { getDoc, getDocs, setDoc, deleteDoc, onSnapshot } = await import("firebase/firestore");
-const { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } = await import("firebase/auth");
+const {
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+  sendSignInLinkToEmail, signInWithEmailLink, isSignInWithEmailLink,
+} = await import("firebase/auth");
+
+// FirebaseBackend's email-link flow touches window.location/localStorage/
+// history/prompt (no jsdom in this project — the emulator-backed rules
+// tests and the e2e suite already cover real-browser behaviour), so stub
+// just what it needs, fresh per test.
+function makeWindowStub() {
+  const store = new Map<string, string>();
+  return {
+    location: { origin: "https://kuppelcup.example", pathname: "/", href: "https://kuppelcup.example/" },
+    localStorage: {
+      getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
+      setItem: (k: string, v: string) => { store.set(k, v); },
+      removeItem: (k: string) => { store.delete(k); },
+    },
+    history: { replaceState: vi.fn() },
+    prompt: vi.fn(),
+  };
+}
 
 const sampleEvent: EventDoc = {
   id: "e1",
@@ -55,6 +80,7 @@ describe("FirebaseBackend", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthInstance.currentUser = null;
+    vi.stubGlobal("window", makeWindowStub());
   });
 
   describe("auth", () => {
@@ -92,8 +118,59 @@ describe("FirebaseBackend", () => {
       await expect(new FirebaseBackend().auth.signIn("a@x.com", "bad")).rejects.toThrow("wrong password");
     });
 
-    it("signInWithEmail is not implemented yet and fails loudly", async () => {
-      await expect(new FirebaseBackend().auth.signInWithEmail("a@x.com")).rejects.toThrow(/not implemented/i);
+    it("signInWithEmail sends a link and rejects with an AuthNotice (nobody signs in synchronously)", async () => {
+      vi.mocked(sendSignInLinkToEmail).mockResolvedValueOnce(undefined as never);
+      const err = await new FirebaseBackend().auth.signInWithEmail(" a@x.com ").catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(AuthNotice);
+      expect((err as Error).message).toContain("a@x.com");
+      expect(sendSignInLinkToEmail).toHaveBeenCalledWith(
+        mockAuthInstance,
+        "a@x.com", // trimmed
+        expect.objectContaining({ url: "https://kuppelcup.example/", handleCodeInApp: true }),
+      );
+      expect(window.localStorage.getItem("kuppelcup:pendingEmailLinkSignIn")).toBe("a@x.com");
+    });
+
+    it("signInWithEmail rejects without calling the SDK for a blank email", async () => {
+      await expect(new FirebaseBackend().auth.signInWithEmail("   ")).rejects.toThrow(/e-mail/i);
+      expect(sendSignInLinkToEmail).not.toHaveBeenCalled();
+    });
+
+    it("completeEmailLinkSignIn is a no-op when the URL isn't a sign-in link", async () => {
+      vi.mocked(isSignInWithEmailLink).mockReturnValueOnce(false);
+      await expect(new FirebaseBackend().auth.completeEmailLinkSignIn?.()).resolves.toBeNull();
+      expect(signInWithEmailLink).not.toHaveBeenCalled();
+    });
+
+    it("completeEmailLinkSignIn completes using the persisted email, then clears it and the URL", async () => {
+      vi.mocked(isSignInWithEmailLink).mockReturnValueOnce(true);
+      window.localStorage.setItem("kuppelcup:pendingEmailLinkSignIn", "a@x.com");
+      vi.mocked(signInWithEmailLink).mockResolvedValueOnce({ user: { uid: "u1", email: "a@x.com" } } as never);
+
+      const acc = await new FirebaseBackend().auth.completeEmailLinkSignIn?.();
+      expect(signInWithEmailLink).toHaveBeenCalledWith(mockAuthInstance, "a@x.com", window.location.href);
+      expect(acc).toEqual({ id: "u1", name: "a@x.com" });
+      expect(window.localStorage.getItem("kuppelcup:pendingEmailLinkSignIn")).toBeNull();
+      expect(window.history.replaceState).toHaveBeenCalledWith(null, "", "/");
+    });
+
+    it("completeEmailLinkSignIn falls back to prompting for the email if nothing was persisted", async () => {
+      vi.mocked(isSignInWithEmailLink).mockReturnValueOnce(true);
+      vi.mocked(window.prompt).mockReturnValueOnce("prompted@x.com");
+      vi.mocked(signInWithEmailLink).mockResolvedValueOnce({ user: { uid: "u2", email: "prompted@x.com" } } as never);
+
+      const acc = await new FirebaseBackend().auth.completeEmailLinkSignIn?.();
+      expect(window.prompt).toHaveBeenCalled();
+      expect(signInWithEmailLink).toHaveBeenCalledWith(mockAuthInstance, "prompted@x.com", window.location.href);
+      expect(acc).toEqual({ id: "u2", name: "prompted@x.com" });
+    });
+
+    it("completeEmailLinkSignIn gives up if the email prompt is cancelled", async () => {
+      vi.mocked(isSignInWithEmailLink).mockReturnValueOnce(true);
+      vi.mocked(window.prompt).mockReturnValueOnce(null);
+
+      await expect(new FirebaseBackend().auth.completeEmailLinkSignIn?.()).resolves.toBeNull();
+      expect(signInWithEmailLink).not.toHaveBeenCalled();
     });
 
     it("creates an account via createUserWithEmailAndPassword, named by username", async () => {

@@ -1,4 +1,5 @@
 import type { Backend } from "./Backend";
+import { AuthNotice } from "./Backend";
 import type { Account, EventDoc, EventMeta } from "../types";
 import { firebaseConfig } from "../firebaseConfig";
 import { initializeApp } from "firebase/app";
@@ -8,7 +9,8 @@ import {
 } from "firebase/firestore";
 import {
   getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  /*sendSignInLinkToEmail, signInWithEmailLink,*/ signOut as fbSignOut,
+  sendSignInLinkToEmail, signInWithEmailLink, isSignInWithEmailLink,
+  signOut as fbSignOut,
 } from "firebase/auth";
 
 // Firestore/Auth-backed implementation of the Backend interface.
@@ -21,11 +23,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const fbAuth = getAuth(app);
 
-function notImplemented(): never {
-  throw new Error(
-    "FirebaseBackend: passwordless email-link sign-in is not implemented yet.",
-  );
-}
+// Email-link sign-in is a two-step, cross-page-load flow: request the link
+// (below), then complete it when the user comes back via that link
+// (FirebaseBackend.auth.completeEmailLinkSignIn). The email has to survive
+// that round trip somewhere the second load can read it back from.
+const PENDING_EMAIL_KEY = "kuppelcup:pendingEmailLinkSignIn";
 
 export class FirebaseBackend implements Backend {
   auth = {
@@ -38,13 +40,16 @@ export class FirebaseBackend implements Backend {
       return { id: cred.user.uid, name: cred.user.displayName ?? cred.user.email ?? "Admin" };
     },
     signInWithEmail: async (email: string): Promise<Account> => {
-      // Passwordless email-link sign-in — a two-step flow:
-      //   1) await sendSignInLinkToEmail(fbAuth, email, { url: <redirect>, handleCodeInApp: true });
-      //      (persist the email locally to complete on return)
-      //   2) on the redirect: const cred = await signInWithEmailLink(fbAuth, email, window.location.href);
-      //      return { id: cred.user.uid, name: cred.user.email ?? "Admin" };
-      void email;
-      return notImplemented();
+      const trimmed = email.trim();
+      if (!trimmed) throw new Error("E-Mail-Adresse fehlt.");
+      // No account is signed in yet -- that only happens once the user
+      // follows the emailed link back into the app (completeEmailLinkSignIn).
+      await sendSignInLinkToEmail(fbAuth, trimmed, {
+        url: window.location.origin + window.location.pathname,
+        handleCodeInApp: true,
+      });
+      window.localStorage.setItem(PENDING_EMAIL_KEY, trimmed);
+      throw new AuthNotice(`Anmeldelink an ${trimmed} gesendet — bitte E-Mails prüfen.`);
     },
     createAccount: async (username: string, password: string): Promise<Account> => {
       const cred = await createUserWithEmailAndPassword(fbAuth, username, password);
@@ -52,6 +57,18 @@ export class FirebaseBackend implements Backend {
     },
     signOut: async (): Promise<void> => {
       await fbSignOut(fbAuth);
+    },
+    completeEmailLinkSignIn: async (): Promise<Account | null> => {
+      if (!isSignInWithEmailLink(fbAuth, window.location.href)) return null;
+      const email = window.localStorage.getItem(PENDING_EMAIL_KEY)
+        ?? window.prompt("Zur Bestätigung bitte die E-Mail-Adresse erneut eingeben:");
+      if (!email) return null;
+      const cred = await signInWithEmailLink(fbAuth, email, window.location.href);
+      window.localStorage.removeItem(PENDING_EMAIL_KEY);
+      // Drop Firebase's sign-in params (apiKey/oobCode/mode/...) so a reload
+      // doesn't try to replay the same link.
+      window.history.replaceState(null, "", window.location.pathname);
+      return { id: cred.user.uid, name: cred.user.email ?? "Admin" };
     },
   };
 

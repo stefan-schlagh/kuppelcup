@@ -601,6 +601,14 @@ span.nav-icon{
   margin: 8px 0 16px;
 }
 
+.pin-notice {
+  color: var(--color-host);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  margin: 8px 0 16px;
+}
+
 /* Admin login & accounts */
 .login-box {
   max-width: 360px;
