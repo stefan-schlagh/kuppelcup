@@ -146,8 +146,14 @@ TODO 20260804
   then enabling "One account per email address" in Firebase console →
   Authentication → Settings avoids duplicate accounts for the same email
   across providers.
-- do tests what happens in tournament tree if there are < 8 participants (for 3 only 2 were added to the tree)
+- [x] do tests what happens in tournament tree if there are < 8 participants (for 3 only 2 were added to the tree)
   - then: the teams getting no competitor in their heat should automatically advance
+  (`buildBracket`: previously a QF/SF/Final slot with no team just sat at
+  `winnerId: null` forever, so a bye never advanced. Now a genuinely empty
+  bracket branch — a seed position that doesn't exist, not just a still-
+  unplayed match — makes the other side win automatically, cascading forward
+  until it reaches a real opponent; a still-unplayed real match is left
+  correctly undecided rather than treated as a bye)
 - all times (+ gemeindewertung + best times) and turnament tree should be printable as a pdf, gesamtwertung as well
 - use a libary like react-pdf so that (potential) previews and the pdf itself can be the same code
   - pdfs shall only be in "light mode"

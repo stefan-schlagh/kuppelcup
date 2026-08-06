@@ -35,36 +35,65 @@ export function selectTop8(ranked: RankedTeam[]): RankedTeam[] {
   return ranked.filter((t) => !t.gastgeber && t.punkte !== 0).slice(0, 8);
 }
 
+// A bracket slot feeding into a match: either a team (decided), nobody yet
+// (`team: null`) while its feeder is still alive and could still produce
+// one, or a permanently empty branch (`dead: true`) — fewer than 8
+// qualifiers leaves some seed positions with no team, ever.
+interface Slot { team: Team | null; dead: boolean }
+
 // Assemble the K.O. bracket from the top-8 seeds and the recorded match runs.
-// Winners propagate QF -> SF -> Final; an exact tie advances team A.
+// Winners propagate QF -> SF -> Final; an exact tie advances team A. A team
+// whose opponent slot is a dead branch (no seed, and nothing upstream can
+// ever fill it) advances automatically — a bye cascades forward until it
+// reaches an opponent who actually exists.
 export function buildBracket(top8: Team[], ko: KoState): BracketData {
   const defaultRun = (): RunData => ({ zeit: null, strafe: 0 });
+  const seedSlot = (t: Team | undefined): Slot => ({ team: t ?? null, dead: t === undefined });
 
-  const assembleMatch = (matchId: string, teamA: Team | null, teamB: Team | null): Match => {
+  const assembleMatch = (matchId: string, a: Slot, b: Slot): { match: Match; slot: Slot } => {
     const saved = ko[matchId] || {};
     const runA = { ...defaultRun(), ...saved.runA };
     const runB = { ...defaultRun(), ...saved.runB };
+    const teamA = a.team;
+    const teamB = b.team;
+
+    if (a.dead && b.dead) {
+      return { match: { id: matchId, teamA: null, teamB: null, runA, runB, winnerId: null }, slot: { team: null, dead: true } };
+    }
+    if (a.dead || b.dead) {
+      // The dead side will never have a competitor, so whoever comes out of
+      // the live side — once decided — advances through this match untouched.
+      const live = a.dead ? teamB : teamA;
+      const winnerId = live?.id ?? null;
+      return {
+        match: { id: matchId, teamA: a.dead ? null : teamA, teamB: b.dead ? null : teamB, runA, runB, winnerId },
+        slot: { team: live, dead: false },
+      };
+    }
+    if (!teamA || !teamB) {
+      // Both sides are still alive, but at least one hasn't been decided yet
+      // (its own feeder match is unplayed) — nothing to compare yet.
+      return { match: { id: matchId, teamA, teamB, runA, runB, winnerId: null }, slot: { team: null, dead: false } };
+    }
+
     const scoreA = runA.zeit !== null ? runA.zeit + (runA.strafe ?? 0) : Infinity;
     const scoreB = runB.zeit !== null ? runB.zeit + (runB.strafe ?? 0) : Infinity;
     let winnerId: string | null = null;
     if (scoreA < Infinity || scoreB < Infinity) {
-      winnerId = scoreA <= scoreB ? teamA?.id ?? null : teamB?.id ?? null;
+      winnerId = scoreA <= scoreB ? teamA.id : teamB.id;
     }
-    return { id: matchId, teamA, teamB, runA, runB, winnerId };
+    const winner = winnerId ? (winnerId === teamA.id ? teamA : teamB) : null;
+    return { match: { id: matchId, teamA, teamB, runA, runB, winnerId }, slot: { team: winner, dead: false } };
   };
 
-  const qf = SEED_ORDER.map(([a, b], i) => assembleMatch(`qf${i + 1}`, top8[a] || null, top8[b] || null));
-  const winnerOf = (mid: string): Team | null => {
-    const m = qf.find((x) => x.id === mid);
-    return m?.winnerId ? (m.winnerId === m.teamA?.id ? m.teamA : m.teamB) : null;
-  };
-  const sf = [
-    assembleMatch("sf1", winnerOf("qf1"), winnerOf("qf2")),
-    assembleMatch("sf2", winnerOf("qf3"), winnerOf("qf4")),
-  ];
-  const finalist = (m: Match): Team | null =>
-    m.winnerId ? (m.winnerId === m.teamA?.id ? m.teamA : m.teamB) : null;
-  const final = assembleMatch("final", finalist(sf[0]), finalist(sf[1]));
+  const qfResults = SEED_ORDER.map(([a, b], i) => assembleMatch(`qf${i + 1}`, seedSlot(top8[a]), seedSlot(top8[b])));
+  const qf = qfResults.map((r) => r.match);
+
+  const sf1 = assembleMatch("sf1", qfResults[0].slot, qfResults[1].slot);
+  const sf2 = assembleMatch("sf2", qfResults[2].slot, qfResults[3].slot);
+  const sf = [sf1.match, sf2.match];
+
+  const final = assembleMatch("final", sf1.slot, sf2.slot).match;
 
   return { qf, sf, final };
 }

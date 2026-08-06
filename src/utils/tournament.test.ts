@@ -90,11 +90,51 @@ describe("buildBracket", () => {
     expect([b.final.teamA?.id, b.final.teamB?.id]).toEqual(["s0", "s2"]);
   });
 
-  it("leaves matches without runs undecided and tolerates missing seeds", () => {
-    const b = buildBracket(seeds.slice(0, 6), {}); // only 6 teams
-    expect(b.qf[0].teamB).toBeNull(); // seed index 7 missing
-    expect(b.qf.every((m) => m.winnerId === null)).toBe(true);
+  it("leaves real matches without runs undecided", () => {
+    const b = buildBracket(seeds.slice(0, 6), {}); // only 6 teams: seeds 6+7 missing
+    expect(b.qf[0].teamB).toBeNull(); // seed index 7 missing -> bye, not a real match
+    expect(b.qf[1].winnerId).toBeNull(); // s3 vs s4, both present, no run yet
+    expect(b.qf[3].winnerId).toBeNull(); // s2 vs s5, both present, no run yet
+    // s0's and s1's byes shouldn't leapfrog the still-unplayed qf2/qf4 —
+    // their semi-finals must wait for a real opponent, not auto-advance.
+    expect(b.sf[0].winnerId).toBeNull();
+    expect(b.sf[1].winnerId).toBeNull();
     expect(b.final.teamA).toBeNull();
+    expect(b.final.teamB).toBeNull();
+  });
+
+  it("gives a walkover to a seed with no competitor (bye)", () => {
+    const b = buildBracket(seeds.slice(0, 6), {}); // seeds 6+7 missing
+    expect(b.qf[0].winnerId).toBe("s0"); // no seed at index 7 -> automatic bye
+    expect(b.qf[2].winnerId).toBe("s1"); // no seed at index 6 -> automatic bye
+  });
+
+  it("cascades a bye forward until the team reaches a real opponent", () => {
+    // Only 2 teams total: both seeds get byes all the way to the final,
+    // where they finally have to play each other for real.
+    const b = buildBracket(seeds.slice(0, 2), {}); // s0, s1
+    expect(b.qf[0].winnerId).toBe("s0");
+    expect(b.qf[2].winnerId).toBe("s1");
+    expect(b.sf[0].winnerId).toBe("s0"); // qf2 was empty (no seeds 3/4) -> bye
+    expect(b.sf[1].winnerId).toBe("s1"); // qf4 was empty (no seeds 2/5) -> bye
+    expect([b.final.teamA?.id, b.final.teamB?.id]).toEqual(["s0", "s1"]);
+    expect(b.final.winnerId).toBeNull(); // a real match now, needs a run
+  });
+
+  it("crowns a walkover champion when there is only one qualifying team", () => {
+    const b = buildBracket(seeds.slice(0, 1), {}); // s0 only
+    expect(b.qf[0].winnerId).toBe("s0");
+    expect(b.sf[0].winnerId).toBe("s0");
+    expect(b.final.winnerId).toBe("s0");
+    expect(b.final.teamB).toBeNull();
+  });
+
+  it("reports no bracket at all when nobody qualified", () => {
+    const b = buildBracket([], {});
+    expect(b.qf.every((m) => m.teamA === null && m.teamB === null && m.winnerId === null)).toBe(true);
+    expect(b.final.teamA).toBeNull();
+    expect(b.final.teamB).toBeNull();
+    expect(b.final.winnerId).toBeNull();
   });
 });
 
