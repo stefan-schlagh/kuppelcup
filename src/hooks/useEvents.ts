@@ -202,10 +202,14 @@ export function useEvents() {
 
   // --- ADMIN ACCOUNTS --- (login/create reject on error; caller surfaces it)
   const enterAccount = useCallback(async (acc: Account) => {
-    setAccount(acc);
+    // Load everything before committing any state: if listEvents/getEvent
+    // rejects (e.g. a missing Firestore index), the caller's catch should
+    // surface a failed login — not leave the UI authenticated with account
+    // set but events/current stuck empty.
     const list = await backend.listEvents(acc.id);
-    setEvents(list);
     const doc = list[0] ? await backend.getEvent(list[0].id) : null;
+    setAccount(acc);
+    setEvents(list);
     setCurrent(doc);
     if (doc) syncUrl(doc.id);
     else clearUrl();

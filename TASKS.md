@@ -136,3 +136,11 @@ TODO 20260804
 
 if there is something not clear: ask
 when you add new logic, add test cases for it
+
+bugs:
+- [x] events not shown when after new login (`useEvents.enterAccount` set `account`
+  before awaiting `listEvents`/`getEvent`, so a rejected fetch — e.g. Firestore's
+  `where(ownerId) + orderBy(createdAt)` needs a composite index, which
+  `firestore.indexes.json` didn't define — left the UI authenticated with events/
+  current stuck empty instead of surfacing a failed login. Fixed the ordering and
+  added the missing index; deploy with `firebase deploy --only firestore:indexes`)
