@@ -401,6 +401,25 @@ span.nav-icon{
   margin-left: 6px;
 }
 
+.tie-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+.tie-badge-contested {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 .badge-host {
   background: var(--bg-host-dim);
   color: var(--text-host-light);
@@ -524,6 +543,18 @@ span.nav-icon{
 .match-winner {
   color: var(--color-accent);
   font-weight: 700;
+}
+
+.match-tied-badge {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-primary);
+  background: var(--bg-host-dim);
+  border-top: 1px solid var(--border-color);
 }
 
 /* Pin Box & Forms */

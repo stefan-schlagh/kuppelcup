@@ -44,6 +44,51 @@ describe("rankTeams", () => {
     expect(ranked.map((t) => t.id)).toEqual(["b", "a", "c"]);
     expect(ranked[0]).toMatchObject({ id: "b", g1: 20, g2: 25, punkte: 20 });
   });
+
+  it("assigns a stable order to a tie within places 1-7 (doesn't affect qualification)", () => {
+    const input = [
+      team("a", 1, [20, 0], [20, 0]), // tied for 1st/2nd
+      team("b", 2, [20, 0], [20, 0]),
+      team("c", 3, [25, 0], [25, 0]), // clear 3rd
+    ];
+    const ranked = rankTeams(input);
+    expect(ranked.map((t) => t.id).slice(0, 2).sort()).toEqual(["a", "b"]);
+    expect(ranked[0].tiedRank).toBe(true);
+    expect(ranked[1].tiedRank).toBe(true);
+    expect(ranked[0].cutoffContested).toBeUndefined();
+    expect(ranked[2].tiedRank).toBeUndefined(); // clear 3rd, not tied with anyone
+
+    // Same tie, fed in the opposite input order: the tie-break must depend
+    // on the teams, not on their position in the input array (that's just
+    // JS's stable sort re-surfacing, not an actual resolution).
+    const reordered = rankTeams([input[1], input[0], input[2]]);
+    expect(reordered.map((t) => t.id).slice(0, 2)).toEqual(ranked.map((t) => t.id).slice(0, 2));
+  });
+
+  it("flags — but doesn't randomize — a tie straddling the top-8 cutoff", () => {
+    const clear = Array.from({ length: 7 }, (_, i) => team(`t${i}`, i + 1, [10 + i, 0], [10 + i, 0]));
+    const eighth = team("place8", 8, [30, 0], [30, 0]);
+    const ninth = team("place9", 9, [30, 0], [30, 0]); // ties with place8
+    const ranked = rankTeams([...clear, eighth, ninth]);
+    const [p8, p9] = [ranked[7], ranked[8]];
+    expect(new Set([p8.id, p9.id])).toEqual(new Set(["place8", "place9"]));
+    expect(p8.cutoffContested).toBe(true);
+    expect(p9.cutoffContested).toBe(true);
+    expect(p8.tiedRank).toBeUndefined();
+    // Places 1-7 are all clear (no ties) and must stay untouched.
+    expect(ranked.slice(0, 7).map((t) => t.id)).toEqual(["t0", "t1", "t2", "t3", "t4", "t5", "t6"]);
+  });
+
+  it("flags a tie entirely below the cutoff for display, without contesting qualification", () => {
+    const clear = Array.from({ length: 9 }, (_, i) => team(`t${i}`, i + 1, [10 + i, 0], [10 + i, 0]));
+    const a = team("a", 10, [50, 0], [50, 0]);
+    const b = team("b", 11, [50, 0], [50, 0]); // tied for last, well below 8th/9th
+    const ranked = rankTeams([...clear, a, b]);
+    const tail = ranked.slice(9);
+    expect(tail.map((t) => t.id).sort()).toEqual(["a", "b"]);
+    expect(tail.every((t) => t.tiedRank)).toBe(true);
+    expect(tail.every((t) => !t.cutoffContested)).toBe(true);
+  });
 });
 
 describe("selectTop8", () => {
@@ -61,7 +106,7 @@ describe("selectTop8", () => {
 describe("buildBracket", () => {
   const ko: KoState = {
     qf1: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 25, strafe: 0 } }, // s0 beats s7
-    qf2: { runA: { zeit: 22, strafe: 0 }, runB: { zeit: 22, strafe: 0 } }, // tie -> team A (s3)
+    qf2: { runA: { zeit: 22, strafe: 0 }, runB: { zeit: 23, strafe: 0 } }, // s3 beats s4
     qf3: { runA: { zeit: 30, strafe: 0 }, runB: { zeit: 21, strafe: 0 } }, // s6 beats s1
     qf4: { runA: { zeit: 19, strafe: 0 }, runB: { zeit: 40, strafe: 0 } }, // s2 beats s5
   };
@@ -74,9 +119,24 @@ describe("buildBracket", () => {
     expect([b.qf[3].teamA?.id, b.qf[3].teamB?.id]).toEqual(["s2", "s5"]);
   });
 
-  it("picks winners by lower total and gives ties to team A", () => {
+  it("picks winners by lower total", () => {
     const b = buildBracket(seeds, ko);
     expect(b.qf.map((m) => m.winnerId)).toEqual(["s0", "s3", "s6", "s2"]);
+  });
+
+  it("leaves an exact K.O. tie unresolved and flags it instead of picking team A", () => {
+    const tied: KoState = {
+      qf1: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 25, strafe: 0 } }, // s0 beats s7, decided
+      qf2: { runA: { zeit: 22, strafe: 0 }, runB: { zeit: 22, strafe: 0 } }, // tie
+    };
+    const b = buildBracket(seeds, tied);
+    expect(b.qf[1].winnerId).toBeNull();
+    expect(b.qf[1].tied).toBe(true);
+    // s0 (decided) is waiting in the semi-final, but s3 shouldn't advance
+    // off an unresolved tie to join them.
+    expect(b.sf[0].teamA?.id).toBe("s0");
+    expect(b.sf[0].teamB).toBeNull();
+    expect(b.sf[0].winnerId).toBeNull();
   });
 
   it("propagates winners into the semi-finals and final", () => {

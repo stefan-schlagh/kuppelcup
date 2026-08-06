@@ -157,10 +157,19 @@ TODO 20260804
 - all times (+ gemeindewertung + best times) and turnament tree should be printable as a pdf, gesamtwertung as well
 - use a libary like react-pdf so that (potential) previews and the pdf itself can be the same code
   - pdfs shall only be in "light mode"
-- conflict resolution for tie breaks:
+- [x] conflict resolution for tie breaks:
   - in turnament mode: another run
   - for base heats: if at 1-7 assign place (relevant on where to start in turnament tree) randomly
   - if 8 and 9 are tied: another run
+  (K.O.: an exact tie no longer auto-advances team A — `Match.tied` is set,
+  nothing propagates to the next round, and Turnierbaum shows "Unentschieden
+  — Stechlauf nötig" until the times are overwritten with a real decider
+  run. Base heats: a tie fully within places 1-7 gets a stable pseudo-random
+  order — a deterministic hash of the team ids, not `Math.random()`, so it
+  doesn't reshuffle on every render — flagged `tiedRank` and shown as a
+  "Gleichstand" badge in Bestenliste. A tie straddling the 8th/9th place is
+  left in place and flagged `cutoffContested` (own badge) instead of being
+  guessed at, since that decides who actually qualifies)
 - Gemeindewertung shall be in the same order as gesamtwertung (place 1-8 from tournament tree, rest from base heats)
 
 if there is something not clear: ask

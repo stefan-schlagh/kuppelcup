@@ -62,6 +62,7 @@ function MatchBox({ match, editable, onUpdateRun }: MatchBoxProps) {
       {renderRow(match.teamA, "runA")}
       <div className="match-divider-line" />
       {renderRow(match.teamB, "runB")}
+      {match.tied && <div className="match-tied-badge">Unentschieden — Stechlauf nötig</div>}
     </div>
   );
 }

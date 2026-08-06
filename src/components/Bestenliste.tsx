@@ -28,7 +28,22 @@ export default function Bestenliste({ ranked, top8Ids }: BestenlisteProps) {
               const qualified = top8Ids.has(t.id);
               return (
                 <tr key={t.id} className={qualified ? "row-qualified" : ""}>
-                  <td className="td-rank">{i + 1}</td>
+                  <td className="td-rank">
+                    {i + 1}
+                    {t.cutoffContested && (
+                      <span
+                        className="tie-badge tie-badge-contested"
+                        title="Gleichstand auf Platz 8/9 — Qualifikation offen, Stechlauf nötig"
+                      >
+                        Stechlauf
+                      </span>
+                    )}
+                    {t.tiedRank && !t.cutoffContested && (
+                      <span className="tie-badge" title="Gleichstand — Platz zufällig zugewiesen">
+                        Gleichstand
+                      </span>
+                    )}
+                  </td>
                   <td className="td-name">
                     {t.name}
                     {t.gastgeber && <span className="host-tag">Gastgeber</span>}

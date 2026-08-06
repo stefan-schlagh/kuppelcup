@@ -7,6 +7,14 @@ export interface RankedTeam extends Team {
   g1: number | null;
   g2: number | null;
   punkte: number;
+  // Tied with at least one neighbour on punkte; the tie-break below picked
+  // an order for them (places 1-7 only affect K.O. seeding, not who
+  // qualifies, so this is a stable coin flip rather than a real conflict).
+  tiedRank?: boolean;
+  // Tied exactly across the top-8 cutoff (whoever is 8th vs. 9th) — that
+  // decides who actually qualifies, so it's left unresolved and flagged
+  // instead of guessed at; needs a real decider run.
+  cutoffContested?: boolean;
 }
 
 // The Live-Monitor view: which runs just finished, are up, and are next.
@@ -22,11 +30,55 @@ export function sortByStart(teams: Team[]): Team[] {
   return [...teams].sort((a, b) => a.start - b.start);
 }
 
-// Rank teams by points (lower is better; no-result teams last).
+// A short, stable hash so a tie-break "coin flip" gives the same answer on
+// every render (same teams -> same order) without persisting a decision
+// anywhere — genuine Math.random() here would reshuffle the tournament tree
+// on every recompute.
+function stableHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+// Resolve ties (equal punkte, excluding no-result teams) in an already
+// punkte-sorted list. Places 1-7 only decide K.O. seed order, not who
+// qualifies, so a tie there is given a stable pseudo-random order. A tie
+// straddling the top-8 cutoff (place 8 vs. place 9) decides who actually
+// qualifies — that can't be guessed at, so it's left in place and flagged
+// (`cutoffContested`) for a real decider run instead. Ties entirely below
+// the cutoff don't affect anything, so they're just flagged for display.
+export function applyTieBreaks(ranked: RankedTeam[]): RankedTeam[] {
+  const result = [...ranked];
+  let i = 0;
+  while (i < result.length) {
+    const p = result[i].punkte;
+    if (p === 0) { i++; continue; } // no-result teams aren't a real tie
+    let j = i;
+    while (j + 1 < result.length && result[j + 1].punkte === p) j++;
+    if (j > i) {
+      const place1 = i + 1; // 1-indexed place of the first team in the tie
+      const place2 = j + 1;
+      if (place1 <= 8 && place2 >= 9) {
+        for (let k = i; k <= j; k++) result[k] = { ...result[k], cutoffContested: true };
+      } else if (place2 <= 8) {
+        const shuffled = result.slice(i, j + 1).sort((a, b) => stableHash(a.id) - stableHash(b.id));
+        for (let k = 0; k < shuffled.length; k++) result[i + k] = { ...shuffled[k], tiedRank: true };
+      } else {
+        for (let k = i; k <= j; k++) result[k] = { ...result[k], tiedRank: true };
+      }
+    }
+    i = j + 1;
+  }
+  return result;
+}
+
+// Rank teams by points (lower is better; no-result teams last), with ties
+// resolved per applyTieBreaks.
 export function rankTeams(teams: Team[]): RankedTeam[] {
-  return teams
+  const sorted = teams
     .map((t) => ({ ...t, g1: gesamt(t.dg1), g2: gesamt(t.dg2), punkte: punkte(t) }))
     .sort(byPunkte);
+  return applyTieBreaks(sorted);
 }
 
 // The eight teams that qualify for the K.O. phase: best-ranked teams that
@@ -42,9 +94,10 @@ export function selectTop8(ranked: RankedTeam[]): RankedTeam[] {
 interface Slot { team: Team | null; dead: boolean }
 
 // Assemble the K.O. bracket from the top-8 seeds and the recorded match runs.
-// Winners propagate QF -> SF -> Final; an exact tie advances team A. A team
-// whose opponent slot is a dead branch (no seed, and nothing upstream can
-// ever fill it) advances automatically — a bye cascades forward until it
+// Winners propagate QF -> SF -> Final; an exact tie is left unresolved and
+// flagged (`tied`) rather than guessed at — it needs a real decider run. A
+// team whose opponent slot is a dead branch (no seed, and nothing upstream
+// can ever fill it) advances automatically — a bye cascades forward until it
 // reaches an opponent who actually exists.
 export function buildBracket(top8: Team[], ko: KoState): BracketData {
   const defaultRun = (): RunData => ({ zeit: null, strafe: 0 });
@@ -78,6 +131,10 @@ export function buildBracket(top8: Team[], ko: KoState): BracketData {
 
     const scoreA = runA.zeit !== null ? runA.zeit + (runA.strafe ?? 0) : Infinity;
     const scoreB = runB.zeit !== null ? runB.zeit + (runB.strafe ?? 0) : Infinity;
+    if (scoreA < Infinity && scoreA === scoreB) {
+      // Both ran, exact tie — not decided by seeding, needs a decider run.
+      return { match: { id: matchId, teamA, teamB, runA, runB, winnerId: null, tied: true }, slot: { team: null, dead: false } };
+    }
     let winnerId: string | null = null;
     if (scoreA < Infinity || scoreB < Infinity) {
       winnerId = scoreA <= scoreB ? teamA.id : teamB.id;

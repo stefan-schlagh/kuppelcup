@@ -24,6 +24,9 @@ export interface Match {
   runA: RunData;
   runB: RunData;
   winnerId: string | null;
+  // Both teams ran and scored exactly equal — a K.O. tie needs another run
+  // (a decider), it isn't resolved automatically.
+  tied?: boolean;
 }
 
 export interface BracketData {
