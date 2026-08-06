@@ -107,3 +107,27 @@ Potential issues to flag:
   and `FIREBASE_WIRED`. While `FIREBASE_WIRED` is false the app stays on
   LocalBackend (localStorage) even if BACKEND is "firebase" — frontend-only dev
   never hits the unwired Firebase stub.
+
+TODO 20260804
+
+- use database rules that make sense and are secure, write tests for them
+- adapt FirebaseBackend tests
+- in parallel heats: only do teams that are in the same DG
+  - write tests for that
+- some interactivity that shows an action has been registered
+- does firebase allow user + pw login
+- complete email only login
+- firebase: do i have to switch on account merging (if e.g. same email used with different login methods)
+- do tests what happens in tournament tree if there are < 8 participants (for 3 only 2 were added to the tree)
+  - then: the teams getting no competitor in their heat should automatically advance
+- all times (+ gemeindewertung + best times) and turnament tree should be printable as a pdf, gesamtwertung as well
+- use a libary like react-pdf so that (potential) previews and the pdf itself can be the same code
+  - pdfs shall only be in "light mode"
+- conflict resolution for tie breaks:
+  - in turnament mode: another run
+  - for base heats: if at 1-7 assign place (relevant on where to start in turnament tree) randomly
+  - if 8 and 9 are tied: another run
+- Gemeindewertung shall be in the same order as gesamtwertung (place 1-8 from tournament tree, rest from base heats)
+
+if there is something not clear: ask
+when you add new logic, add test cases for it
