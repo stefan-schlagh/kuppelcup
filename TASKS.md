@@ -97,6 +97,10 @@ Potential issues to flag:
   (requires `firebase login` once). Run `npm run test:rules` first — it exercises the rules
   against the Firestore emulator (needs Java; the emulator jar downloads once via `firebase
   emulators:start` on first use).
+- [x] e2e smoke tests (Playwright) live in `e2e/`: `npm run test:e2e` (one-time
+  `npx playwright install chromium`). The dev server it drives is forced onto
+  LocalBackend via `VITE_E2E_LOCAL_BACKEND=true` (set in `playwright.config.ts`,
+  read in `src/config.ts`) so it can never touch the real Firebase project.
 
 ## Notes
 - Keep things simple.
