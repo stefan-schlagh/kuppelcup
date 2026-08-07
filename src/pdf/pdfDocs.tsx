@@ -1,7 +1,7 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 import type { RankedTeam } from "../utils/tournament";
 import type { BracketData, Match, Team } from "../types";
-import { fmtTime } from "../utils/helpers";
+import { fmtTime, gesamt } from "../utils/helpers";
 import { PDF_COLORS } from "./theme";
 
 export interface PdfMeta {
@@ -87,7 +87,8 @@ const punkteCol: Column = { key: "punkte", header: "Pkt.", width: 30, align: "ri
 const simpleColumns: Column[] = [rangCol, teamCol, punkteCol];
 
 function score(run: Match["runA"]): string {
-  return run.zeit != null ? fmtTime(run.zeit + (run.strafe ?? 0)) : "—";
+  const total = gesamt(run);
+  return total != null ? fmtTime(total) : "—";
 }
 
 function MatchBox({ match }: { match: Match }) {
