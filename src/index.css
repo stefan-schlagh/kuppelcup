@@ -9,6 +9,7 @@
   --text-muted: #8B8E94;
   --text-footer: #5C5F66;
   --color-primary: #C8102E;
+  --color-primary-variation: #EF5E5E;
   --color-accent: #C99A3C;
   --color-host: #7AA6C2;
   --bg-host-dim: #2E4A5C;
@@ -127,7 +128,7 @@ body {
   line-height: 1;
   width: 38px;
   height: 38px;
-  border-radius: 8px;
+  border-radius: 15px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -138,6 +139,8 @@ body {
 
 .theme-toggle:hover {
   border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: #C99A3C20;
 }
 
 /* Navigation Tabs */
@@ -201,8 +204,8 @@ span.nav-icon{
 /* Main & Common Panel Grid */
 .main-content {
   padding: 24px;
-  max-width: 1000px;
-  margin: 0 auto;
+  margin: 0;
+  position: relative;
 }
 
 /* Tighten the header and content padding on phones. */
@@ -238,7 +241,7 @@ span.nav-icon{
   font-family: 'Oswald', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 18px;
+  font-size: clamp(18px, 5vw, 40px);
   color: var(--color-accent);
   margin-bottom: 8px;
   margin-top: 0;
@@ -246,7 +249,7 @@ span.nav-icon{
 
 .hint-text {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: clamp(13px, 2vw, 16px);
   margin-bottom: 16px;
   margin-top: 0;
 }
@@ -286,15 +289,20 @@ span.nav-icon{
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 15px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
+  position: absolute;
+  top: 35px;
+  right: 35px;
 }
 
 .fs-toggle:hover {
-  color: var(--text-main);
+  color: var(--color-accent);
   border-color: var(--color-accent);
+  background-color: #C99A3C20;
+  scale: 1.05;
 }
 
 .fs-toggle div {
@@ -310,6 +318,12 @@ span.nav-icon{
   color: var(--text-main);
   padding: 28px 40px;
   overflow: auto;
+}
+
+.fs-panel.is-fullscreen .fs-toggle:hover{
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background-color: #C8102E20;
 }
 
 /* Scale content up for readability on a beamer. */
@@ -1104,7 +1118,7 @@ span.nav-icon{
 .urkunde {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 22px;
   padding: 16px;
   /* Preview a sheet in A4 Hochformat, matching the generated PDF. */
   width: 100%;
@@ -1113,7 +1127,7 @@ span.nav-icon{
 }
 
 .urkunde-inner {
-  border: 3px double var(--color-accent);
+  border: 3px solid var(--color-primary-variation);
   border-radius: 6px;
   padding: 40px 32px;
   text-align: center;
@@ -1121,6 +1135,10 @@ span.nav-icon{
   display: flex;
   flex-direction: column;
   justify-content: center;
+  background-image: url(/CertificateBackground.png);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .urkunde-hose {
@@ -1142,6 +1160,7 @@ span.nav-icon{
 .urkunde-event {
   color: var(--text-muted);
   font-size: 15px;
+  text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0;
 }
@@ -1149,12 +1168,12 @@ span.nav-icon{
 .urkunde-rule {
   width: 120px;
   height: 2px;
-  background: var(--color-accent);
+  background: var(--color-primary);
   margin: 20px auto;
 }
 
 .urkunde-wertung {
-  color: var(--color-accent);
+  color: var(--color-primary);
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: 700;
@@ -1340,6 +1359,7 @@ span.nav-icon{
   position: fixed;
   right: 2.5%;
   bottom: 90px;
+  top: unset;
   background: var(--bg-surface);
   box-shadow: inset 0 -10px 20px var(--text-muted);
   border: none;
@@ -1347,6 +1367,11 @@ span.nav-icon{
 
   .fs-toggle:active{
     border: none;
+  }
+
+  .fs-toggle:hover{
+    background: var(--bg-surface);
+    color: var(--text-main);
   }
 
   .fs-toggle div {
@@ -1369,6 +1394,12 @@ span.nav-icon{
     box-shadow: none;
     border: 1px solid var(--color-accent);
     opacity: 0.9;
+  }
+
+  .fs-panel.is-fullscreen .fs-toggle:hover{
+    border-color: var(--color-accent);
+    background: var(--bg-surface);
+    color: var(--color-accent);
   }
 
   .fs-panel.is-fullscreen .fs-toggle div svg{
