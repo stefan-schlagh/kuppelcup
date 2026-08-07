@@ -294,7 +294,20 @@ TODO 20260807:
   can't be scoped to a subtree — matches the real PDF regardless of the
   app's current theme. e2e-tested (loads with dark as the default theme,
   asserts the preview's computed background is white).
-- backup does not include k.o. heats
+- [x] backup does not include k.o. heats
+  (`utils/backup.ts`: `backupToCsv`/`csvToBackup` replace `teamsToCsv`/
+  `csvToTeams` as the primary export/import functions — a second CSV block
+  for K.O. runs, `match,side,zeit,strafe`, appended after the team table
+  separated by a blank line, only when there's any K.O. data to write. An
+  old team-only export still imports fine (empty `ko`), and `AdminPanel`'s
+  import only overwrites K.O. results when the file actually has a K.O.
+  block — an older-style re-import can't wipe out K.O. results already
+  recorded for the event. Wired via `patchEvent` (already existed for
+  atomic multi-field updates) instead of the old teams-only `setTeams`
+  callback. Unit-tested (round-trip, old-format compat, malformed K.O.
+  rows ignored) and e2e-tested (export, clear a K.O. time in the UI,
+  re-import the same file, confirm it's restored — proves the whole wire-up,
+  not just the CSV parsing).
 - [x] CI run fails (e2e stage): all 7 Playwright tests failed, page never rendered
   even "Bestenliste — Grunddurchgang", so every test timed out waiting for content
   that never appeared. Root cause: `backend/index.ts` statically imports both

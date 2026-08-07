@@ -216,8 +216,9 @@ export default function KuppelCup() {
             toggleGastgeber={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
             toggleGemeinde={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gemeinde: !t.gemeinde} : t))}
             bracket={bracket}
+            ko={ko}
             updateKoRun={updateKoRun}
-            onImportTeams={setTeams}
+            onImportBackup={patchEvent}
             phase={phase}
             setPhase={setPhase}
             locked={locked}

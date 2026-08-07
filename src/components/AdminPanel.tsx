@@ -1,11 +1,11 @@
 import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS, PHASES, PHASE_LABELS } from "../utils/helpers";
-import { teamsToCsv, csvToTeams, downloadCsv } from "../utils/backup";
+import { backupToCsv, csvToBackup, downloadCsv } from "../utils/backup";
 import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
-import type { Team, EventPhase, BracketData, Account, EventMeta, EventDoc } from '../types'
+import type { Team, EventPhase, BracketData, KoState, Account, EventMeta, EventDoc } from '../types'
 import type { RankedTeam } from "../utils/tournament";
 import type { PdfMeta } from "../pdf/pdfDocs";
 import { LogOut } from 'lucide-react';
@@ -18,8 +18,9 @@ interface AdminPanelProps {
   toggleGastgeber: (id: string) => void;
   toggleGemeinde: (id: string) => void;
   bracket: BracketData;
+  ko: KoState;
   updateKoRun: (matchId: string, side: "runA" | "runB", field: RunField, value: number | null) => void;
-  onImportTeams: (teams: Team[]) => void;
+  onImportBackup: (data: Partial<EventDoc>) => void;
   phase: EventPhase;
   setPhase: (phase: EventPhase) => void;
   locked: boolean;
@@ -49,8 +50,9 @@ export default function AdminPanel({
   toggleGastgeber,
   toggleGemeinde,
   bracket,
+  ko,
   updateKoRun,
-  onImportTeams,
+  onImportBackup,
   phase,
   setPhase,
   locked,
@@ -82,7 +84,7 @@ export default function AdminPanel({
 
   const handleExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCsv(`kuppelcup-backup-${stamp}.csv`, teamsToCsv(teams));
+    downloadCsv(`kuppelcup-backup-${stamp}.csv`, backupToCsv(teams, ko));
   };
 
   // Dynamically imported: @react-pdf/renderer is large (~500kB gzipped) and
@@ -106,11 +108,18 @@ export default function AdminPanel({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const parsed = csvToTeams(String(reader.result ?? ""));
+      const { teams: parsed, ko: parsedKo } = csvToBackup(String(reader.result ?? ""));
+      const hasKo = Object.keys(parsedKo).length > 0;
       if (parsed.length === 0) {
         alert("Keine Teams in der Datei gefunden.");
-      } else if (confirm(`${parsed.length} Teams importieren? Aktuelle Daten werden ersetzt.`)) {
-        onImportTeams?.(parsed);
+        return;
+      }
+      const label = hasKo ? `${parsed.length} Teams + K.O.-Ergebnisse` : `${parsed.length} Teams`;
+      if (confirm(`${label} importieren? Aktuelle Daten werden ersetzt.`)) {
+        // Only overwrite K.O. results if the file actually had any -- an
+        // older team-only export shouldn't wipe out K.O. results already
+        // recorded for this event.
+        onImportBackup(hasKo ? { teams: parsed, ko: parsedKo } : { teams: parsed });
       }
     };
     reader.readAsText(file);

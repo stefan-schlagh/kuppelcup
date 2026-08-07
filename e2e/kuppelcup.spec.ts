@@ -127,6 +127,40 @@ test("admin can export the combined Gesamtbericht PDF; the button is admin-only"
   expect(bytes.length).toBeGreaterThan(500);
 });
 
+test("CSV backup includes K.O. results and restores them on import", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  await page.getByRole("button", { name: "K.O.-Ergebnisse" }).click();
+  const timeInputs = page.locator(".bracket-input-time");
+  const originalQf1RunA = await timeInputs.first().inputValue();
+  expect(originalQf1RunA).not.toBe("");
+
+  await page.getByRole("button", { name: "Backup" }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export als CSV" }).click();
+  const download = await downloadPromise;
+  const csv = await readFile((await download.path())!, "utf8");
+  expect(csv).toContain("match,side,zeit,strafe");
+
+  // Clear the recorded time to prove the import actually restores it below,
+  // not just that it was never gone.
+  await page.getByRole("button", { name: "K.O.-Ergebnisse" }).click();
+  await timeInputs.first().fill("");
+  await expect(timeInputs.first()).toHaveValue("");
+
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Backup" }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "backup.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+
+  await page.getByRole("button", { name: "K.O.-Ergebnisse" }).click();
+  await expect(timeInputs.first()).toHaveValue(originalQf1RunA);
+});
+
 test("Urkunden preview stays light-mode even when the app is in dark mode", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
