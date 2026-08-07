@@ -278,4 +278,24 @@ TODO 20260807:
 - use Querformat for Gesamtbericht
 - are all pdf previews in react-pdf? previews should be light mode as well.
 - backup does not include k.o. heats
-- CI run fails: https://productionresultssa6.blob.core.windows.net/actions-results/9ae0a663-e53a-41c8-a1d7-e74c5f163b81/workflow-job-run-bec5370b-e8d3-509d-b4a4-d5d1f56a67a0/logs/job/job-logs.txt?rsct=text%2Fplain&se=2026-08-07T11%3A01%3A20Z&sig=iSXk%2FQAYbs%2Bv9zjQpjkXlst0fmQKr7zTBWFajV7PeqU%3D&ske=2026-08-07T13%3A34%3A45Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-08-07T09%3A34%3A45Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=r&spr=https&sr=b&st=2026-08-07T10%3A51%3A15Z&sv=2025-11-05
+- [x] CI run fails (e2e stage): all 7 Playwright tests failed, page never rendered
+  even "Bestenliste — Grunddurchgang", so every test timed out waiting for content
+  that never appeared. Root cause: `backend/index.ts` statically imports both
+  `LocalBackend` and `FirebaseBackend` regardless of which one is actually
+  selected, and `FirebaseBackend.ts` ran `initializeApp`/`getFirestore`/`getAuth`
+  at *module* load — so those always executed on every boot, even when
+  `VITE_E2E_LOCAL_BACKEND` picks LocalBackend, because that flag only controls
+  which class gets *instantiated*, not which modules get *loaded*. `getFirestore`/
+  `getAuth` throw synchronously on an invalid/missing config (confirmed:
+  `Firebase: Error (auth/invalid-api-key).`) — and CI has no `.env.local`, by
+  design (same as `npm test`/`npm run build`). This crashed the whole app before
+  React rendered anything, in CI specifically, because that's the one context
+  in this whole project that runs the *real* dev server with *no* Firebase
+  config at all (locally I always had `.env.local`; `npm test`'s FirebaseBackend
+  tests mock the SDK, so it was never exercised there either). Moved
+  `initializeApp`/`getFirestore`/`getAuth` from module-level `const`s to
+  instance fields on `FirebaseBackend` (computed at construction, i.e.
+  `new FirebaseBackend()`) — LocalBackend-only runs now never touch the
+  Firebase SDK at all. Verified by reproducing locally (removed `.env.local`,
+  loaded the app, confirmed the same crash) then confirming it's gone after
+  the fix, plus a full e2e run with no `.env.local` present.

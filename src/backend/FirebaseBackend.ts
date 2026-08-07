@@ -19,10 +19,14 @@ import {
 // Firestore layout: a single "events" collection, one document per event
 // keyed by event id, each document holding a full EventDoc. The `ownerId`
 // field scopes visibility and drives the security rules (see firestore.rules).
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const fbAuth = getAuth(app);
+//
+// SDK setup lives on the instance (constructor), not the module scope.
+// `backend/index.ts` statically imports this file regardless of which
+// backend is actually selected -- a module-level `getAuth()`/`getFirestore()`
+// would run on every boot even when LocalBackend is what's actually used,
+// and both throw synchronously with an invalid/missing config (e.g. no
+// VITE_FIREBASE_* env vars — CI, or e2e's LocalBackend-only dev server),
+// crashing the whole app before React even renders.
 
 // Email-link sign-in is a two-step, cross-page-load flow: request the link
 // (below), then complete it when the user comes back via that link
@@ -46,14 +50,18 @@ async function logged<T>(context: string, genericMessage: string, fn: () => Prom
 }
 
 export class FirebaseBackend implements Backend {
+  private app = initializeApp(firebaseConfig);
+  private db = getFirestore(this.app);
+  private fbAuth = getAuth(this.app);
+
   auth = {
     currentAccount: (): Account | null => {
-      const u = fbAuth.currentUser;
+      const u = this.fbAuth.currentUser;
       return u ? { id: u.uid, name: u.displayName ?? u.email ?? "Admin" } : null;
     },
     signIn: async (username: string, password: string): Promise<Account> =>
       logged("signIn", "Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.", async () => {
-        const cred = await signInWithEmailAndPassword(fbAuth, username, password);
+        const cred = await signInWithEmailAndPassword(this.fbAuth, username, password);
         return { id: cred.user.uid, name: cred.user.displayName ?? cred.user.email ?? "Admin" };
       }),
     signInWithEmail: async (email: string): Promise<Account> => {
@@ -62,7 +70,7 @@ export class FirebaseBackend implements Backend {
       // No account is signed in yet -- that only happens once the user
       // follows the emailed link back into the app (completeEmailLinkSignIn).
       await logged("signInWithEmail", "Anmeldelink konnte nicht gesendet werden. Bitte versuchen Sie es erneut.", () =>
-        sendSignInLinkToEmail(fbAuth, trimmed, {
+        sendSignInLinkToEmail(this.fbAuth, trimmed, {
           url: window.location.origin + window.location.pathname,
           handleCodeInApp: true,
         }),
@@ -72,18 +80,18 @@ export class FirebaseBackend implements Backend {
     },
     createAccount: async (username: string, password: string): Promise<Account> =>
       logged("createAccount", "Konto konnte nicht erstellt werden. Bitte versuchen Sie es erneut.", async () => {
-        const cred = await createUserWithEmailAndPassword(fbAuth, username, password);
+        const cred = await createUserWithEmailAndPassword(this.fbAuth, username, password);
         return { id: cred.user.uid, name: username };
       }),
     signOut: async (): Promise<void> =>
-      logged("signOut", "Abmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.", () => fbSignOut(fbAuth)),
+      logged("signOut", "Abmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.", () => fbSignOut(this.fbAuth)),
     completeEmailLinkSignIn: async (): Promise<Account | null> => {
-      if (!isSignInWithEmailLink(fbAuth, window.location.href)) return null;
+      if (!isSignInWithEmailLink(this.fbAuth, window.location.href)) return null;
       const email = window.localStorage.getItem(PENDING_EMAIL_KEY)
         ?? window.prompt("Zur Bestätigung bitte die E-Mail-Adresse erneut eingeben:");
       if (!email) return null;
       try {
-        const cred = await signInWithEmailLink(fbAuth, email, window.location.href);
+        const cred = await signInWithEmailLink(this.fbAuth, email, window.location.href);
         window.localStorage.removeItem(PENDING_EMAIL_KEY);
         // Drop Firebase's sign-in params (apiKey/oobCode/mode/...) so a reload
         // doesn't try to replay the same link.
@@ -107,7 +115,7 @@ export class FirebaseBackend implements Backend {
 
   async listEvents(ownerId: string): Promise<EventMeta[]> {
     return logged("listEvents", "Events konnten nicht geladen werden.", async () => {
-      const q = query(collection(db, "events"), where("ownerId", "==", ownerId), orderBy("createdAt", "desc"));
+      const q = query(collection(this.db, "events"), where("ownerId", "==", ownerId), orderBy("createdAt", "desc"));
       const snap = await getDocs(q);
       return snap.docs.map((d) => {
         const e = d.data() as EventDoc;
@@ -118,7 +126,7 @@ export class FirebaseBackend implements Backend {
 
   async createEvent(name: string, ownerId: string): Promise<EventMeta> {
     return logged("createEvent", "Event konnte nicht erstellt werden.", async () => {
-      const ref = doc(collection(db, "events"));
+      const ref = doc(collection(this.db, "events"));
       const meta = { id: ref.id, name, ownerId, phase: "anmeldung" as const, createdAt: Date.now() };
       await setDoc(ref, { ...meta, teams: [], ko: {} });
       return meta;
@@ -127,25 +135,25 @@ export class FirebaseBackend implements Backend {
 
   async getEvent(id: string): Promise<EventDoc | null> {
     return logged("getEvent", "Event konnte nicht geladen werden.", async () => {
-      const snap = await getDoc(doc(db, "events", id));
+      const snap = await getDoc(doc(this.db, "events", id));
       return snap.exists() ? (snap.data() as EventDoc) : null;
     });
   }
 
   async saveEvent(event: EventDoc): Promise<void> {
     return logged("saveEvent", "Änderungen konnten nicht gespeichert werden.", () =>
-      setDoc(doc(db, "events", event.id), event));
+      setDoc(doc(this.db, "events", event.id), event));
   }
 
   async deleteEvent(id: string): Promise<void> {
     return logged("deleteEvent", "Event konnte nicht gelöscht werden.", () =>
-      deleteDoc(doc(db, "events", id)));
+      deleteDoc(doc(this.db, "events", id)));
   }
 
   subscribeEvent(id: string, onChange: (doc: EventDoc | null) => void): () => void {
     // Real-time via Firestore — this is the whole point of the Firebase backend.
     return onSnapshot(
-      doc(db, "events", id),
+      doc(this.db, "events", id),
       (snap) => onChange(snap.exists() ? (snap.data() as EventDoc) : null),
       (err) => {
         console.error(`[FirebaseBackend] subscribeEvent(${id}):`, err);
