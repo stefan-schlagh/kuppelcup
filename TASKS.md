@@ -354,4 +354,15 @@ TODO 20260807:
 
 backlog: 
 - use react-pdf everywhere
-- scan for secrets
+- [x] scan for secrets — clean. Searched the full git history (`git log --all
+  -p -G...`, not just the current tree, since a secret committed and later
+  "removed" would still be in history) for: the real Firebase API key
+  (never committed — it only ever lived in the gitignored `.env.local`),
+  any Google API key pattern (`AIza...`), private key blocks (RSA/EC/
+  OpenSSH), AWS access key IDs, generic `password=`/`secret=`/`api_key=`
+  literal assignments, GitHub/Slack/Stripe token prefixes, and credential
+  files (`.npmrc`, `.netrc`, kubeconfig, gcloud). Nothing matched. The only
+  tracked files that sound sensitive by name are legitimate placeholders:
+  `.env.example` (empty values) and `src/firebaseConfig.ts` (reads from
+  `import.meta.env`, no literal values). `.firebaserc`'s project id isn't a
+  secret — Firebase project ids are meant to be public.
