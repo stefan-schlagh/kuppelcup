@@ -129,8 +129,12 @@ export function buildBracket(top8: Team[], ko: KoState): BracketData {
       return { match: { id: matchId, teamA, teamB, runA, runB, winnerId: null }, slot: { team: null, dead: false } };
     }
 
-    const scoreA = runA.zeit !== null ? runA.zeit + (runA.strafe ?? 0) : Infinity;
-    const scoreB = runB.zeit !== null ? runB.zeit + (runB.strafe ?? 0) : Infinity;
+    // Rounded to hundredths (gesamt), matching how points are displayed and
+    // how the base round is scored — comparing raw zeit + strafe here would
+    // let a winner get picked on sub-cent float noise that isn't a real
+    // difference, and could miss a tie that the displayed values show as equal.
+    const scoreA = gesamt(runA) ?? Infinity;
+    const scoreB = gesamt(runB) ?? Infinity;
     if (scoreA < Infinity && scoreA === scoreB) {
       // Both ran, exact tie — not decided by seeding, needs a decider run.
       return { match: { id: matchId, teamA, teamB, runA, runB, winnerId: null, tied: true }, slot: { team: null, dead: false } };

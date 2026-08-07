@@ -80,9 +80,17 @@ Potential issues to flag:
 - [ ] Replace the stubbed local admin login (no password) with real auth (Firebase Auth
       — passwords / provider sign-in) once the backend is wired. Multi-admin support with
       per-admin events is already in place (LocalBackend); Firebase methods are stubbed.
-- [ ] Define an explicit tie-break rule for base-round ranking + top-8 cutoff (see "Ties" above)
-- [ ] Make K.O. winner comparison use rounded totals (`gesamt`) for consistency; decide how exact ties resolve (re-run vs. seed)
-- [ ] Surface ties in the UI (mark equal ranks / flag a contested qualification line)
+- [x] Define an explicit tie-break rule for base-round ranking + top-8 cutoff (see "Ties" above)
+  — done as part of "conflict resolution for tie breaks" under TODO 20260804 above
+- [x] Make K.O. winner comparison use rounded totals (`gesamt`) for consistency; decide how exact ties resolve (re-run vs. seed)
+  (`buildBracket` compared raw `zeit + strafe`, so a "winner" could get
+  picked on sub-cent float noise the displayed points don't even show —
+  e.g. `21.37 + 20` is `41.370000000000005` in JS, not `41.37`. Now uses
+  `gesamt()`, same as everywhere else values are shown; exact ties resolve
+  via a decider run, per the tie-break work above — not the seed)
+- [x] Surface ties in the UI (mark equal ranks / flag a contested qualification line)
+  — done as part of "conflict resolution for tie breaks" under TODO 20260804 above
+  (`tiedRank`/`cutoffContested` badges in Bestenliste, `tied` badge in Turnierbaum)
 - [ ] Visually distinguish K.O. heats in the Live-Monitor (phase badge or "vs." styling for the two opponents), rather than only the text label
 - [x] fix UI for small screens, especially on the top (header brand row wraps, nav tabs scroll, tighter padding; Turnierbaum stacks — see earlier)
 

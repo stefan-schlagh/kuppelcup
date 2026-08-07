@@ -140,6 +140,18 @@ describe("buildBracket", () => {
     expect(b.sf[0].winnerId).toBeNull();
   });
 
+  it("catches a tie that only appears equal after rounding to hundredths, not on raw floats", () => {
+    // 21.37 + 20 === 41.370000000000005 in raw JS float math, but rounds to
+    // 41.37 the same as 41.37 + 0 — comparing raw zeit+strafe would silently
+    // pick a "winner" on that sub-cent float noise instead of flagging a tie.
+    const tied: KoState = {
+      qf1: { runA: { zeit: 21.37, strafe: 20 }, runB: { zeit: 41.37, strafe: 0 } },
+    };
+    const b = buildBracket(seeds, tied);
+    expect(b.qf[0].winnerId).toBeNull();
+    expect(b.qf[0].tied).toBe(true);
+  });
+
   it("propagates winners into the semi-finals and final", () => {
     const b = buildBracket(seeds, {
       ...ko,
