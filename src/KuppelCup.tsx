@@ -182,7 +182,7 @@ export default function KuppelCup() {
       <main className="main-content">
         {saveError && (
           <div className="save-error-bar" role="alert">
-            <span>Speichern fehlgeschlagen: {saveError}</span>
+            <span>{saveError}</span>
             <button className="save-error-dismiss" onClick={dismissSaveError} aria-label="Schließen">✕</button>
           </div>
         )}

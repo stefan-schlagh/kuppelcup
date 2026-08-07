@@ -250,3 +250,20 @@ bugs:
   `firestore.indexes.json` didn't define — left the UI authenticated with events/
   current stuck empty instead of surfacing a failed login. Fixed the ordering and
   added the missing index; deploy with `firebase deploy --only firestore:indexes`)
+
+
+TODO 20260807:
+
+- [x] do not show full firebase errors in the frontend, but show generic messages.
+  log details in the backend.
+  (`FirebaseBackend.ts`: every Firebase SDK call is now wrapped in a `logged()`
+  helper — `console.error`s the real error with context, then throws/rejects a
+  fixed, safe, German message instead of letting the raw SDK error (auth
+  codes, `permission-denied: ...`, etc.) reach `useEvents`/`KuppelCup`'s
+  `saveError`/`authError` display. `completeEmailLinkSignIn` degrades to
+  signed-out instead of throwing at all — it runs during app boot, so
+  throwing there would break loading the app for anyone with a stale link,
+  not just fail the sign-in. LocalBackend untouched: its errors were already
+  hand-written, safe, generic messages, not leaked SDK detail.)
+- use Querformat for Gesamtbericht
+- are all pdf previews in react-pdf? previews should be light mode as well.

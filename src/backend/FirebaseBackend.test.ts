@@ -113,9 +113,18 @@ describe("FirebaseBackend", () => {
       expect(acc).toEqual({ id: "u1", name: "Alice" });
     });
 
-    it("rejects sign-in when the SDK rejects", async () => {
-      vi.mocked(signInWithEmailAndPassword).mockRejectedValueOnce(new Error("wrong password"));
-      await expect(new FirebaseBackend().auth.signIn("a@x.com", "bad")).rejects.toThrow("wrong password");
+    it("rejects sign-in with a generic message, not the raw SDK error, and logs the detail", async () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(signInWithEmailAndPassword).mockRejectedValueOnce(new Error("auth/wrong-password: the password is invalid"));
+      await expect(new FirebaseBackend().auth.signIn("a@x.com", "bad")).rejects.toThrow(
+        "Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.",
+      );
+      // ...but the real error is still logged, not just swallowed.
+      expect(consoleError).toHaveBeenCalledWith(
+        expect.stringContaining("signIn"),
+        expect.objectContaining({ message: expect.stringContaining("auth/wrong-password") }),
+      );
+      consoleError.mockRestore();
     });
 
     it("signInWithEmail sends a link and rejects with an AuthNotice (nobody signs in synchronously)", async () => {
@@ -173,6 +182,19 @@ describe("FirebaseBackend", () => {
       expect(signInWithEmailLink).not.toHaveBeenCalled();
     });
 
+    it("completeEmailLinkSignIn degrades to signed-out (not a thrown error) if the SDK call fails", async () => {
+      // This runs during app boot -- throwing here would break loading the
+      // app for a stale/expired link, not just fail the sign-in.
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(isSignInWithEmailLink).mockReturnValueOnce(true);
+      window.localStorage.setItem("kuppelcup:pendingEmailLinkSignIn", "a@x.com");
+      vi.mocked(signInWithEmailLink).mockRejectedValueOnce(new Error("auth/invalid-action-code"));
+
+      await expect(new FirebaseBackend().auth.completeEmailLinkSignIn?.()).resolves.toBeNull();
+      expect(consoleError).toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
+
     it("creates an account via createUserWithEmailAndPassword, named by username", async () => {
       vi.mocked(createUserWithEmailAndPassword).mockResolvedValueOnce({
         user: { uid: "u2" },
@@ -223,6 +245,19 @@ describe("FirebaseBackend", () => {
   it("saves the full event document", async () => {
     await new FirebaseBackend().saveEvent(sampleEvent);
     expect(setDoc).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }), sampleEvent);
+  });
+
+  it("rejects saveEvent with a generic message on failure, logging the real one", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(setDoc).mockRejectedValueOnce(new Error("permission-denied: Missing or insufficient permissions."));
+    await expect(new FirebaseBackend().saveEvent(sampleEvent)).rejects.toThrow(
+      "Änderungen konnten nicht gespeichert werden.",
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining("saveEvent"),
+      expect.objectContaining({ message: expect.stringContaining("permission-denied") }),
+    );
+    consoleError.mockRestore();
   });
 
   it("deletes an event by id", async () => {

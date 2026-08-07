@@ -29,46 +29,70 @@ const fbAuth = getAuth(app);
 // that round trip somewhere the second load can read it back from.
 const PENDING_EMAIL_KEY = "kuppelcup:pendingEmailLinkSignIn";
 
+// Firebase SDK errors (auth/invalid-email, permission-denied, network
+// blips, ...) carry internal detail that isn't safe or useful to show an
+// end user. Log the real error here, at the source, and surface only a
+// generic, already-display-ready message to the UI.
+async function logged<T>(context: string, genericMessage: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    console.error(`[FirebaseBackend] ${context}:`, e);
+    throw new Error(genericMessage);
+  }
+}
+
 export class FirebaseBackend implements Backend {
   auth = {
     currentAccount: (): Account | null => {
       const u = fbAuth.currentUser;
       return u ? { id: u.uid, name: u.displayName ?? u.email ?? "Admin" } : null;
     },
-    signIn: async (username: string, password: string): Promise<Account> => {
-      const cred = await signInWithEmailAndPassword(fbAuth, username, password);
-      return { id: cred.user.uid, name: cred.user.displayName ?? cred.user.email ?? "Admin" };
-    },
+    signIn: async (username: string, password: string): Promise<Account> =>
+      logged("signIn", "Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.", async () => {
+        const cred = await signInWithEmailAndPassword(fbAuth, username, password);
+        return { id: cred.user.uid, name: cred.user.displayName ?? cred.user.email ?? "Admin" };
+      }),
     signInWithEmail: async (email: string): Promise<Account> => {
       const trimmed = email.trim();
       if (!trimmed) throw new Error("E-Mail-Adresse fehlt.");
       // No account is signed in yet -- that only happens once the user
       // follows the emailed link back into the app (completeEmailLinkSignIn).
-      await sendSignInLinkToEmail(fbAuth, trimmed, {
-        url: window.location.origin + window.location.pathname,
-        handleCodeInApp: true,
-      });
+      await logged("signInWithEmail", "Anmeldelink konnte nicht gesendet werden. Bitte versuchen Sie es erneut.", () =>
+        sendSignInLinkToEmail(fbAuth, trimmed, {
+          url: window.location.origin + window.location.pathname,
+          handleCodeInApp: true,
+        }),
+      );
       window.localStorage.setItem(PENDING_EMAIL_KEY, trimmed);
       throw new AuthNotice(`Anmeldelink an ${trimmed} gesendet — bitte E-Mails prüfen.`);
     },
-    createAccount: async (username: string, password: string): Promise<Account> => {
-      const cred = await createUserWithEmailAndPassword(fbAuth, username, password);
-      return { id: cred.user.uid, name: username };
-    },
-    signOut: async (): Promise<void> => {
-      await fbSignOut(fbAuth);
-    },
+    createAccount: async (username: string, password: string): Promise<Account> =>
+      logged("createAccount", "Konto konnte nicht erstellt werden. Bitte versuchen Sie es erneut.", async () => {
+        const cred = await createUserWithEmailAndPassword(fbAuth, username, password);
+        return { id: cred.user.uid, name: username };
+      }),
+    signOut: async (): Promise<void> =>
+      logged("signOut", "Abmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.", () => fbSignOut(fbAuth)),
     completeEmailLinkSignIn: async (): Promise<Account | null> => {
       if (!isSignInWithEmailLink(fbAuth, window.location.href)) return null;
       const email = window.localStorage.getItem(PENDING_EMAIL_KEY)
         ?? window.prompt("Zur Bestätigung bitte die E-Mail-Adresse erneut eingeben:");
       if (!email) return null;
-      const cred = await signInWithEmailLink(fbAuth, email, window.location.href);
-      window.localStorage.removeItem(PENDING_EMAIL_KEY);
-      // Drop Firebase's sign-in params (apiKey/oobCode/mode/...) so a reload
-      // doesn't try to replay the same link.
-      window.history.replaceState(null, "", window.location.pathname);
-      return { id: cred.user.uid, name: cred.user.email ?? "Admin" };
+      try {
+        const cred = await signInWithEmailLink(fbAuth, email, window.location.href);
+        window.localStorage.removeItem(PENDING_EMAIL_KEY);
+        // Drop Firebase's sign-in params (apiKey/oobCode/mode/...) so a reload
+        // doesn't try to replay the same link.
+        window.history.replaceState(null, "", window.location.pathname);
+        return { id: cred.user.uid, name: cred.user.email ?? "Admin" };
+      } catch (e) {
+        // Runs during app boot (useEvents' init effect) -- throwing here
+        // would break loading the app for anyone with a stale/expired link,
+        // not just fail the sign-in. Log and degrade to signed-out instead.
+        console.error("[FirebaseBackend] completeEmailLinkSignIn:", e);
+        return null;
+      }
     },
   };
 
@@ -78,37 +102,48 @@ export class FirebaseBackend implements Backend {
   }
 
   async listEvents(ownerId: string): Promise<EventMeta[]> {
-    const q = query(collection(db, "events"), where("ownerId", "==", ownerId), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const e = d.data() as EventDoc;
-      return { id: e.id, name: e.name, ownerId: e.ownerId, phase: e.phase, createdAt: e.createdAt };
+    return logged("listEvents", "Events konnten nicht geladen werden.", async () => {
+      const q = query(collection(db, "events"), where("ownerId", "==", ownerId), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => {
+        const e = d.data() as EventDoc;
+        return { id: e.id, name: e.name, ownerId: e.ownerId, phase: e.phase, createdAt: e.createdAt };
+      });
     });
   }
 
   async createEvent(name: string, ownerId: string): Promise<EventMeta> {
-    const ref = doc(collection(db, "events"));
-    const meta = { id: ref.id, name, ownerId, phase: "anmeldung" as const, createdAt: Date.now() };
-    await setDoc(ref, { ...meta, teams: [], ko: {} });
-    return meta;
+    return logged("createEvent", "Event konnte nicht erstellt werden.", async () => {
+      const ref = doc(collection(db, "events"));
+      const meta = { id: ref.id, name, ownerId, phase: "anmeldung" as const, createdAt: Date.now() };
+      await setDoc(ref, { ...meta, teams: [], ko: {} });
+      return meta;
+    });
   }
 
   async getEvent(id: string): Promise<EventDoc | null> {
-    const snap = await getDoc(doc(db, "events", id));
-    return snap.exists() ? (snap.data() as EventDoc) : null;
+    return logged("getEvent", "Event konnte nicht geladen werden.", async () => {
+      const snap = await getDoc(doc(db, "events", id));
+      return snap.exists() ? (snap.data() as EventDoc) : null;
+    });
   }
 
   async saveEvent(event: EventDoc): Promise<void> {
-    await setDoc(doc(db, "events", event.id), event);
+    return logged("saveEvent", "Änderungen konnten nicht gespeichert werden.", () =>
+      setDoc(doc(db, "events", event.id), event));
   }
 
   async deleteEvent(id: string): Promise<void> {
-    await deleteDoc(doc(db, "events", id));
+    return logged("deleteEvent", "Event konnte nicht gelöscht werden.", () =>
+      deleteDoc(doc(db, "events", id)));
   }
 
   subscribeEvent(id: string, onChange: (doc: EventDoc | null) => void): () => void {
     // Real-time via Firestore — this is the whole point of the Firebase backend.
-    return onSnapshot(doc(db, "events", id), (snap) =>
-      onChange(snap.exists() ? (snap.data() as EventDoc) : null));
+    return onSnapshot(
+      doc(db, "events", id),
+      (snap) => onChange(snap.exists() ? (snap.data() as EventDoc) : null),
+      (err) => console.error(`[FirebaseBackend] subscribeEvent(${id}):`, err),
+    );
   }
 }
