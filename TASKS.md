@@ -281,7 +281,19 @@ TODO 20260807:
   (595pt tall vs. 842pt in portrait); re-verified the 20-team roster still
   fits one page. Visually checked via a temporary throwaway script
   rendered to PDF and converted to PNG via `pdftoppm`, then removed.)
-- are all pdf previews in react-pdf? previews should be light mode as well.
+- [x] are all pdf previews in react-pdf? previews should be light mode as well.
+  — no: only `Gesamtbericht` uses react-pdf, and it has no preview UI at all
+  (direct download only, from AdminPanel → Backup). `Urkunden` predates
+  react-pdf — its real PDF is jsPDF (`utils/urkunde-pdf.ts`, hardcoded light
+  colors) and its on-screen preview is hand-rolled HTML/CSS (`.urkunde` etc.
+  in `index.css`) that read the app's theme-aware CSS custom properties
+  (`--bg-surface`, `--text-main`, ...) — so it rendered **dark** whenever the
+  app was in dark mode (the default!), while the actual generated PDF is
+  always light. Fixed: `.urkunden-sheets` now redeclares the light-theme
+  values for those same properties locally, since `:root[data-theme="light"]`
+  can't be scoped to a subtree — matches the real PDF regardless of the
+  app's current theme. e2e-tested (loads with dark as the default theme,
+  asserts the preview's computed background is white).
 - backup does not include k.o. heats
 - [x] CI run fails (e2e stage): all 7 Playwright tests failed, page never rendered
   even "Bestenliste — Grunddurchgang", so every test timed out waiting for content
@@ -304,3 +316,9 @@ TODO 20260807:
   Firebase SDK at all. Verified by reproducing locally (removed `.env.local`,
   loaded the app, confirmed the same crash) then confirming it's gone after
   the fix, plus a full e2e run with no `.env.local` present.
+
+- on "Mit E-Mail anmelden" i get auth/operation-not-allowed
+- add Stechlauf to Live-monitor
+- Stechlauf is not displayed for same time in quarter / half final
+
+backlog: use react-pdf everywhere

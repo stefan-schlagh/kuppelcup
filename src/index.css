@@ -1153,6 +1153,17 @@ span.nav-icon{
   flex-direction: column;
   gap: 24px;
   margin-top: 16px;
+  /* The generated PDF (jsPDF) always renders light — hardcoded colors,
+     not theme-aware. The preview should match regardless of the app's
+     current dark/light toggle. :root[data-theme="light"] can't be scoped
+     to a subtree, so redeclare the same light values locally; everything
+     under .urkunde* already reads these same custom properties. */
+  --bg-surface: #FFFFFF;
+  --border-color: #DAD5C9;
+  --text-main: #1B1D21;
+  --text-muted: #6B6E74;
+  --color-accent: #9A7220;
+  color-scheme: light;
 }
 
 .urkunde {

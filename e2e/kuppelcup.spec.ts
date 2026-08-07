@@ -127,6 +127,24 @@ test("admin can export the combined Gesamtbericht PDF; the button is admin-only"
   expect(bytes.length).toBeGreaterThan(500);
 });
 
+test("Urkunden preview stays light-mode even when the app is in dark mode", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+
+  // Dark is the default theme (useStorage("kuppelcup:theme", "dark")) --
+  // no toggle needed on a fresh session.
+  const appTheme = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
+  expect(appTheme).toBe("dark");
+
+  await page.getByRole("button", { name: "Urkunden", exact: true }).click();
+  const preview = page.locator(".urkunde").first();
+  await expect(preview).toBeVisible();
+  const bg = await preview.evaluate((el) => getComputedStyle(el).backgroundColor);
+  // The generated PDF (jsPDF) is always white -- the preview must match
+  // regardless of the app's current theme, not follow it into dark mode.
+  expect(bg).toBe("rgb(255, 255, 255)");
+});
+
 test("entering a result flashes a brief 'Gespeichert' confirmation", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
