@@ -2,6 +2,7 @@ import type { Backend } from "./Backend";
 import { AuthNotice } from "./Backend";
 import type { Account, EventDoc, EventMeta } from "../types";
 import { firebaseConfig } from "../firebaseConfig";
+import { reportError } from "../sentry";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc,
@@ -31,13 +32,15 @@ const PENDING_EMAIL_KEY = "kuppelcup:pendingEmailLinkSignIn";
 
 // Firebase SDK errors (auth/invalid-email, permission-denied, network
 // blips, ...) carry internal detail that isn't safe or useful to show an
-// end user. Log the real error here, at the source, and surface only a
-// generic, already-display-ready message to the UI.
+// end user. Report the real error here, at the source (console always;
+// Sentry too when configured — see ../sentry), and surface only a generic,
+// already-display-ready message to the UI.
 async function logged<T>(context: string, genericMessage: string, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (e) {
     console.error(`[FirebaseBackend] ${context}:`, e);
+    reportError(`FirebaseBackend.${context}`, e);
     throw new Error(genericMessage);
   }
 }
@@ -91,6 +94,7 @@ export class FirebaseBackend implements Backend {
         // would break loading the app for anyone with a stale/expired link,
         // not just fail the sign-in. Log and degrade to signed-out instead.
         console.error("[FirebaseBackend] completeEmailLinkSignIn:", e);
+        reportError("FirebaseBackend.completeEmailLinkSignIn", e);
         return null;
       }
     },
@@ -143,7 +147,10 @@ export class FirebaseBackend implements Backend {
     return onSnapshot(
       doc(db, "events", id),
       (snap) => onChange(snap.exists() ? (snap.data() as EventDoc) : null),
-      (err) => console.error(`[FirebaseBackend] subscribeEvent(${id}):`, err),
+      (err) => {
+        console.error(`[FirebaseBackend] subscribeEvent(${id}):`, err);
+        reportError("FirebaseBackend.subscribeEvent", err);
+      },
     );
   }
 }

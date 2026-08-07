@@ -9,6 +9,7 @@ import { AuthNotice } from "./Backend";
 // EventDoc shaping) — not an integration test against a real project. That is
 // what the emulator-backed firestore.rules tests (tests/rules/) are for.
 vi.mock("../firebaseConfig", () => ({ firebaseConfig: {} }));
+vi.mock("../sentry", () => ({ reportError: vi.fn() }));
 vi.mock("firebase/app", () => ({ initializeApp: vi.fn(() => ({})) }));
 
 const mockAuthInstance: { currentUser: unknown } = { currentUser: null };
@@ -47,6 +48,7 @@ const {
   signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
   sendSignInLinkToEmail, signInWithEmailLink, isSignInWithEmailLink,
 } = await import("firebase/auth");
+const { reportError } = await import("../sentry");
 
 // FirebaseBackend's email-link flow touches window.location/localStorage/
 // history/prompt (no jsdom in this project — the emulator-backed rules
@@ -124,6 +126,10 @@ describe("FirebaseBackend", () => {
         expect.stringContaining("signIn"),
         expect.objectContaining({ message: expect.stringContaining("auth/wrong-password") }),
       );
+      expect(reportError).toHaveBeenCalledWith(
+        expect.stringContaining("signIn"),
+        expect.objectContaining({ message: expect.stringContaining("auth/wrong-password") }),
+      );
       consoleError.mockRestore();
     });
 
@@ -192,6 +198,10 @@ describe("FirebaseBackend", () => {
 
       await expect(new FirebaseBackend().auth.completeEmailLinkSignIn?.()).resolves.toBeNull();
       expect(consoleError).toHaveBeenCalled();
+      expect(reportError).toHaveBeenCalledWith(
+        "FirebaseBackend.completeEmailLinkSignIn",
+        expect.objectContaining({ message: expect.stringContaining("auth/invalid-action-code") }),
+      );
       consoleError.mockRestore();
     });
 
@@ -257,6 +267,10 @@ describe("FirebaseBackend", () => {
       expect.stringContaining("saveEvent"),
       expect.objectContaining({ message: expect.stringContaining("permission-denied") }),
     );
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining("saveEvent"),
+      expect.objectContaining({ message: expect.stringContaining("permission-denied") }),
+    );
     consoleError.mockRestore();
   });
 
@@ -282,5 +296,26 @@ describe("FirebaseBackend", () => {
 
     capturedCallback?.({ exists: () => false });
     expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it("reports subscribeEvent errors instead of leaving them unhandled", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    let capturedErrorCallback: ((err: unknown) => void) | undefined;
+    vi.mocked(onSnapshot).mockImplementation(((
+      _ref: unknown, _cb: (snap: unknown) => void, errCb: (err: unknown) => void,
+    ) => {
+      capturedErrorCallback = errCb;
+      return vi.fn();
+    }) as never);
+
+    new FirebaseBackend().subscribeEvent("e1", vi.fn());
+    capturedErrorCallback?.(new Error("permission-denied"));
+
+    expect(consoleError).toHaveBeenCalled();
+    expect(reportError).toHaveBeenCalledWith(
+      "FirebaseBackend.subscribeEvent",
+      expect.objectContaining({ message: "permission-denied" }),
+    );
+    consoleError.mockRestore();
   });
 });

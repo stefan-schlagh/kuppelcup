@@ -265,5 +265,17 @@ TODO 20260807:
   throwing there would break loading the app for anyone with a stale link,
   not just fail the sign-in. LocalBackend untouched: its errors were already
   hand-written, safe, generic messages, not leaked SDK detail.)
+  - [x] you asked whether this reaches Google Cloud Logging: no, `console.error`
+    only goes to the local browser console, and there's no server component
+    (no Cloud Functions) for Cloud Logging to collect from anyway. Added
+    `@sentry/react` instead (`src/sentry.ts`) — every place `logged()` catches
+    an error now also calls `Sentry.captureException`, and Sentry's browser
+    SDK auto-catches uncaught errors/unhandled rejections app-wide once
+    initialized. **Manual step**: create a project at sentry.io, put its DSN
+    in `VITE_SENTRY_DSN` in `.env.local` (see `.env.example`) — without a
+    DSN, or outside a production build (`npm run build`), it's a no-op, so
+    local dev/CI/e2e never send anything and never need an account.
 - use Querformat for Gesamtbericht
 - are all pdf previews in react-pdf? previews should be light mode as well.
+- backup does not include k.o. heats
+- CI run fails: https://productionresultssa6.blob.core.windows.net/actions-results/9ae0a663-e53a-41c8-a1d7-e74c5f163b81/workflow-job-run-bec5370b-e8d3-509d-b4a4-d5d1f56a67a0/logs/job/job-logs.txt?rsct=text%2Fplain&se=2026-08-07T11%3A01%3A20Z&sig=iSXk%2FQAYbs%2Bv9zjQpjkXlst0fmQKr7zTBWFajV7PeqU%3D&ske=2026-08-07T13%3A34%3A45Z&skoid=ca7593d4-ee42-46cd-af88-8b886a2f84eb&sks=b&skt=2026-08-07T09%3A34%3A45Z&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skv=2025-11-05&sp=r&spr=https&sr=b&st=2026-08-07T10%3A51%3A15Z&sv=2025-11-05
