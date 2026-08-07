@@ -1113,6 +1113,15 @@ span.nav-icon{
 }
 
 .monitor-error-text { color: var(--color-primary); }
+
+.monitor-tied-badge {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-primary);
+}
 .text-muted-color { color: var(--text-main); }
 .empty-msg { color: var(--text-footer); margin: 0; font-style: italic; }
 

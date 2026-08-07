@@ -330,8 +330,28 @@ TODO 20260807:
   loaded the app, confirmed the same crash) then confirming it's gone after
   the fix, plus a full e2e run with no `.env.local` present.
 
-- on "Mit E-Mail anmelden" i get auth/operation-not-allowed
-- add Stechlauf to Live-monitor
-- Stechlauf is not displayed for same time in quarter / half final
+- [x] on "Mit E-Mail anmelden" i get auth/operation-not-allowed — that's a real
+  Firebase Auth error code meaning the "Email link (passwordless sign-in)"
+  method isn't enabled yet in your Firebase project (a separate toggle from
+  plain Email/Password, under Authentication → Sign-in method → Email/
+  Password in the console — already noted as a manual step above). Not a
+  code bug; confirmed the actual error message reaching the UI is the
+  generic one from the earlier fix, not this raw code (that only goes to
+  the console/Sentry now).
+- [x] add Stechlauf to Live-monitor
+- [x] Stechlauf is not displayed for same time in quarter / half final
+  (these two were the same gap: Live-Monitor never had any tie awareness at
+  all, so a tied QF/SF/Final heat looked identical to a normal one once it
+  scrolled into "former". `MonitorRunner` gained a `tied?: boolean`, set on
+  both runners of a K.O. heat when `Match.tied` is (base-round DG1/DG2
+  entries never get it — no opponent in the same heat to tie against).
+  LiveMonitor shows "Unentschieden — Stechlauf nötig" under the time in the
+  "former" card when set — the only reachable spot: a heat only becomes
+  tied once both runs are recorded, at which point it's already complete,
+  so it can never be the in-progress "current" heat. Verified in the
+  browser (screenshotted Turnierbaum reflecting a manually-tied SF) and
+  unit + e2e tested.)
 
-backlog: use react-pdf everywhere
+backlog: 
+- use react-pdf everywhere
+- scan for secrets

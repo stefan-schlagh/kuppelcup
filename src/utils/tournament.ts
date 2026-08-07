@@ -214,8 +214,8 @@ function chunkHeats(entries: MonitorRunner[], parallel: number): MonitorRunner[]
 // matches (each match is its own heat of two). The "current" heat is the
 // one containing the first run still missing a time.
 export function buildMonitorQueue(scheduledTeams: Team[], bracket: BracketData, parallel: number): MonitorView {
-  const runner = (t: Team, label: string, r: RunData): MonitorRunner => ({
-    name: t.name, start: t.start, label, zeit: r.zeit, strafe: r.strafe,
+  const runner = (t: Team, label: string, r: RunData, tied?: boolean): MonitorRunner => ({
+    name: t.name, start: t.start, label, zeit: r.zeit, strafe: r.strafe, ...(tied ? { tied } : {}),
   });
 
   const heats: MonitorRunner[][] = [
@@ -224,7 +224,7 @@ export function buildMonitorQueue(scheduledTeams: Team[], bracket: BracketData, 
   ];
   [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
     if (m.teamA && m.teamB) {
-      heats.push([runner(m.teamA, koLabel(m.id), m.runA), runner(m.teamB, koLabel(m.id), m.runB)]);
+      heats.push([runner(m.teamA, koLabel(m.id), m.runA, m.tied), runner(m.teamB, koLabel(m.id), m.runB, m.tied)]);
     }
   });
 

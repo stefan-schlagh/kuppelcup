@@ -59,6 +59,27 @@ test("an exact K.O. tie is flagged and does not advance to the semi-final", asyn
   await expect(semiFinal.getByText("—")).toBeVisible();
 });
 
+test("a tied K.O. heat shows a Stechlauf notice on the Live-Monitor", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page); // fills base round + all K.O. matches
+
+  // Tie the Final specifically: with every match already decided, the
+  // bracket stays fully complete either way, so Live-Monitor's "former"
+  // heat (the most recently finished one) is still the Final -- just now
+  // a tied one, rather than needing to re-engineer which heat is "current".
+  await page.getByRole("button", { name: "K.O.-Ergebnisse" }).click();
+  const final = page.locator(".bracket-col-final");
+  const timeInputs = final.locator(".bracket-input-time");
+  const penaltyInputs = final.locator(".bracket-input-penalty");
+  await timeInputs.nth(0).fill("21.00");
+  await timeInputs.nth(1).fill("21.00");
+  await penaltyInputs.nth(0).fill("0");
+  await penaltyInputs.nth(1).fill("0");
+
+  await page.getByRole("button", { name: "Live-Monitor" }).click();
+  await expect(page.getByText("Unentschieden — Stechlauf nötig")).toHaveCount(2);
+});
+
 test("a base-round tie within places 1-7 is flagged as Gleichstand", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();

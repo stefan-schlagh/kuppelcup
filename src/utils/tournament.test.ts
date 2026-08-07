@@ -254,6 +254,23 @@ describe("buildMonitorQueue", () => {
     expect(view.current.map((r) => r.label)).toEqual(["Viertelfinale", "Viertelfinale"]);
   });
 
+  it("flags both runners of a tied K.O. heat, but never a base-round entry", () => {
+    // Base round is fully recorded (8 heats, all complete), then qf1 is
+    // recorded as a tie (also complete) -- so it's the *former* heat, with
+    // qf2 (untouched, no results yet) as current.
+    const teams8 = Array.from({ length: 8 }, (_, i) => team(`s${i}`, i + 1, [20 + i, 0], [20 + i, 0]));
+    const bracket = buildBracket(selectTop8(rankTeams(teams8)), {
+      qf1: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 20, strafe: 0 } }, // tie
+    });
+    const view = buildMonitorQueue(sortByStart(teams8), bracket, 2);
+    expect(view.former.map((r) => [r.label, r.tied])).toEqual([
+      ["Viertelfinale", true],
+      ["Viertelfinale", true],
+    ]);
+    // qf2 is a real, merely-unplayed match -- not tied.
+    expect(view.current.every((r) => r.label === "Viertelfinale" && r.tied === undefined)).toBe(true);
+  });
+
   it("with an odd team count, a heat never mixes DG1 and DG2 runners", () => {
     // 3 teams, parallel=2: DG1 heats are [a,b] then [c] alone. Naively
     // flattening DG1+DG2 into one array and chunking by index would have
