@@ -218,7 +218,19 @@ TODO 20260804
   a display tie-break. Everyone outside the K.O. bracket keeps their
   base-round rank. Gemeindewertung now filters this instead of raw
   `ranked`; e2e-tested since it needed real K.O. + Admin UI interaction)
-- add a single test script that tests everything, include this in CI workflow
+- [x] add a single test script that tests everything, include this in CI workflow
+  (`npm run test:all` = unit tests, then `test:rules` against the Firestore
+  emulator, then `test:e2e` against a LocalBackend dev server — wired into
+  `.github/workflows/node.js.yml`. Along the way, fixed a real gap: `test:rules`
+  called bare `firebase`, which only worked locally by accident because
+  firebase-tools happened to be globally installed on this machine — it was
+  never a project dependency, so it would have failed in CI. Added
+  `firebase-tools` as a devDependency so the local `node_modules/.bin/firebase`
+  is what actually runs. CI also needs Java (`actions/setup-java`, for the
+  emulator) and `npx playwright install --with-deps chromium`; both the
+  emulator jar and the Playwright browser download are cached by
+  `package-lock.json` hash so only the first CI run after a dependency bump
+  pays for the download.)
 
 if there is something not clear: ask
 when you add new logic, add test cases for it
