@@ -35,8 +35,10 @@ export function useEvents() {
   const [current, setCurrent] = useState<EventDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
   const initialized = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<EventDoc | null>(null);
   const selfWriting = useRef(false); // true while our own write is in flight
 
@@ -76,6 +78,12 @@ export function useEvents() {
     try {
       await backend.saveEvent(doc);
       setSaveError(null);
+      // Brief "saved" flash so entering a result gives some feedback
+      // beyond just not showing an error — the write itself is silent and
+      // debounced, otherwise nothing on screen confirms it went through.
+      setJustSaved(true);
+      if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
+      savedFlashTimer.current = setTimeout(() => setJustSaved(false), 1600);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -122,6 +130,7 @@ export function useEvents() {
       window.removeEventListener("beforeunload", onHide);
       document.removeEventListener("visibilitychange", onHide);
       flush();
+      if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
     };
   }, [flush]);
 
@@ -250,6 +259,7 @@ export function useEvents() {
     loaded,
     saveError,
     dismissSaveError: () => setSaveError(null),
+    justSaved,
     login,
     loginWithEmail,
     createAdmin,

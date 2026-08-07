@@ -103,6 +103,21 @@ body {
   gap: 10px;
 }
 
+.saved-flash {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-accent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.saved-flash.is-visible {
+  opacity: 1;
+}
+
 .phase-badge {
   font-size: 11px;
   font-weight: 700;

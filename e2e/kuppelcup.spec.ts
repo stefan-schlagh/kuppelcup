@@ -126,3 +126,19 @@ test("admin can export the combined Gesamtbericht PDF; the button is admin-only"
   expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
   expect(bytes.length).toBeGreaterThan(500);
 });
+
+test("entering a result flashes a brief 'Gespeichert' confirmation", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+
+  const savedFlash = page.locator(".saved-flash");
+  await expect(savedFlash).not.toHaveClass(/is-visible/);
+
+  await page.getByRole("button", { name: "Grunddurchgang erfassen" }).click();
+  await page.locator(".input-field").first().fill("20.00");
+
+  // The save is debounced (400ms) then persisted -- the flash should show
+  // up once that's done, then fade back out on its own a bit later.
+  await expect(savedFlash).toHaveClass(/is-visible/, { timeout: 3000 });
+  await expect(savedFlash).not.toHaveClass(/is-visible/, { timeout: 3000 });
+});

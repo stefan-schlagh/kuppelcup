@@ -11,7 +11,7 @@ import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
-import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText } from 'lucide-react';
+import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check } from 'lucide-react';
 
 const numberOfParallelRounds = 2
 
@@ -23,6 +23,7 @@ export default function KuppelCup() {
     loaded,
     saveError,
     dismissSaveError,
+    justSaved,
     login,
     loginWithEmail,
     createAdmin,
@@ -141,6 +142,11 @@ export default function KuppelCup() {
           <div className="hose-icon">⊃⊂</div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
           <div className="header-right">
+            {authed && (
+              <span className={`saved-flash ${justSaved ? "is-visible" : ""}`} aria-live="polite">
+                <Check size={14} /> Gespeichert
+              </span>
+            )}
             {authed && <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>}
             <button
               className="theme-toggle"

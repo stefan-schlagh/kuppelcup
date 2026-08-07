@@ -127,7 +127,12 @@ TODO 20260804
   index; with an odd team count that paired the last DG1 runner with the
   first DG2 runner in the same "parallel" heat. Now DG1/DG2/each K.O. match
   are chunked as separate phases so a heat never mixes them)
-- some interactivity that shows an action has been registered
+- [x] some interactivity that shows an action has been registered
+  (result entry saves silently and debounced — nothing on screen confirmed
+  a write actually went through, only `saveError` existed and only for
+  failures. Added a brief "✓ Gespeichert" flash in the header, next to the
+  phase badge, that appears once a debounced save completes and fades out
+  ~1.6s later; e2e-tested since it's a timing-dependent UI behavior)
 - [x] does firebase allow user + pw login — yes, the Email/Password provider is
   already enabled (`firebase.json` → `auth.providers.emailPassword`) and
   `FirebaseBackend.auth.signIn`/`createAccount` already call
