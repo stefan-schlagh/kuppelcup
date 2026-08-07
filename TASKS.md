@@ -172,9 +172,26 @@ TODO 20260804
   unplayed match — makes the other side win automatically, cascading forward
   until it reaches a real opponent; a still-unplayed real match is left
   correctly undecided rather than treated as a bye)
-- all times (+ gemeindewertung + best times) and turnament tree should be printable as a pdf, gesamtwertung as well
-- use a libary like react-pdf so that (potential) previews and the pdf itself can be the same code
+- [x] all times (+ gemeindewertung + best times) and turnament tree should be printable as a pdf, gesamtwertung as well
+- [x] use a libary like react-pdf so that (potential) previews and the pdf itself can be the same code
   - pdfs shall only be in "light mode"
+  (`@react-pdf/renderer`; `src/pdf/pdfDocs.tsx` builds one `GesamtberichtPdf`
+  — Grunddurchgang + Gemeindewertung + Tagesbestzeit + Gesamtwertung +
+  Turnierbaum together on a single physical A4 page (per your call — small
+  fixed font, not paginated per section), including the new `Gesamtwertung`
+  list added to the Bestenliste tab. One "Gesamtbericht als PDF
+  exportieren" button, admin-only (AdminPanel → Backup — the whole panel is
+  already gated behind admin auth). react-pdf's styles are a fixed light
+  palette independent of the DOM/app theme, so "light mode only" is
+  automatic, not something to maintain. The library is dynamically
+  `import()`ed from the button handler, not statically — it's ~480kB
+  gzipped and was otherwise landing in every visitor's bundle, spectators
+  included, for a feature only admins use; confirmed via `npm run build`
+  that it now split into its own lazily-loaded chunk. Verified with a
+  temporary throwaway script rendering a 20-team roster to a real PDF,
+  converted to PNG via `pdftoppm` to eyeball the layout, plus a real e2e
+  download test (`page.waitForEvent("download")`) that also confirms the
+  button doesn't exist when signed out.)
 - [x] conflict resolution for tie breaks:
   - in turnament mode: another run
   - for base heats: if at 1-7 assign place (relevant on where to start in turnament tree) randomly

@@ -5,7 +5,7 @@ import { AuthNotice } from "./backend";
 import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
 import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest, gesamtwertung } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
-import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
+import Bestenliste, { Gemeindewertung, Tagesbestzeit, Gesamtwertung } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
@@ -74,6 +74,7 @@ export default function KuppelCup() {
   const ko: KoState = current?.ko ?? {};
   const phase: EventPhase = current?.phase ?? "anmeldung";
   const competitionName = current?.name ?? "KUPPELCUP";
+  const pdfMeta = { competitionName, year: 2026 };
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -184,6 +185,7 @@ export default function KuppelCup() {
             <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
             <Gemeindewertung ranked={gemeinde} />
             <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
+            <Gesamtwertung ranked={gesamt} />
           </FullscreenPanel>
         )}
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
@@ -225,6 +227,12 @@ export default function KuppelCup() {
             deleteEvent={deleteEvent}
             selectEvent={selectEvent}
             logout={logout}
+            ranked={ranked}
+            top8Ids={new Set(top8.map(t => t.id))}
+            gemeinde={gemeinde}
+            dailyBestTimes={dailyBestTimes}
+            gesamt={gesamt}
+            pdfMeta={pdfMeta}
           />
           ) : (
             <div className="login-box">

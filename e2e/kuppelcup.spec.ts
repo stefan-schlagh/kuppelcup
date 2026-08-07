@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 // Runs against LocalBackend only (see playwright.config.ts) — the seeded
 // local admin (admin/admin) always starts with one starter event and no
@@ -104,4 +105,24 @@ test("Gemeindewertung follows the overall (K.O.-aware) standings, not raw base r
   // gesamtwertung, not ranked.filter(gemeinde).
   await expect(rows.first().locator(".td-name")).toHaveText(championName);
   await expect(rows.last().locator(".td-name")).toHaveText(lastRowName);
+});
+
+test("admin can export the combined Gesamtbericht PDF; the button is admin-only", async ({ page }) => {
+  // Public view: no Admin panel, so no export button exists anywhere.
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /Gesamtbericht als PDF/ })).toHaveCount(0);
+
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+  await page.getByRole("button", { name: "Backup" }).click();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /Gesamtbericht als PDF/ }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^gesamtbericht-.*\.pdf$/);
+
+  const path = await download.path();
+  const bytes = await readFile(path!);
+  expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+  expect(bytes.length).toBeGreaterThan(500);
 });

@@ -74,35 +74,36 @@ export default function Bestenliste({ ranked, top8Ids }: BestenlisteProps) {
   );
 }
 
-// TODO add all runs
+function SimpleStandingsTable({ ranked }: { ranked: RankedTeam[] }) {
+  return (
+    <div className="table-wrap">
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Rang</th>
+            <th>Team</th>
+            <th>Punkte</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ranked.map((t, i) => (
+            <tr key={t.id}>
+              <td className="td-rank">{i + 1}</td>
+              <td className="td-name">{t.name}</td>
+              <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function Gemeindewertung({ ranked }: { ranked: RankedTeam[] }) {
   return (
     <div>
       <h2 className="panel-title">Bestenliste — Gemeindewertung</h2>
-      <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Rang</th>
-              <th>Team</th>
-              <th>Punkte</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranked.map((t, i) => {
-              return (
-                <tr key={t.id}>
-                  <td className="td-rank">{i + 1}</td>
-                  <td className="td-name">
-                    {t.name}
-                  </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <SimpleStandingsTable ranked={ranked} />
     </div>
   );
 }
@@ -111,30 +112,16 @@ export function Tagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
   return (
     <div>
       <h2 className="panel-title">Bestenliste — Tagesbestzeit</h2>
-      <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Rang</th>
-              <th>Team</th>
-              <th>Punkte</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranked.map((t, i) => {
-              return (
-                <tr key={t.id}>
-                  <td className="td-rank">{i + 1}</td>
-                  <td className="td-name">
-                    {t.name}
-                  </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <SimpleStandingsTable ranked={ranked} />
+    </div>
+  );
+}
+
+export function Gesamtwertung({ ranked }: { ranked: RankedTeam[] }) {
+  return (
+    <div>
+      <h2 className="panel-title">Gesamtwertung</h2>
+      <SimpleStandingsTable ranked={ranked} />
     </div>
   );
 }

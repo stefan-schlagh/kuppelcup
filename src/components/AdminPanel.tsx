@@ -6,6 +6,8 @@ import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
 import type { Team, EventPhase, BracketData, Account, EventMeta, EventDoc } from '../types'
+import type { RankedTeam } from "../utils/tournament";
+import type { PdfMeta } from "../pdf/pdfDocs";
 import { LogOut } from 'lucide-react';
 
 type RunField = "zeit" | "strafe";
@@ -33,6 +35,12 @@ interface AdminPanelProps {
   deleteEvent: (id: string) => void;
   selectEvent: (id: string) => void;
   logout: () => void;
+  ranked: RankedTeam[];
+  top8Ids: Set<string>;
+  gemeinde: RankedTeam[];
+  dailyBestTimes: RankedTeam[];
+  gesamt: RankedTeam[];
+  pdfMeta: PdfMeta;
 }
 
 export default function AdminPanel({
@@ -58,6 +66,12 @@ export default function AdminPanel({
   deleteEvent,
   selectEvent,
   logout,
+  ranked,
+  top8Ids,
+  gemeinde,
+  dailyBestTimes,
+  gesamt,
+  pdfMeta,
 }: AdminPanelProps) {
   const [sub, setSub] = useState("event");
   const [newName, setNewName] = useState("");
@@ -69,6 +83,22 @@ export default function AdminPanel({
   const handleExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
     downloadCsv(`kuppelcup-backup-${stamp}.csv`, teamsToCsv(teams));
+  };
+
+  // Dynamically imported: @react-pdf/renderer is large (~500kB gzipped) and
+  // only ever needed here, behind an admin-only click — statically
+  // importing it would ship that weight to every visitor, spectators
+  // included.
+  const handleExportGesamtbericht = async () => {
+    const [{ downloadPdf }, { GesamtberichtPdf }] = await Promise.all([
+      import("../pdf/download"),
+      import("../pdf/pdfDocs"),
+    ]);
+    const stamp = new Date().toISOString().slice(0, 10);
+    await downloadPdf(
+      GesamtberichtPdf({ ranked, top8Ids, gemeinde, dailyBest: dailyBestTimes, gesamt, bracket, meta: pdfMeta }),
+      `gesamtbericht-${stamp}.pdf`,
+    );
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,6 +353,17 @@ export default function AdminPanel({
             </label>
           </div>
           <p className="hint-text">Beim Import werden die vorhandenen Teams ersetzt (K.O.-Ergebnisse bleiben unberührt).</p>
+
+          <p className="hint-text">Grunddurchgang, Gemeindewertung, Tagesbestzeit, Gesamtwertung und Turnierbaum als ein A4-Gesamtbericht.</p>
+          <div className="backup-actions">
+            <button
+              className="pin-btn backup-btn"
+              disabled={ranked.length === 0}
+              onClick={() => void handleExportGesamtbericht()}
+            >
+              Gesamtbericht als PDF exportieren ⬇
+            </button>
+          </div>
         </div>
       )}
     </div>
