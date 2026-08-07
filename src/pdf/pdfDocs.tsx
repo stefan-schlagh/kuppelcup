@@ -149,7 +149,7 @@ export function GesamtberichtPdf({ ranked, top8Ids, gemeinde, dailyBest, gesamt,
 
   return (
     <Document>
-      <Page size="A4" style={s.page}>
+      <Page size="A4" orientation="landscape" style={s.page}>
         <Text style={s.title}>Gesamtbericht</Text>
         <Text style={s.subtitle}>{meta.competitionName} {meta.year}</Text>
 

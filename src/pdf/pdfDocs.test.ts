@@ -44,11 +44,11 @@ function pageCount(buf: Buffer): number {
 }
 
 describe("GesamtberichtPdf", () => {
-  it("renders a single A4 portrait page, even with a full 20-team roster", async () => {
+  it("renders a single A4 landscape (Querformat) page, even with a full 20-team roster", async () => {
     const buf = await renderToBuffer(GesamtberichtPdf(baseProps()));
     expect(buf.subarray(0, 4).toString()).toBe("%PDF");
     expect(pageCount(buf)).toBe(1);
-    expect(mediaBox(buf)).toBe("/MediaBox [0 0 595.280029 841.890015]");
+    expect(mediaBox(buf)).toBe("/MediaBox [0 0 841.890015 595.280029]");
   });
 
   it("doesn't crash with no teams and an empty bracket", async () => {

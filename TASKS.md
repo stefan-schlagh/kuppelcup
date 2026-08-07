@@ -275,7 +275,12 @@ TODO 20260807:
     in `VITE_SENTRY_DSN` in `.env.local` (see `.env.example`) — without a
     DSN, or outside a production build (`npm run build`), it's a no-op, so
     local dev/CI/e2e never send anything and never need an account.
-- use Querformat for Gesamtbericht
+- [x] use Querformat for Gesamtbericht
+  (`<Page size="A4" orientation="landscape">` — the extra width fits the
+  bracket + 4 stat tables comfortably, though the page is *shorter*
+  (595pt tall vs. 842pt in portrait); re-verified the 20-team roster still
+  fits one page. Visually checked via a temporary throwaway script
+  rendered to PDF and converted to PNG via `pdftoppm`, then removed.)
 - are all pdf previews in react-pdf? previews should be light mode as well.
 - backup does not include k.o. heats
 - [x] CI run fails (e2e stage): all 7 Playwright tests failed, page never rendered
