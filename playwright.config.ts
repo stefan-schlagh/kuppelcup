@@ -10,6 +10,12 @@ const PORT = 5174;
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  // Capped rather than the default (one worker per CPU core): several
+  // tests now lazy-load @react-pdf/renderer's full browser bundle
+  // (~480kB) against a single shared dev server, and full-core parallelism
+  // was enough to make otherwise-solid tests time out under contention
+  // (verified: --workers=1 was consistently fast and reliable).
+  workers: 2,
   retries: process.env.CI ? 2 : 0,
   reporter: "list",
   use: {

@@ -182,22 +182,44 @@ test("CSV backup includes K.O. results and restores them on import", async ({ pa
   await expect(timeInputs.first()).toHaveValue(originalQf1RunA);
 });
 
-test("Urkunden preview stays light-mode even when the app is in dark mode", async ({ page }) => {
+test("admin can export Urkunden as a PDF, one certificate per participant", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+  await page.getByRole("button", { name: "Urkunden", exact: true }).click();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /Als PDF exportieren/ }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^urkunden-.*\.pdf$/);
+
+  const bytes = await readFile((await download.path())!);
+  expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+  // 20 sample teams -> 20 certificate pages.
+  expect(bytes.toString("latin1")).toMatch(/\/Count\s+20\b/);
+});
+
+test("Urkunden preview renders the actual generated PDF, in a dark-themed app", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
 
   // Dark is the default theme (useStorage("kuppelcup:theme", "dark")) --
-  // no toggle needed on a fresh session.
+  // no toggle needed on a fresh session. The preview is a react-pdf
+  // <PDFViewer> (an iframe showing the real, generated PDF via a blob:
+  // URL), not themed HTML -- it can't inherit the app's dark mode by
+  // construction, unlike the old hand-rolled HTML/CSS preview this
+  // replaced, so there's nothing theme-related left to assert here beyond
+  // "it still works while the app is dark."
   const appTheme = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
   expect(appTheme).toBe("dark");
 
   await page.getByRole("button", { name: "Urkunden", exact: true }).click();
-  const preview = page.locator(".urkunde").first();
-  await expect(preview).toBeVisible();
-  const bg = await preview.evaluate((el) => getComputedStyle(el).backgroundColor);
-  // The generated PDF (jsPDF) is always white -- the preview must match
-  // regardless of the app's current theme, not follow it into dark mode.
-  expect(bg).toBe("rgb(255, 255, 255)");
+  // Generous timeout: this is the one spot that lazy-loads
+  // @react-pdf/renderer's full browser bundle (~480kB) *and* renders a
+  // real PDF before the iframe even appears, unlike the other lazy-PDF
+  // paths (which only fetch on a button click, not on tab open).
+  const iframe = page.locator("iframe");
+  await expect(iframe).toBeVisible({ timeout: 15000 });
+  await expect.poll(() => iframe.evaluate((el) => (el as HTMLIFrameElement).src), { timeout: 15000 }).toMatch(/^blob:/);
 });
 
 test("entering a result flashes a brief 'Gespeichert' confirmation", async ({ page }) => {
