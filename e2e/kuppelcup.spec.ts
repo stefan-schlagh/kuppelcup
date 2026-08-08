@@ -309,3 +309,57 @@ test("a newly created admin account starts with no events, and the team form onl
   await expect(page.getByText("Teams (1)")).toBeVisible();
 });
 
+test("an admin can create, rename, switch between, and delete events", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+
+  await page.getByPlaceholder("Neuer Event-Name, z.B. 2. Geissberg KUPPELCUP").fill("Zweites Event");
+  await page.getByRole("button", { name: "Event anlegen +" }).click();
+  const rows = page.locator(".data-table").first().locator("tbody tr");
+  await expect(rows).toHaveCount(2);
+
+  // A freshly created event becomes current immediately -- no "Öffnen"
+  // button on its own row (that's only for switching away from it).
+  const newRow = page.locator("tr", { hasText: "Zweites Event" });
+  await expect(newRow.getByRole("button", { name: "Öffnen" })).toHaveCount(0);
+  await expect(newRow).toHaveClass(/row-qualified/);
+
+  page.once("dialog", (d) => d.accept("Zweites Event (umbenannt)"));
+  await newRow.getByRole("button", { name: "Umbenennen" }).click();
+  const renamedRow = page.locator("tr", { hasText: "Zweites Event (umbenannt)" });
+  await expect(renamedRow).toBeVisible();
+
+  // Switch back to the starter event.
+  const starterRow = page.locator("tr", { hasText: "1. Geissberg KUPPELCUP" });
+  await starterRow.getByRole("button", { name: "Öffnen" }).click();
+  await expect(starterRow).toHaveClass(/row-qualified/);
+  await expect(renamedRow.getByRole("button", { name: "Öffnen" })).toBeVisible();
+
+  page.once("dialog", (d) => d.accept());
+  await renamedRow.getByRole("button", { name: "✕" }).click();
+  await expect(rows).toHaveCount(1);
+});
+
+test("visiting an event's own URL (?event=<id>) loads that specific event", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+  await page.getByPlaceholder("Neuer Event-Name, z.B. 2. Geissberg KUPPELCUP").fill("Geteiltes Event");
+  await page.getByRole("button", { name: "Event anlegen +" }).click();
+  const eventUrl = page.url();
+
+  await page.locator("tr", { hasText: "1. Geissberg KUPPELCUP" }).getByRole("button", { name: "Öffnen" }).click();
+  await page.goto(eventUrl);
+  await page.getByRole("button", { name: "Admin" }).click();
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+  await expect(page.locator("tr.row-qualified")).toContainText("Geteiltes Event");
+});
+
+test("the QR panel shows the shareable link for an event", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+  await page.locator("tr", { hasText: "1. Geissberg KUPPELCUP" }).getByRole("button", { name: "QR" }).click();
+  await expect(page.locator(".qr-panel")).toBeVisible();
+  await expect(page.locator(".qr-img")).toBeVisible();
+  await expect(page.locator(".qr-url code")).toContainText("?event=");
+});
+
