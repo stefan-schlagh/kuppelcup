@@ -363,3 +363,56 @@ test("the QR panel shows the shareable link for an event", async ({ page }) => {
   await expect(page.locator(".qr-url code")).toContainText("?event=");
 });
 
+test("Gastgeber and Gemeindewertung checkboxes toggle a team's flags and persist", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+
+  const teamsTable = page.locator(".data-table").nth(1);
+  const firstRow = teamsTable.locator("tbody tr").first();
+  const gastgeberCheckbox = firstRow.locator('input[type="checkbox"]').nth(0);
+  const gemeindeCheckbox = firstRow.locator('input[type="checkbox"]').nth(1);
+
+  // seedTeams() marks only the first team as Gastgeber.
+  await expect(gastgeberCheckbox).toBeChecked();
+  await gastgeberCheckbox.uncheck();
+  await expect(gemeindeCheckbox).not.toBeChecked();
+  await gemeindeCheckbox.check();
+
+  // Persisted across a tab switch (not just local component state).
+  await page.getByRole("button", { name: "Grunddurchgang erfassen" }).click();
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+  await expect(teamsTable.locator("tbody tr").first().locator('input[type="checkbox"]').nth(0)).not.toBeChecked();
+  await expect(teamsTable.locator("tbody tr").first().locator('input[type="checkbox"]').nth(1)).toBeChecked();
+});
+
+test("teams can only be added/removed during Anmeldung, and everything locks once abgeschlossen", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+
+  await page.getByRole("button", { name: "Durchführung" }).click();
+  await expect(page.getByText("Teams können nur in der Anmeldungs-Phase hinzugefügt oder entfernt werden.")).toBeVisible();
+  const teamsTable = page.locator(".data-table").nth(1);
+  await expect(teamsTable.getByTitle("Team entfernen")).toHaveCount(0);
+  // Not locked yet -- checkboxes still editable in Durchführung.
+  await expect(teamsTable.locator('input[type="checkbox"]').first()).toBeEnabled();
+
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Abgeschlossen" }).click();
+
+  await expect(teamsTable.locator('input[type="checkbox"]').first()).toBeDisabled();
+  await page.getByRole("button", { name: "Grunddurchgang erfassen" }).click();
+  await expect(page.getByText("Event abgeschlossen — Eingaben gesperrt.")).toBeVisible();
+  await expect(page.locator(".input-field").first()).toBeDisabled();
+});
+
+test("the theme toggle switches between dark and light and persists across a reload", async ({ page }) => {
+  await page.goto("/");
+  const theme = () => page.evaluate(() => document.documentElement.getAttribute("data-theme"));
+  await expect.poll(theme).toBe("dark");
+  await page.getByRole("button", { name: "Hell/Dunkel wechseln" }).click();
+  await expect.poll(theme).toBe("light");
+  await page.reload();
+  await expect.poll(theme).toBe("light");
+});
