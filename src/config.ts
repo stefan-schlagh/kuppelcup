@@ -14,7 +14,8 @@ export const BACKEND: BackendKind = "firebase";
 // LocalBackend even if BACKEND is "firebase", so the unwired Firebase stub
 // never throws. Flip to true only once FirebaseBackend is actually wired up.
 //
-// VITE_E2E_LOCAL_BACKEND forces this back to false regardless — set by
-// playwright.config.ts so `npm run test:e2e` always runs against
-// LocalBackend and can never touch the real Firebase project.
-export const FIREBASE_WIRED = import.meta.env.VITE_E2E_LOCAL_BACKEND === "true" ? false : true;
+// VITE_FORCE_LOCAL_BACKEND forces this back to false regardless — set by
+// `npm run dev:local` for your own manual testing against LocalBackend
+// (localStorage only, no Firebase project touched at all), and by
+// playwright.config.ts so `npm run test:e2e` always runs the same way.
+export const FIREBASE_WIRED = import.meta.env.VITE_FORCE_LOCAL_BACKEND === "true" ? false : true;

@@ -1,9 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // e2e smoke tests against a dev server forced onto LocalBackend
-// (VITE_E2E_LOCAL_BACKEND, see src/config.ts) — these must never be able to
-// reach the real Firebase project. Run with `npm run test:e2e`; browsers
-// need a one-time `npx playwright install chromium`.
+// (VITE_FORCE_LOCAL_BACKEND, see src/config.ts — same flag `npm run dev:local`
+// uses) — these must never be able to reach the real Firebase project. Run
+// with `npm run test:e2e`; browsers need a one-time `npx playwright install
+// chromium`.
 const PORT = 5174;
 
 export default defineConfig({
@@ -26,6 +27,6 @@ export default defineConfig({
     command: `npm run dev -- --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
-    env: { VITE_E2E_LOCAL_BACKEND: "true" },
+    env: { VITE_FORCE_LOCAL_BACKEND: "true" },
   },
 });

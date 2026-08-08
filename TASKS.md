@@ -405,3 +405,16 @@ backlog:
   `.env.example` (empty values) and `src/firebaseConfig.ts` (reads from
   `import.meta.env`, no literal values). `.firebaserc`'s project id isn't a
   secret — Firebase project ids are meant to be public.
+- [x] add a "local mode" that does not use any backend, for your own manual
+  testing: `npm run dev:local` runs the dev server with `FIREBASE_WIRED`
+  forced off, same as the e2e suite already did — so it always talks to
+  `LocalBackend` (localStorage only) and never touches Firebase, regardless
+  of `BACKEND`/`FIREBASE_WIRED` in `src/config.ts`. Renamed the flag that
+  already existed for e2e (`VITE_E2E_LOCAL_BACKEND` → `VITE_FORCE_LOCAL_BACKEND`)
+  since it's no longer e2e-only, and pointed `playwright.config.ts` at the
+  new name. Log in with the seeded local admin (`admin`/`admin`); the "Beispiel-
+  Teams laden" button in Admin gives you sample data to poke at right away.
+  Verified: `npm run dev:local` boots and logs in correctly (temporary
+  Playwright script against a real browser, removed after), `tsc -b`, unit
+  tests, lint, and the full e2e suite (11/11) all still pass with the
+  renamed flag.
