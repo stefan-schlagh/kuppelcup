@@ -259,7 +259,9 @@ export default function AdminPanel({
           )}
 
           <h3 className="panel-title" style={{ marginTop: 24 }}>Teams ({teams.length})</h3>
-          {isAnmeldung ? (
+          {!current ? (
+            <p className="hint-text">Bitte zuerst oben ein Event anlegen oder auswählen.</p>
+          ) : isAnmeldung ? (
             <div className="add-team-row">
               <input
                 type="text"
@@ -332,9 +334,9 @@ export default function AdminPanel({
                 {teams.map((t: Team) => (
                   <tr key={t.id}>
                     <td className="td-name">{t.name}</td>
-                    <td><input type="number" step="0.01" disabled={locked} value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
+                    <td><input type="number" step="0.01" disabled={locked} value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
                     <td><input type="number" min="0" step="5" disabled={locked} value={t.dg1.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg1", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
-                    <td><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
+                    <td><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
                     <td><input type="number" min="0" step="5" disabled={locked} value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
                   </tr>
                 ))}
