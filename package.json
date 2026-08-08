@@ -19,8 +19,8 @@
     "@react-pdf/renderer": "^4.5.1",
     "@sentry/react": "^10.69.0",
     "firebase": "^12.17.0",
-    "jspdf": "^4.2.1",
     "lucide-react": "^1.26.0",
+    "pako": "^1.0.11",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
