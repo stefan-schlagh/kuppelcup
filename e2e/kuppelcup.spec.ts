@@ -237,3 +237,75 @@ test("entering a result flashes a brief 'Gespeichert' confirmation", async ({ pa
   await expect(savedFlash).toHaveClass(/is-visible/, { timeout: 3000 });
   await expect(savedFlash).not.toHaveClass(/is-visible/, { timeout: 3000 });
 });
+
+test("clearing an entered Grunddurchgang time doesn't leave a stale NaN score (regression)", async ({ page }) => {
+  // Regression test: the DG1/DG2 zeit inputs used a bare parseFloat(), so
+  // clearing a filled-in field produced NaN instead of null (parseFloat("")
+  // is NaN) -- unlike the equivalent K.O. input, which already null-guarded
+  // this. NaN then poisoned punkte()/byPunkte() ranking silently.
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+  await page.getByRole("button", { name: "Grunddurchgang erfassen" }).click();
+
+  const zeitInputs = page.locator(".input-field");
+  await zeitInputs.nth(0).fill("20.00");
+  await zeitInputs.nth(1).fill("21.00");
+  await zeitInputs.nth(0).fill(""); // clear DG1 zeit for the first team again
+
+  await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
+  await expect(page.getByText("NaN")).toHaveCount(0);
+  // The first team's Punkte must still be a real number (from its DG2 run,
+  // 21), not NaN swallowing the whole ranking calculation.
+  await expect(page.locator(".data-table").first().locator("tbody tr").first().locator(".td-best")).toHaveText("21");
+});
+
+test("a wrong password shows an inline error and does not sign in", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Admin" }).click();
+  await page.getByPlaceholder("E-Mail-Adresse").first().fill("admin");
+  await page.getByPlaceholder("Passwort").fill("definitely-wrong");
+  await page.getByRole("button", { name: "Anmelden" }).click();
+  await expect(page.locator(".pin-error")).toBeVisible();
+  await expect(page.getByText("Meine Events")).toHaveCount(0);
+});
+
+test("passwordless e-mail sign-in logs in immediately against the local backend", async ({ page }) => {
+  // FirebaseBackend can't sign in synchronously (real email-link flow), but
+  // LocalBackend's stub does -- e2e always runs on LocalBackend, so this is
+  // reachable end-to-end unlike the "check your email" notice path.
+  await page.goto("/");
+  await page.getByRole("button", { name: "Admin" }).click();
+  await page.getByPlaceholder("E-Mail-Adresse").nth(1).fill("chef@ff-example.at");
+  await page.getByRole("button", { name: "Link per E-Mail (passwortlos)" }).click();
+  await expect(page.getByText("Meine Events")).toBeVisible();
+  await expect(page.getByRole("button", { name: /chef@ff-example\.at/ })).toBeVisible();
+  // Brand-new admin -- no events yet.
+  await expect(page.getByText("Teams (0)")).toBeVisible();
+});
+
+test("a newly created admin account starts with no events, and the team form only appears once one exists", async ({ page }) => {
+  // Regression test: AdminPanel's add-team input used to render whenever
+  // phase === "anmeldung" (the default with no current event at all), so a
+  // brand-new admin could type a team name and click "Hinzufügen +" and have
+  // it silently discarded -- addTeam/setTeams both no-op without a current
+  // event, with zero feedback.
+  await page.goto("/");
+  await page.getByRole("button", { name: "Admin" }).click();
+  await page.getByPlaceholder("E-Mail-Adresse").first().fill("ff-neu-admin@example.at");
+  await page.getByPlaceholder("Passwort").fill("secret123");
+  await page.getByRole("button", { name: "Neues Konto erstellen" }).click();
+  await expect(page.getByText("Meine Events")).toBeVisible();
+  await expect(page.locator(".data-table").first().locator("tbody tr")).toHaveCount(0);
+
+  await expect(page.getByText("Bitte zuerst oben ein Event anlegen oder auswählen.")).toBeVisible();
+  await expect(page.getByPlaceholder("Teamname, z.B. FF Buchberg")).toHaveCount(0);
+
+  await page.getByPlaceholder("Neuer Event-Name, z.B. 2. Geissberg KUPPELCUP").fill("Mein Event");
+  await page.getByRole("button", { name: "Event anlegen +" }).click();
+
+  await expect(page.getByPlaceholder("Teamname, z.B. FF Buchberg")).toBeVisible();
+  await page.getByPlaceholder("Teamname, z.B. FF Buchberg").fill("FF Testteam");
+  await page.getByRole("button", { name: "Hinzufügen +" }).click();
+  await expect(page.getByText("Teams (1)")).toBeVisible();
+});
+
