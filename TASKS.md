@@ -353,46 +353,7 @@ TODO 20260807:
   unit + e2e tested.)
 
 backlog: 
-- [x] use react-pdf everywhere
-  (Urkunden was the only remaining holdout: jsPDF for the real PDF
-  (`utils/urkunde-pdf.ts`, now deleted) plus a hand-rolled HTML/CSS preview
-  kept manually in sync with it. `src/pdf/urkundenPdf.tsx` is the
-  react-pdf replacement — one `<Document>`, one certificate `<Page>` per
-  participant, same visual design (double border, gold/red accents,
-  Helvetica can't render the on-screen "⊃⊂" mark so a colored rule stands
-  in, same as the old jsPDF version already did). The preview is now a
-  `<PDFViewer>` (`src/pdf/UrkundenPreview.tsx`) — an iframe showing the
-  *actual* generated PDF via a blob: URL, not separate themed HTML, so
-  it's structurally impossible for it to drift from what gets downloaded
-  or to inherit the app's dark mode (unlike before). Both the preview and
-  the download button dynamically `import()` `@react-pdf/renderer` (only
-  admins with the Urkunden tab open ever need it) — confirmed via
-  `npm run build` that removing jsPDF actually *shrank* the main bundle,
-  since jsPDF was statically imported before. `jspdf` dropped as a
-  dependency entirely (nothing else used it).
-
-  Hit and fixed a real dependency issue along the way: `@react-pdf/renderer`
-  needs deep `pako/lib/zlib/*` paths that only exist in pako's old
-  (pre-`exports`-map) package layout; it was only ever installed nested
-  (via `browserify-zlib`/`unicode-trie`), which Vite's dev-server dependency
-  pre-bundler couldn't resolve for `<PDFViewer>`'s browser-only code path.
-  Pinned `pako@1.0.11` as a direct dependency so it hoists to a single
-  top-level copy Vite can find. (Installing bare `pako` — latest, v3 — first
-  made this *worse*, not better: v3's modern `exports` map hides those same
-  deep paths entirely. Confirmed the fix's fully installed, not just
-  present locally, by testing the actual `npm run build` output too.)
-
-  Verified: unit tests (page count, A4 portrait size) plus a temporary
-  throwaway script rendering real certificates to PDF and converting to
-  PNG via `pdftoppm` to eyeball the design against the original (removed
-  after). Browser verification hit headless Chromium's known limitation of
-  not visually rendering embedded PDFs — confirmed instead that the iframe
-  gets a real, valid `blob:` PDF URL with zero console errors, which a
-  real (non-headless) browser renders naturally. e2e-tested (download
-  produces a real N-page PDF; preview loads a real PDF while the app is in
-  dark mode). Also had to cap Playwright's `workers` to 2 — the added
-  lazy-loaded, PDF-heavy tests weren't flaky standalone or under
-  `--workers=1`, only under this sandbox's default full-core parallelism.
+- use react-pdf everywhere
 - [x] scan for secrets — clean. Searched the full git history (`git log --all
   -p -G...`, not just the current tree, since a secret committed and later
   "removed" would still be in history) for: the real Firebase API key

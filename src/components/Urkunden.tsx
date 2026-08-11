@@ -1,8 +1,5 @@
-import { lazy, Suspense } from "react";
 import type { BracketData, Match, Team } from "../types";
-import type { UrkundeEntry } from "../pdf/urkundenPdf";
-
-const UrkundenPreview = lazy(() => import("../pdf/UrkundenPreview"));
+import { generateUrkundenPdf, type UrkundeEntry } from "../utils/urkunde-pdf";
 
 function winnerTeam(m: Match): Team | null {
   if (!m.winnerId) return null;
@@ -25,6 +22,8 @@ interface UrkundenProps {
   year: number | string;
 }
 
+// One certificate per participant. Each team's Wertung reflects its best
+// achievement (K.O. placement), otherwise a plain Teilnehmerurkunde.
 export default function Urkunden({ ranked, bracket, competitionName, year }: UrkundenProps) {
   const champion = winnerTeam(bracket.final);
   const finalist = loserTeam(bracket.final);
@@ -45,18 +44,6 @@ export default function Urkunden({ ranked, bracket, competitionName, year }: Urk
     const detail = p > 0 ? `Grunddurchgang: Rang ${i + 1} · ${p} Punkte` : "Teilnahme am Grunddurchgang";
     return { name: t.name, wertung: wertungFor(t), detail };
   });
-  const meta = { competitionName, year };
-
-  // Dynamically imported: @react-pdf/renderer is large and only ever
-  // needed here, behind an admin-only click.
-  const handleExport = async () => {
-    const [{ downloadPdf }, { UrkundenPdf }] = await Promise.all([
-      import("../pdf/download"),
-      import("../pdf/urkundenPdf"),
-    ]);
-    const stamp = new Date().toISOString().slice(0, 10);
-    await downloadPdf(UrkundenPdf({ entries, meta }), `urkunden-${stamp}.pdf`);
-  };
 
   return (
     <div className="urkunden">
@@ -64,7 +51,7 @@ export default function Urkunden({ ranked, bracket, competitionName, year }: Urk
         <h2 className="panel-title">Urkunden — alle Teilnehmer</h2>
         <button
           className="pin-btn backup-btn"
-          onClick={() => void handleExport()}
+          onClick={() => generateUrkundenPdf(entries, { competitionName, year })}
           disabled={entries.length === 0}
         >
           Als PDF exportieren ⬇
@@ -74,15 +61,30 @@ export default function Urkunden({ ranked, bracket, competitionName, year }: Urk
       {entries.length === 0 ? (
         <p className="hint-text">Noch keine Teams vorhanden.</p>
       ) : (
-        <>
-          <p className="hint-text">
-            {entries.length} Urkunde{entries.length === 1 ? "" : "n"} — eine Seite pro Teilnehmer im PDF.
-          </p>
-          <Suspense fallback={<p className="hint-text">Vorschau wird geladen …</p>}>
-            <UrkundenPreview entries={entries} meta={meta} />
-          </Suspense>
-        </>
+        <p className="hint-text">
+          {entries.length} Urkunde{entries.length === 1 ? "" : "n"} — eine Seite pro Teilnehmer im PDF.
+        </p>
       )}
+
+      <div className="urkunden-sheets">
+        {entries.map((e, i) => (
+          <div className="urkunde" key={i}>
+            <div className="urkunde-inner">
+              <div className="urkunde-hose">⊃⊂</div>
+              <h1 className="urkunde-title">Urkunde</h1>
+              <p className="urkunde-event">{competitionName} {year}</p>
+              <div className="urkunde-rule" />
+              <p className="urkunde-wertung">{e.wertung}</p>
+              <p className="urkunde-platz">{e.detail}</p>
+              <p className="urkunde-team">{e.name}</p>
+              <div className="urkunde-signatures">
+                <span className="urkunde-sig">Datum</span>
+                <span className="urkunde-sig">Turnierleitung</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
