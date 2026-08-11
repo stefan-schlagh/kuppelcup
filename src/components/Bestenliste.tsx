@@ -1,5 +1,6 @@
 import { fmtTime, gesamt } from "../utils/helpers";
 import type { RankedTeam } from "../utils/tournament";
+import { Award, Trophy } from 'lucide-react';
 
 interface BestenlisteProps {
   ranked: RankedTeam[];
@@ -122,4 +123,29 @@ export function Tagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
       </div>
     </div>
   );
+}
+
+export function SummaryBestenliste({ ranked }: { ranked: RankedTeam[] }) {
+  return(
+    <div>
+    <h2 className="panel-title">Bestenlise — Leaderboard</h2>
+    <div className="summary-bestenliste">
+    {ranked.map((t, i) => {
+      return(
+        <div key={t.id} className="place">
+          <div className="award-container">{i < 1 ? <Trophy /> : <Award />}</div>
+          <div className="bar">
+            <span>{i+1}</span>
+            <div className="points" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">
+              <span>{t.punkte}</span>
+            </div>
+          </div>
+          <span className="team-name">
+            {t.name}
+          </span>
+        </div> 
+      );})}
+    </div>
+    </div>
+  )
 }
