@@ -26,3 +26,9 @@ dist-ssr
 .firebase
 .env.local
 .env.*.local
+
+# Playwright (npm run test:e2e)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

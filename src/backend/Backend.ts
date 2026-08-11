@@ -1,5 +1,16 @@
 import type { Account, EventDoc, EventMeta } from "../types";
 
+// A non-error informational message from an auth flow — e.g. "check your
+// email for the sign-in link". Thrown (not returned) because the login
+// form's only feedback channel is the catch block callers already have,
+// but it should be styled/treated as a notice, not a failure.
+export class AuthNotice extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthNotice";
+  }
+}
+
 // The connection layer the app talks to. A LocalBackend implements it with
 // localStorage today; a FirebaseBackend maps the same calls onto Firestore
 // + Firebase Auth. Everything is async so the Firestore implementation can
@@ -10,12 +21,22 @@ export interface Backend {
     currentAccount(): Account | null;
     // Sign in with username + password; rejects on bad credentials.
     signIn(username: string, password: string): Promise<Account>;
-    // Passwordless sign-in with just an email (Firebase email-link). Signs in
-    // the matching admin, creating an empty one if the email is new.
+    // Passwordless sign-in with just an email. LocalBackend signs in (or
+    // creates) the matching admin immediately. FirebaseBackend can't sign
+    // anyone in synchronously — Firebase email-link requires the user to
+    // follow a link emailed to them — so it sends that link and rejects
+    // with an AuthNotice instead of resolving an Account.
     signInWithEmail(email: string): Promise<Account>;
     // Create a new (empty) admin account; rejects if the username is taken.
     createAccount(username: string, password: string): Promise<Account>;
     signOut(): Promise<void>;
+    // Completes a pending email-link sign-in if the current URL is one
+    // (i.e. the user just followed the emailed link back into the app).
+    // Call once on startup, before reading currentAccount(). Resolves null
+    // if the URL isn't a sign-in link (the common case) or LocalBackend
+    // (which never needs this — its signInWithEmail already completes
+    // synchronously).
+    completeEmailLinkSignIn?(): Promise<Account | null>;
   };
 
   // The event to show on the public landing page when nobody is signed in and
