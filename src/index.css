@@ -103,6 +103,21 @@ body {
   gap: 10px;
 }
 
+.saved-flash {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-accent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.saved-flash.is-visible {
+  opacity: 1;
+}
+
 .phase-badge {
   font-size: 11px;
   font-weight: 700;
@@ -401,6 +416,25 @@ span.nav-icon{
   margin-left: 6px;
 }
 
+.tie-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+.tie-badge-contested {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 .badge-host {
   background: var(--bg-host-dim);
   color: var(--text-host-light);
@@ -526,6 +560,18 @@ span.nav-icon{
   font-weight: 700;
 }
 
+.match-tied-badge {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-primary);
+  background: var(--bg-host-dim);
+  border-top: 1px solid var(--border-color);
+}
+
 /* Pin Box & Forms */
 .pin-box {
   max-width: 280px;
@@ -564,6 +610,14 @@ span.nav-icon{
 
 .pin-error {
   color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  margin: 8px 0 16px;
+}
+
+.pin-notice {
+  color: var(--color-host);
   font-size: 13px;
   font-weight: 600;
   text-align: center;
@@ -1059,6 +1113,15 @@ span.nav-icon{
 }
 
 .monitor-error-text { color: var(--color-primary); }
+
+.monitor-tied-badge {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-primary);
+}
 .text-muted-color { color: var(--text-main); }
 .empty-msg { color: var(--text-footer); margin: 0; font-style: italic; }
 
@@ -1094,141 +1157,10 @@ span.nav-icon{
   flex-wrap: wrap;
 }
 
-.urkunden-sheets {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.urkunden-pdf-viewer {
   margin-top: 16px;
-}
-
-.urkunde {
-  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 16px;
-  /* Preview a sheet in A4 Hochformat, matching the generated PDF. */
-  width: 100%;
-  max-width: 540px;
-  margin: 0 auto;
-}
-
-.urkunde-inner {
-  border: 3px double var(--color-accent);
-  border-radius: 6px;
-  padding: 40px 32px;
-  text-align: center;
-  aspect-ratio: 1 / 1.414; /* A4 portrait */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.urkunde-hose {
-  color: var(--color-primary);
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -3px;
-}
-
-.urkunde-title {
-  font-family: 'Oswald', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 6px;
-  font-size: 40px;
-  margin: 8px 0 4px;
-  color: var(--text-main);
-}
-
-.urkunde-event {
-  color: var(--text-muted);
-  font-size: 15px;
-  letter-spacing: 1px;
-  margin: 0;
-}
-
-.urkunde-rule {
-  width: 120px;
-  height: 2px;
-  background: var(--color-accent);
-  margin: 20px auto;
-}
-
-.urkunde-wertung {
-  color: var(--color-accent);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-weight: 700;
-  font-size: 16px;
-  margin: 0 0 4px;
-}
-
-.urkunde-platz {
-  color: var(--text-muted);
-  font-size: 14px;
-  margin: 0 0 16px;
-}
-
-.urkunde-team {
-  font-family: 'Oswald', sans-serif;
-  font-size: 30px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--text-main);
-}
-
-.urkunde-signatures {
-  display: flex;
-  justify-content: space-around;
-  gap: 24px;
-  margin-top: 56px;
-}
-
-.urkunde-sig {
-  border-top: 1px solid var(--text-muted);
-  padding-top: 6px;
-  min-width: 160px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-@media print {
-  body {
-    background: #fff;
-  }
-  body * {
-    visibility: hidden;
-  }
-  .urkunden-sheets,
-  .urkunden-sheets * {
-    visibility: visible;
-  }
-  .urkunden-sheets {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    gap: 0;
-  }
-  .urkunde {
-    border: none;
-    padding: 0;
-    page-break-after: always;
-    break-after: page;
-  }
-  .urkunde-inner {
-    min-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  .urkunde-title,
-  .urkunde-team {
-    color: #111;
-  }
-  .no-print {
-    display: none !important;
-  }
 }
 
 
@@ -1386,51 +1318,9 @@ span.nav-icon{
     text-align: center;
     margin-top: 10px;
   }
-  
-  .urkunde{
-    width: 90%;
-  }
 
-  .urkunde-inner{
-    padding: 32px 24px;
-  }
-
-  .urkunde-hose{
-    font-size: clamp(26px, 4vw, 34px);
-  }
-
-  .urkunde-title{
-    font-size: clamp(32px, 5vw, 40px);
-  }
-
-  .urkunde-event{
-    font-size: clamp(12px, 2vw, 15px);
-  }
-
-  .urkunde-rule{
-    min-width: 100px;
-    width: 50%;
-    max-width: 120px;
-  }
-
-  .urkunde-wertung{
-    font-size: clamp(13px, 2vw, 16px);
-  }
-
-  .urkunde-platz{
-    font-size: clamp(11px, 2vw, 14px);
-  }
-
-  .urkunde-team{
-    font-size: clamp(22px, 4vw, 30px)
-  }
-
-  .urkunde-signatures{
-    gap: 12px;
-  }
-
-  .urkunde-sig{
-    min-width: 100px;
+  .urkunden-pdf-viewer{
+    height: 480px;
   }
 
   /* *Admin-Overlay */

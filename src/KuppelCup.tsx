@@ -1,16 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
+import { AuthNotice } from "./backend";
 import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
-import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest } from "./utils/tournament";
+import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest, gesamtwertung } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
-import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
+import Bestenliste, { Gemeindewertung, Tagesbestzeit, Gesamtwertung } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
-import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText } from 'lucide-react';
+import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check } from 'lucide-react';
 
 const numberOfParallelRounds = 2
 
@@ -22,6 +23,7 @@ export default function KuppelCup() {
     loaded,
     saveError,
     dismissSaveError,
+    justSaved,
     login,
     loginWithEmail,
     createAdmin,
@@ -40,6 +42,7 @@ export default function KuppelCup() {
   const [loginPass, setLoginPass] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [theme, setTheme] = useStorage<"dark" | "light">("kuppelcup:theme", "dark");
 
   // "Admin" features are unlocked while an admin account is signed in.
@@ -48,12 +51,19 @@ export default function KuppelCup() {
   const runAuth = async (fn: () => Promise<void>) => {
     try {
       setAuthError(null);
+      setAuthNotice(null);
       await fn();
       setLoginUser("");
       setLoginPass("");
       setLoginEmail("");
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : String(e));
+      if (e instanceof AuthNotice) {
+        // Not a failure -- e.g. "check your email for the sign-in link".
+        setAuthNotice(e.message);
+        setLoginEmail("");
+      } else {
+        setAuthError(e instanceof Error ? e.message : String(e));
+      }
     }
   };
   const handleLogin = () => runAuth(() => login(loginUser, loginPass));
@@ -65,6 +75,7 @@ export default function KuppelCup() {
   const ko: KoState = current?.ko ?? {};
   const phase: EventPhase = current?.phase ?? "anmeldung";
   const competitionName = current?.name ?? "KUPPELCUP";
+  const pdfMeta = { competitionName, year: 2026 };
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -79,8 +90,11 @@ export default function KuppelCup() {
   const bracket = useMemo(() => buildBracket(top8, ko), [top8, ko]);
   const monitorData = useMemo(() => buildMonitorQueue(scheduledTeams, bracket, numberOfParallelRounds), [scheduledTeams, bracket]);
   const dailyBestTimes = useMemo(() => dailyBest(ranked, bracket), [ranked, bracket]);
+  const gesamt = useMemo(() => gesamtwertung(ranked, bracket), [ranked, bracket]);
 
-  const gemeinde = ranked.filter((t) => t.gemeinde);
+  // Gemeindewertung follows the overall standings (K.O. placement for the
+  // top 8, base-round rank for the rest), not raw base-round order.
+  const gemeinde = gesamt.filter((t) => t.gemeinde);
 
   // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
   const locked = phase === "abgeschlossen"; // no changes possible once finished
@@ -128,6 +142,11 @@ export default function KuppelCup() {
           <div className="hose-icon">⊃⊂</div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
           <div className="header-right">
+            {authed && (
+              <span className={`saved-flash ${justSaved ? "is-visible" : ""}`} aria-live="polite">
+                <Check size={14} /> Gespeichert
+              </span>
+            )}
             {authed && <span className={`phase-badge phase-${phase}`}>{PHASE_LABELS[phase]}</span>}
             <button
               className="theme-toggle"
@@ -163,7 +182,7 @@ export default function KuppelCup() {
       <main className="main-content">
         {saveError && (
           <div className="save-error-bar" role="alert">
-            <span>Speichern fehlgeschlagen: {saveError}</span>
+            <span>{saveError}</span>
             <button className="save-error-dismiss" onClick={dismissSaveError} aria-label="Schließen">✕</button>
           </div>
         )}
@@ -172,6 +191,7 @@ export default function KuppelCup() {
             <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
             <Gemeindewertung ranked={gemeinde} />
             <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
+            <Gesamtwertung ranked={gesamt} />
           </FullscreenPanel>
         )}
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
@@ -196,8 +216,9 @@ export default function KuppelCup() {
             toggleGastgeber={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gastgeber: !t.gastgeber} : t))}
             toggleGemeinde={(id: string) => !locked && setTeams(teams.map(t => t.id === id ? {...t, gemeinde: !t.gemeinde} : t))}
             bracket={bracket}
+            ko={ko}
             updateKoRun={updateKoRun}
-            onImportTeams={setTeams}
+            onImportBackup={patchEvent}
             phase={phase}
             setPhase={setPhase}
             locked={locked}
@@ -213,16 +234,22 @@ export default function KuppelCup() {
             deleteEvent={deleteEvent}
             selectEvent={selectEvent}
             logout={logout}
+            ranked={ranked}
+            top8Ids={new Set(top8.map(t => t.id))}
+            gemeinde={gemeinde}
+            dailyBestTimes={dailyBestTimes}
+            gesamt={gesamt}
+            pdfMeta={pdfMeta}
           />
           ) : (
             <div className="login-box">
               <h2 className="panel-title">Admin-Anmeldung</h2>
-              <p className="hint-text">Mit Benutzername und Passwort anmelden oder ein neues Admin-Konto anlegen.</p>
+              <p className="hint-text">Mit E-Mail und Passwort anmelden oder ein neues Admin-Konto anlegen.</p>
               <input
-                type="text"
+                type="email"
                 value={loginUser}
-                placeholder="Benutzername"
-                autoComplete="username"
+                placeholder="E-Mail-Adresse"
+                autoComplete="email"
                 onChange={(e) => setLoginUser(e.target.value)}
                 className="pin-input login-input"
               />
@@ -254,6 +281,7 @@ export default function KuppelCup() {
                 className="pin-input login-input"
               />
               <button className="pin-btn login-secondary" onClick={handleEmailLogin}>Link per E-Mail (passwortlos)</button>
+              {authNotice && <p className="pin-notice">{authNotice}</p>}
             </div>
           ))}
         </main>

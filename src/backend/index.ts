@@ -1,4 +1,5 @@
 import type { Backend } from "./Backend";
+import { AuthNotice } from "./Backend";
 import { LocalBackend } from "./LocalBackend";
 import { FirebaseBackend } from "./FirebaseBackend";
 import { BACKEND, FIREBASE_WIRED } from "../config";
@@ -12,3 +13,4 @@ const useFirebase = BACKEND === "firebase" && FIREBASE_WIRED;
 export const backend: Backend = useFirebase ? new FirebaseBackend() : new LocalBackend();
 
 export type { Backend };
+export { AuthNotice };

@@ -1,5 +1,5 @@
 import type { BracketData, Match, Team, RunData } from "../types";
-import { fmtTime } from "../utils/helpers";
+import { fmtTime, gesamt } from "../utils/helpers";
 
 interface MatchBoxProps {
   match: Match;
@@ -13,8 +13,9 @@ function MatchBox({ match, editable, onUpdateRun }: MatchBoxProps) {
     const run: RunData = match[side];
     const isWinner = match.winnerId && match.winnerId === team?.id;
     
-    // Calculate display summary value
-    const totalScore = run.zeit !== null ? run.zeit + (run.strafe ?? 0) : null;
+    // Same rounding as buildBracket's winner decision and everywhere else
+    // a total is shown — see the K.O. scoring fix for why this matters.
+    const totalScore = gesamt(run);
 
     return (
       <div className={`match-team-row ${isWinner ? "match-winner" : ""}`}>
@@ -62,6 +63,7 @@ function MatchBox({ match, editable, onUpdateRun }: MatchBoxProps) {
       {renderRow(match.teamA, "runA")}
       <div className="match-divider-line" />
       {renderRow(match.teamB, "runB")}
+      {match.tied && <div className="match-tied-badge">Unentschieden — Stechlauf nötig</div>}
     </div>
   );
 }

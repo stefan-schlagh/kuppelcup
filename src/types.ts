@@ -24,6 +24,9 @@ export interface Match {
   runA: RunData;
   runB: RunData;
   winnerId: string | null;
+  // Both teams ran and scored exactly equal — a K.O. tie needs another run
+  // (a decider), it isn't resolved automatically.
+  tied?: boolean;
 }
 
 export interface BracketData {
@@ -43,6 +46,10 @@ export interface MonitorRunner {
   label: string;
   zeit: number | null;
   strafe: number | null;
+  // Set on both runners of a K.O. heat that ended in an exact tie (see
+  // Match.tied) — never set for base-round (DG1/DG2) entries, which don't
+  // have an opponent in the same heat to tie against.
+  tied?: boolean;
 }
 
 // An admin account that owns events. For now this is a local placeholder;

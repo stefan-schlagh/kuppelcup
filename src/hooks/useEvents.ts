@@ -35,8 +35,10 @@ export function useEvents() {
   const [current, setCurrent] = useState<EventDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
   const initialized = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<EventDoc | null>(null);
   const selfWriting = useRef(false); // true while our own write is in flight
 
@@ -47,6 +49,9 @@ export function useEvents() {
     if (initialized.current) return;
     initialized.current = true;
     (async () => {
+      // If the user just followed an emailed sign-in link back into the
+      // app, complete it before reading currentAccount() (no-op otherwise).
+      await backend.auth.completeEmailLinkSignIn?.();
       const acc = backend.auth.currentAccount(); // persisted session, or null
       setAccount(acc);
       const list = acc ? await backend.listEvents(acc.id) : [];
@@ -73,6 +78,12 @@ export function useEvents() {
     try {
       await backend.saveEvent(doc);
       setSaveError(null);
+      // Brief "saved" flash so entering a result gives some feedback
+      // beyond just not showing an error — the write itself is silent and
+      // debounced, otherwise nothing on screen confirms it went through.
+      setJustSaved(true);
+      if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
+      savedFlashTimer.current = setTimeout(() => setJustSaved(false), 1600);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -119,6 +130,7 @@ export function useEvents() {
       window.removeEventListener("beforeunload", onHide);
       document.removeEventListener("visibilitychange", onHide);
       flush();
+      if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current);
     };
   }, [flush]);
 
@@ -202,10 +214,14 @@ export function useEvents() {
 
   // --- ADMIN ACCOUNTS --- (login/create reject on error; caller surfaces it)
   const enterAccount = useCallback(async (acc: Account) => {
-    setAccount(acc);
+    // Load everything before committing any state: if listEvents/getEvent
+    // rejects (e.g. a missing Firestore index), the caller's catch should
+    // surface a failed login — not leave the UI authenticated with account
+    // set but events/current stuck empty.
     const list = await backend.listEvents(acc.id);
-    setEvents(list);
     const doc = list[0] ? await backend.getEvent(list[0].id) : null;
+    setAccount(acc);
+    setEvents(list);
     setCurrent(doc);
     if (doc) syncUrl(doc.id);
     else clearUrl();
@@ -243,6 +259,7 @@ export function useEvents() {
     loaded,
     saveError,
     dismissSaveError: () => setSaveError(null),
+    justSaved,
     login,
     loginWithEmail,
     createAdmin,

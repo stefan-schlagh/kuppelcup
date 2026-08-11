@@ -1,10 +1,12 @@
 import { configDefaults, defineConfig } from "vitest/config";
 
 // The Firestore rules tests under tests/rules/ need the Firestore emulator
-// running (`npm run test:rules`), so keep them out of the plain `npm test`
-// run — vitest picking them up without an emulator would just hang/fail.
+// (`npm run test:rules`), and e2e/ are Playwright specs that need a browser
+// + dev server (`npm run test:e2e`) — both use vitest-shaped *.test.ts /
+// *.spec.ts filenames, so keep them out of the plain `npm test` run
+// explicitly or vitest would try to collect them too.
 export default defineConfig({
   test: {
-    exclude: [...configDefaults.exclude, "tests/rules/**"],
+    exclude: [...configDefaults.exclude, "tests/rules/**", "e2e/**"],
   },
 });

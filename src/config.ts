@@ -13,4 +13,9 @@ export const BACKEND: BackendKind = "firebase";
 // Safety toggle for frontend-only development: while false, the app uses
 // LocalBackend even if BACKEND is "firebase", so the unwired Firebase stub
 // never throws. Flip to true only once FirebaseBackend is actually wired up.
-export const FIREBASE_WIRED = true;
+//
+// VITE_FORCE_LOCAL_BACKEND forces this back to false regardless — set by
+// `npm run dev:local` for your own manual testing against LocalBackend
+// (localStorage only, no Firebase project touched at all), and by
+// playwright.config.ts so `npm run test:e2e` always runs the same way.
+export const FIREBASE_WIRED = import.meta.env.VITE_FORCE_LOCAL_BACKEND === "true" ? false : true;

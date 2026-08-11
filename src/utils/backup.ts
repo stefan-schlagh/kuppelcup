@@ -1,4 +1,4 @@
-import type { Team } from "../types";
+import type { KoState, RunData, Team } from "../types";
 
 // Flat CSV backup of the base-round data (the hand-entered Grunddurchgang).
 // One row per team; round-trippable via teamsToCsv / csvToTeams.
@@ -100,6 +100,66 @@ export function csvToTeams(csv: string): Team[] {
       dg2: { zeit: parseNum(at("dg2_zeit")), strafe: parseNum(at("dg2_strafe")) },
     };
   });
+}
+
+const KO_COLUMNS = ["match", "side", "zeit", "strafe"] as const;
+
+function koToCsv(ko: KoState): string | null {
+  const rows: string[] = [];
+  for (const matchId of Object.keys(ko)) {
+    const runs = ko[matchId];
+    if (runs.runA) rows.push([matchId, "A", numCell(runs.runA.zeit), numCell(runs.runA.strafe)].join(","));
+    if (runs.runB) rows.push([matchId, "B", numCell(runs.runB.zeit), numCell(runs.runB.strafe)].join(","));
+  }
+  if (rows.length === 0) return null;
+  return [KO_COLUMNS.join(","), ...rows].join("\n");
+}
+
+function csvToKo(csv: string): KoState {
+  const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+  if (lines.length < 2) return {};
+
+  const header = splitCsvLine(lines[0]).map((h) => h.trim());
+  const idx = (name: string) => header.indexOf(name);
+  const ko: KoState = {};
+
+  for (const line of lines.slice(1)) {
+    const cells = splitCsvLine(line);
+    const at = (name: string) => cells[idx(name)] ?? "";
+    const matchId = at("match").trim();
+    const side = at("side").trim().toUpperCase();
+    if (!matchId || (side !== "A" && side !== "B")) continue;
+    const run: RunData = { zeit: parseNum(at("zeit")), strafe: parseNum(at("strafe")) };
+    const slot = ko[matchId] ?? {};
+    if (side === "A") slot.runA = run; else slot.runB = run;
+    ko[matchId] = slot;
+  }
+  return ko;
+}
+
+export interface Backup {
+  teams: Team[];
+  ko: KoState;
+}
+
+// Combined backup: the team table, then — if any K.O. run has been
+// recorded — a second CSV block for it, separated by a blank line. Old
+// exports without a K.O. block still import fine (csvToBackup just
+// returns an empty ko); the caller decides what "empty" means on import
+// (AdminPanel leaves existing K.O. results alone rather than wipe them
+// when the imported file didn't have any).
+export function backupToCsv(teams: Team[], ko: KoState): string {
+  const teamSection = teamsToCsv(teams);
+  const koSection = koToCsv(ko);
+  return koSection ? `${teamSection}\n\n${koSection}` : teamSection;
+}
+
+export function csvToBackup(csv: string): Backup {
+  const [teamBlock, koBlock] = csv.split(/\r?\n\s*\r?\n/);
+  return {
+    teams: teamBlock ? csvToTeams(teamBlock) : [],
+    ko: koBlock ? csvToKo(koBlock) : {},
+  };
 }
 
 // Trigger a browser download of the given text content.
