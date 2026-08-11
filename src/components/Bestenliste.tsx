@@ -1,6 +1,6 @@
 import { fmtTime, gesamt } from "../utils/helpers";
 import type { RankedTeam } from "../utils/tournament";
-import { Award, Trophy } from 'lucide-react';
+import { Award, Trophy, Timer, Flame } from 'lucide-react';
 
 interface BestenlisteProps {
   ranked: RankedTeam[];
@@ -29,18 +29,18 @@ export default function Bestenliste({ ranked, top8Ids }: BestenlisteProps) {
               const qualified = top8Ids.has(t.id);
               return (
                 <tr key={t.id} className={qualified ? "row-qualified" : ""}>
-                  <td className="td-rank">{i + 1}</td>
-                  <td className="td-name">
+                  <td className="td-rank" data-cell="platzierung">{i + 1}</td>
+                  <td className="td-name" data-cell="team">
                     {t.name}
                     {t.gastgeber && <span className="host-tag">Gastgeber</span>}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg1))}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg1))}`} data-cell="wertung (durchgang 1)">
                     {fmtTime(t.dg1.zeit)} {t.dg1.strafe ? <span className="fehler-tag">+{t.dg1.strafe}s</span> : null}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg2))}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg2))}`} data-cell="wertung (durchgang 2)">
                     {fmtTime(t.dg2.zeit)} {t.dg2.strafe ? <span className="fehler-tag">+{t.dg2.strafe}s</span> : null}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2" data-cell="punkte">{t.punkte}</td>
                   <td>
                     {t.gastgeber ? (
                       <span className="badge-host">Außer Konkurrenz</span>
@@ -78,11 +78,11 @@ export function Gemeindewertung({ ranked }: { ranked: RankedTeam[] }) {
             {ranked.map((t, i) => {
               return (
                 <tr key={t.id}>
-                  <td className="td-rank">{i + 1}</td>
-                  <td className="td-name">
+                  <td className="td-rank" data-cell="platzierung">{i + 1}</td>
+                  <td className="td-name" data-cell="team">
                     {t.name}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2" data-cell="punkte">{t.punkte}</td>
                 </tr>
               );
             })}
@@ -110,11 +110,11 @@ export function Tagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
             {ranked.map((t, i) => {
               return (
                 <tr key={t.id}>
-                  <td className="td-rank">{i + 1}</td>
-                  <td className="td-name">
+                  <td className="td-rank" data-cell="platzierung">{i + 1}</td>
+                  <td className="td-name" data-cell="team">
                     {t.name}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2" data-cell="punkte">{t.punkte}</td>
                 </tr>
               );
             })}
@@ -148,4 +148,35 @@ export function SummaryBestenliste({ ranked }: { ranked: RankedTeam[] }) {
     </div>
     </div>
   )
+}
+
+export function DisplayTagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
+  return(
+    <div>
+      <h2 className="panel-title">Tagesbestzeit</h2>
+      {ranked.map((t) => {
+        return (
+          <div key={t.id} className="display-tagesbestzeit">
+            <h2 className="display-title">
+              Bestzeit
+            </h2>
+            <h1 className="team-name">
+              {t.name}
+            </h1>
+            <div className="points-wrapper">
+              <span className="points" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">
+                {t.punkte}
+              </span>
+            </div>
+            <div className="bg-timer">
+              <Timer />
+            </div>
+            <div className="bg-flame">
+              <Flame />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
