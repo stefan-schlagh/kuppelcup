@@ -4,7 +4,7 @@ import { useEvents } from "./hooks/useEvents";
 import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
 import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
-import Bestenliste, { Gemeindewertung, Tagesbestzeit } from "./components/Bestenliste";
+import Bestenliste, { DisplayTagesbestzeit, Gemeindewertung, SummaryBestenliste, Tagesbestzeit } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
@@ -168,11 +168,17 @@ export default function KuppelCup() {
           </div>
         )}
         {tab === "liste" && (
-          <FullscreenPanel>
-            <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
-            <Gemeindewertung ranked={gemeinde} />
-            <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
-          </FullscreenPanel>
+          <div className="bestenliste">
+            <div className="dashboard"> 
+              <SummaryBestenliste ranked={ranked.slice(0,3)} />
+              <DisplayTagesbestzeit ranked={ranked.slice(0,1)} />
+            </div>
+            <FullscreenPanel>
+              <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
+              <Gemeindewertung ranked={gemeinde} />
+              <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
+            </FullscreenPanel>
+          </div>
         )}
         {tab === "monitor" && <LiveMonitor data={monitorData} />}
         {tab === "baum" && (

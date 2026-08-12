@@ -128,7 +128,7 @@ export function Tagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
 export function SummaryBestenliste({ ranked }: { ranked: RankedTeam[] }) {
   return(
     <div>
-    <h2 className="panel-title">Bestenlise — Leaderboard</h2>
+    <h2 className="panel-title">Bestenliste — Leaderboard</h2>
     <div className="summary-bestenliste">
     {ranked.map((t, i) => {
       return(
@@ -164,6 +164,9 @@ export function DisplayTagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
               {t.name}
             </h1>
             <div className="points-wrapper">
+              <span className="point-subtitle">
+                Punkte:
+              </span>
               <span className="points" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">
                 {t.punkte}
               </span>
