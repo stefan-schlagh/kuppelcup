@@ -1,7 +1,7 @@
 /* Custom properties for theme colors — dark is the default */
 :root {
   color-scheme: dark;
-  --bg-main: #1B1D21;
+  --bg-main: #1B1D21; 
   --bg-surface: #22242A;
   --bg-row-alt: #24262B;
   --border-color: #2E3138;
@@ -62,6 +62,34 @@ body {
 .app-header {
   padding: 20px 24px 0;
   border-bottom: 1px solid var(--border-color);
+  background: var(--bg-main);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-container:has(table) .app-header::after, .app-container:has(.urkunde) .app-header::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+  z-index: -99;
+  animation: progress 2s linear;
+  transform-origin: left;
+  animation-timeline: scroll();
+}
+
+@keyframes progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .brand-row {
@@ -298,6 +326,11 @@ span.nav-icon{
   right: 35px;
 }
 
+.bestenliste .fs-toggle{
+  position: relative;
+  top: 50px;
+}
+
 .fs-toggle:hover {
   color: var(--color-accent);
   border-color: var(--color-accent);
@@ -341,6 +374,259 @@ span.nav-icon{
 .fs-panel.is-fullscreen .bracket-time-display { font-size: 17px; }
 .fs-panel.is-fullscreen .fs-toggle { font-size: 16px; padding: 8px 16px; }
 
+/* Dashboard */
+.dashboard {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 500px);
+  grid-template-rows: auto;
+  column-gap: calc(100% - 2 * 500px);
+  justify-content: center;
+} 
+
+.dashboard .panel-title{
+  font-size: clamp(18px, 5vw, 32px);
+}
+
+/* Bestenliste - Leaderboard */
+.summary-bestenliste {
+  min-width: fit-content;
+  max-width: 500px;
+  aspect-ratio: 1 / 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 15px;
+  padding: 20px;
+  color: var(--text-muted);
+  display: grid;
+  grid-template-areas: "second-place first-place third-place";
+}
+
+.summary-bestenliste:not(:has(.place)){
+  display: none;
+}
+
+.place {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.place:nth-child(1) {
+  grid-area: first-place;
+  --bg-bar: #b37e23;
+  --bg-bar-contrast: #c49035;
+}
+
+.place:nth-child(2) {
+  grid-area: second-place;
+  --bg-bar: #566a6b;
+  --bg-bar-contrast: #808e8f;
+}
+
+.place:nth-child(3) {
+  grid-area: third-place;
+  --bg-bar: #94533d;
+  --bg-bar-contrast: #a06e5e;
+}
+
+.award-container {
+  background: repeating-linear-gradient(-45deg, var(--bg-bar), var(--bg-bar) 15px, var(--bg-bar-contrast) 15px, var(--bg-bar-contrast) 30px);
+  background-size: 100% 85px;
+  width: clamp(50px, 10vw, 100px);
+  aspect-ratio: 1 / 1;
+  --webkit-aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  animation: bg-stripes 2s linear infinite;
+  position: absolute;
+  bottom: calc(50%);
+  border: 10px solid var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.place:first-child .award-container{
+  bottom: calc(60%);
+}
+
+.award-container svg {
+  width: 50%;
+  height: 50%;
+  stroke-width: 2.5px;
+}
+
+.bar {
+  width: clamp(50px, 10vw, 100px);
+  height: 50%;
+  border-radius: 15px;
+  background: repeating-linear-gradient(-45deg, var(--bg-bar), var(--bg-bar) 15px, var(--bg-bar-contrast) 15px, var(--bg-bar-contrast) 30px);
+  background-size: 100% 85px;
+  animation: bg-stripes 2s linear infinite;
+  z-index: 98;
+  overflow: hidden;
+  position: relative;
+}
+
+.place:first-child .bar {
+  height: 60%;
+}
+
+@keyframes bg-stripes{
+  from{
+    background-position: 0 85px;
+  }
+  to{
+    background-position: 0 0;
+  }
+}
+
+.bar span{
+  font-size: clamp(40px, 9vw, 90px);
+  font-weight: 900;
+  color: white;
+  position: relative;
+  top: 50px;
+  z-index: 99;
+}
+
+.bar .points{
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+}
+
+.bar .points span{
+  top: unset;
+  font-size: clamp(12px, 3vw, 20px);
+  font-weight: normal;
+  margin: auto;
+}
+
+.summary-bestenliste .team-name {
+  font-weight: 600;
+  font-size: clamp(10px, 2vw, 18px);
+  margin: clamp(5px, 2vw ,20px);
+}
+
+/* Tagesbestzeit - Wrapper */
+.display-tagesbestzeit {
+  min-width: fit-content;
+  max-width: 500px;
+  aspect-ratio: 1 / 1;
+  background: var(--color-primary);
+  border-radius: 15px;
+  padding: 20px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.display-title {
+  position: relative;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: clamp(18px, 4vw, 24px);
+  margin: 0;
+  z-index: 99;
+}
+
+.display-tagesbestzeit .team-name{
+  position: relative;
+  text-transform: uppercase;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 900;
+  font-size: clamp(24px, 6vw, 60px);
+  margin: 0;
+  z-index: 99;
+}
+
+.points-wrapper {
+  width: 100%;
+  position: absolute;
+  text-align: right;
+  bottom: 20px;
+  right: 20px;
+  z-index: 99
+}
+
+.display-tagesbestzeit .points{
+  width: 100%;
+  font-size: clamp(100px, 10vw, 140px);
+  font-family: 'Oswald', sans-serif;
+}
+
+.point-subtitle {
+  font-size: clamp(14px, 3vw, 24px);
+  font-weight: bold;
+}
+
+.display-tagesbestzeit svg{
+  color: var(--color-primary-variation);
+  z-index: 98;
+}
+
+.bg-timer {
+  width: 120%;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  animation: bg-movement 20s linear infinite;
+}
+
+@keyframes bg-movement {
+  0%{
+    transform: translateX(20%) translateY(20%) rotate(-20deg);
+  }
+  50%{
+    transform: translateX(10%) translateY(30%) rotate(-30deg);
+  }
+  100%{
+    transform: translateX(20%) translateY(20%) rotate(-20deg);
+  }
+}
+
+.bg-timer svg{
+  height: 100%;
+  width: 100%;
+}
+
+.bg-flame {
+  width: 35%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-20%) translateY(-10%);
+}
+
+.bg-flame svg{
+  height: 100%;
+  width: 100%;
+}
+
+@media screen and (min-width: 1200px) {
+  .dashboard {
+  grid-template-columns: repeat(auto-fit, 45%);
+  column-gap: 10%;
+  } 
+
+  .summary-bestenliste {
+  max-width: 100%;
+  }
+
+  .display-tagesbestzeit {
+  max-width: 100%;
+  }
+}
+
 /* Tables & Leaderboard */
 .table-wrap {
   overflow-x: auto;
@@ -352,6 +638,14 @@ span.nav-icon{
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
+}
+
+.data-table tr:nth-child(even){
+  background: var(--card-dim-bg);
+}
+
+.data-table tr:nth-child(odd){
+  background: var(--bg-surface);
 }
 
 .data-table th {
@@ -1352,7 +1646,7 @@ span.nav-icon{
   }
 
   /* *Fullscreen Overlay */
-  .fs-toggle {
+  .fs-toggle, .bestenliste .fs-toggle {
   height: 50px;
   width: 50px;
   border-radius: 25px;
@@ -1404,6 +1698,16 @@ span.nav-icon{
 
   .fs-panel.is-fullscreen .fs-toggle div svg{
     stroke: var(--color-accent);
+  }
+
+  /* *Dashboard */
+  .dashboard {
+    grid-template-columns: repeat(auto-fit, 100%);
+  }
+
+  .summary-bestenliste, .display-tagesbestzeit {
+    min-width: unset;
+    max-width: 100%;
   }
   
   /* *Urkunden */
