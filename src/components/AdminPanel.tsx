@@ -1,11 +1,13 @@
 import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS, PHASES, PHASE_LABELS } from "../utils/helpers";
-import { teamsToCsv, csvToTeams, downloadCsv } from "../utils/backup";
+import { backupToCsv, csvToBackup, downloadCsv } from "../utils/backup";
 import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
-import type { Team, EventPhase, BracketData, Account, EventMeta, EventDoc } from '../types'
+import type { Team, EventPhase, BracketData, KoState, Account, EventMeta, EventDoc } from '../types'
+import type { RankedTeam } from "../utils/tournament";
+import type { PdfMeta } from "../pdf/pdfDocs";
 import { LogOut } from 'lucide-react';
 
 type RunField = "zeit" | "strafe";
@@ -16,8 +18,9 @@ interface AdminPanelProps {
   toggleGastgeber: (id: string) => void;
   toggleGemeinde: (id: string) => void;
   bracket: BracketData;
+  ko: KoState;
   updateKoRun: (matchId: string, side: "runA" | "runB", field: RunField, value: number | null) => void;
-  onImportTeams: (teams: Team[]) => void;
+  onImportBackup: (data: Partial<EventDoc>) => void;
   phase: EventPhase;
   setPhase: (phase: EventPhase) => void;
   locked: boolean;
@@ -33,6 +36,12 @@ interface AdminPanelProps {
   deleteEvent: (id: string) => void;
   selectEvent: (id: string) => void;
   logout: () => void;
+  ranked: RankedTeam[];
+  top8Ids: Set<string>;
+  gemeinde: RankedTeam[];
+  dailyBestTimes: RankedTeam[];
+  gesamt: RankedTeam[];
+  pdfMeta: PdfMeta;
 }
 
 export default function AdminPanel({
@@ -41,8 +50,9 @@ export default function AdminPanel({
   toggleGastgeber,
   toggleGemeinde,
   bracket,
+  ko,
   updateKoRun,
-  onImportTeams,
+  onImportBackup,
   phase,
   setPhase,
   locked,
@@ -58,6 +68,12 @@ export default function AdminPanel({
   deleteEvent,
   selectEvent,
   logout,
+  ranked,
+  top8Ids,
+  gemeinde,
+  dailyBestTimes,
+  gesamt,
+  pdfMeta,
 }: AdminPanelProps) {
   const [sub, setSub] = useState("event");
   const [newName, setNewName] = useState("");
@@ -68,7 +84,23 @@ export default function AdminPanel({
 
   const handleExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCsv(`kuppelcup-backup-${stamp}.csv`, teamsToCsv(teams));
+    downloadCsv(`kuppelcup-backup-${stamp}.csv`, backupToCsv(teams, ko));
+  };
+
+  // Dynamically imported: @react-pdf/renderer is large (~500kB gzipped) and
+  // only ever needed here, behind an admin-only click — statically
+  // importing it would ship that weight to every visitor, spectators
+  // included.
+  const handleExportGesamtbericht = async () => {
+    const [{ downloadPdf }, { GesamtberichtPdf }] = await Promise.all([
+      import("../pdf/download"),
+      import("../pdf/pdfDocs"),
+    ]);
+    const stamp = new Date().toISOString().slice(0, 10);
+    await downloadPdf(
+      GesamtberichtPdf({ ranked, top8Ids, gemeinde, dailyBest: dailyBestTimes, gesamt, bracket, meta: pdfMeta }),
+      `gesamtbericht-${stamp}.pdf`,
+    );
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,11 +108,18 @@ export default function AdminPanel({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const parsed = csvToTeams(String(reader.result ?? ""));
+      const { teams: parsed, ko: parsedKo } = csvToBackup(String(reader.result ?? ""));
+      const hasKo = Object.keys(parsedKo).length > 0;
       if (parsed.length === 0) {
         alert("Keine Teams in der Datei gefunden.");
-      } else if (confirm(`${parsed.length} Teams importieren? Aktuelle Daten werden ersetzt.`)) {
-        onImportTeams?.(parsed);
+        return;
+      }
+      const label = hasKo ? `${parsed.length} Teams + K.O.-Ergebnisse` : `${parsed.length} Teams`;
+      if (confirm(`${label} importieren? Aktuelle Daten werden ersetzt.`)) {
+        // Only overwrite K.O. results if the file actually had any -- an
+        // older team-only export shouldn't wipe out K.O. results already
+        // recorded for this event.
+        onImportBackup(hasKo ? { teams: parsed, ko: parsedKo } : { teams: parsed });
       }
     };
     reader.readAsText(file);
@@ -220,7 +259,9 @@ export default function AdminPanel({
           )}
 
           <h3 className="panel-title" style={{ marginTop: 24 }}>Teams ({teams.length})</h3>
-          {isAnmeldung ? (
+          {!current ? (
+            <p className="hint-text">Bitte zuerst oben ein Event anlegen oder auswählen.</p>
+          ) : isAnmeldung ? (
             <div className="add-team-row">
               <input
                 type="text"
@@ -293,9 +334,9 @@ export default function AdminPanel({
                 {teams.map((t: Team) => (
                   <tr key={t.id}>
                     <td className="td-name">{t.name}</td>
-                    <td><input type="number" step="0.01" disabled={locked} value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
+                    <td><input type="number" step="0.01" disabled={locked} value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
                     <td><input type="number" min="0" step="5" disabled={locked} value={t.dg1.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg1", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
-                    <td><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", parseFloat(e.target.value))} className="input-field" /></td>
+                    <td><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
                     <td><input type="number" min="0" step="5" disabled={locked} value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
                   </tr>
                 ))}
@@ -323,6 +364,17 @@ export default function AdminPanel({
             </label>
           </div>
           <p className="hint-text">Beim Import werden die vorhandenen Teams ersetzt (K.O.-Ergebnisse bleiben unberührt).</p>
+
+          <p className="hint-text">Grunddurchgang, Gemeindewertung, Tagesbestzeit, Gesamtwertung und Turnierbaum als ein A4-Gesamtbericht.</p>
+          <div className="backup-actions">
+            <button
+              className="pin-btn backup-btn"
+              disabled={ranked.length === 0}
+              onClick={() => void handleExportGesamtbericht()}
+            >
+              Gesamtbericht als PDF exportieren ⬇
+            </button>
+          </div>
         </div>
       )}
     </div>

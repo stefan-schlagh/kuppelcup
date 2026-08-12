@@ -32,6 +32,7 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
                     <span className="monitor-error-text"> (+{entry.strafe}s)</span>
                   )}
                 </div>
+                {entry.tied && <div className="monitor-tied-badge">Unentschieden — Stechlauf nötig</div>}
               </div>
             ))}
           </div>

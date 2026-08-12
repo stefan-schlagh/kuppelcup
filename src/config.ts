@@ -8,20 +8,14 @@ export type BackendKind = "local" | "firebase";
 
 // Which backend the app talks to. Stays "local" (localStorage) until
 // Firebase is configured; switch to "firebase" to use Firestore/Auth.
-export const BACKEND: BackendKind = "local";
+export const BACKEND: BackendKind = "firebase";
 
 // Safety toggle for frontend-only development: while false, the app uses
 // LocalBackend even if BACKEND is "firebase", so the unwired Firebase stub
 // never throws. Flip to true only once FirebaseBackend is actually wired up.
-export const FIREBASE_WIRED = false;
-
-// Firebase project config — fill these in to enable the "firebase" backend.
-// Then: `npm install firebase` and wire up src/backend/FirebaseBackend.ts.
-export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-};
+//
+// VITE_FORCE_LOCAL_BACKEND forces this back to false regardless — set by
+// `npm run dev:local` for your own manual testing against LocalBackend
+// (localStorage only, no Firebase project touched at all), and by
+// playwright.config.ts so `npm run test:e2e` always runs the same way.
+export const FIREBASE_WIRED = import.meta.env.VITE_FORCE_LOCAL_BACKEND === "true" ? false : true;
