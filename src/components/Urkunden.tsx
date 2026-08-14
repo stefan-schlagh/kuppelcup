@@ -42,7 +42,7 @@ export default function Urkunden({ gesamt, bracket, competitionName, year }: Urk
   };
 
   const entries: UrkundeEntry[] = gesamt.map((t, i) => {
-    const detail = `Gesamtrang ${i + 1}`;
+    const detail = `${i + 1}. Platz`;
     return { name: t.name, wertung: wertungFor(t), detail };
   });
 
