@@ -26,6 +26,8 @@ interface AdminPanelProps {
   locked: boolean;
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
+  renameTeam: (id: string, name: string) => void;
+  updateTeamStart: (id: string, start: number) => void;
   loadSampleTeams: () => void;
   fillRandomResults: () => void;
   account: Account | null;
@@ -58,6 +60,8 @@ export default function AdminPanel({
   locked,
   addTeam,
   removeTeam,
+  renameTeam,
+  updateTeamStart,
   loadSampleTeams,
   fillRandomResults,
   account,
@@ -294,8 +298,29 @@ export default function AdminPanel({
                 )}
                 {teams.map((t: Team) => (
                   <tr key={t.id}>
-                    <td className="td-rank">{t.start}</td>
-                    <td className="td-name">{t.name}</td>
+                    <td className="td-rank">
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        disabled={locked}
+                        value={t.start}
+                        onChange={(e) => updateTeamStart(t.id, Math.max(1, parseInt(e.target.value || "1", 10)))}
+                        className="input-field-small"
+                      />
+                    </td>
+                    <td className="td-name">
+                      {isAnmeldung ? (
+                        <input
+                          type="text"
+                          value={t.name}
+                          onChange={(e) => renameTeam(t.id, e.target.value)}
+                          className="input-field"
+                        />
+                      ) : (
+                        t.name
+                      )}
+                    </td>
                     <td style={{ textAlign: "center" }}>
                       <input type="checkbox" disabled={locked} checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
                     </td>

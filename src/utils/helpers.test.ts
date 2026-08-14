@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER, makeTeam, withRandomResults, randomKoResults, KO_MATCH_IDS, byPunkte } from "./helpers";
+import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER, makeTeam, reassignStart, withRandomResults, randomKoResults, KO_MATCH_IDS, byPunkte } from "./helpers";
 import type { Team } from "../types";
 
-const teamWithRuns = (dg1: Team["dg1"], dg2: Team["dg2"]): Team => ({
-  id: "t1",
-  start: 1,
+const teamWithRuns = (dg1: Team["dg1"], dg2: Team["dg2"], id = "t1", start = 1): Team => ({
+  id,
+  start,
   name: "FF Test",
   dg1,
   dg2,
@@ -91,6 +91,51 @@ describe("makeTeam", () => {
     expect(a.dg1).toEqual({ zeit: null, strafe: null });
     expect(a.dg2).toEqual({ zeit: null, strafe: null });
     expect(a.id).not.toBe(b.id);
+  });
+});
+
+describe("reassignStart", () => {
+  const teams = (starts: number[]): Team[] =>
+    starts.map((start, i) => teamWithRuns({ zeit: null, strafe: null }, { zeit: null, strafe: null }, `t${i + 1}`, start));
+
+  it("moving a team forward onto a taken number shifts the teams in between down by one", () => {
+    const result = reassignStart(teams([1, 2, 3, 4, 5]), "t1", 4);
+    expect(result.map((t) => t.start)).toEqual([4, 1, 2, 3, 5]);
+    expect(new Set(result.map((t) => t.start)).size).toBe(5);
+  });
+
+  it("moving a team backward onto a taken number shifts the teams in between up by one", () => {
+    const result = reassignStart(teams([1, 2, 3, 4, 5]), "t5", 2);
+    expect(result.map((t) => t.start)).toEqual([1, 3, 4, 5, 2]);
+    expect(new Set(result.map((t) => t.start)).size).toBe(5);
+  });
+
+  it("moving into a free gap still closes the gap it leaves behind", () => {
+    const result = reassignStart(teams([1, 3, 5]), "t1", 4);
+    // t1 -> 4; t2 (3) is between old (1) and new (4), so it shifts down to 2.
+    expect(result.map((t) => t.start)).toEqual([4, 2, 5]);
+  });
+
+  it("is a no-op when the start number is unchanged", () => {
+    const input = teams([1, 2, 3]);
+    expect(reassignStart(input, "t2", 2)).toBe(input);
+  });
+
+  it("clamps below 1 up to 1", () => {
+    const result = reassignStart(teams([1, 2, 3]), "t3", -5);
+    expect(result.find((t) => t.id === "t3")?.start).toBe(1);
+    expect(new Set(result.map((t) => t.start)).size).toBe(3);
+  });
+
+  it("is a no-op for an unknown team id", () => {
+    const input = teams([1, 2, 3]);
+    expect(reassignStart(input, "does-not-exist", 5)).toBe(input);
+  });
+
+  it("does not mutate the input teams", () => {
+    const input = teams([1, 2, 3]);
+    reassignStart(input, "t1", 3);
+    expect(input.map((t) => t.start)).toEqual([1, 2, 3]);
   });
 });
 
