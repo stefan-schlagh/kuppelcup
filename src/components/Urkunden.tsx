@@ -16,15 +16,17 @@ interface RankedTeam extends Team {
 }
 
 interface UrkundenProps {
-  ranked: RankedTeam[];
+  gesamt: RankedTeam[];
   bracket: BracketData;
   competitionName: string;
   year: number | string;
 }
 
 // One certificate per participant. Each team's Wertung reflects its best
-// achievement (K.O. placement), otherwise a plain Teilnehmerurkunde.
-export default function Urkunden({ ranked, bracket, competitionName, year }: UrkundenProps) {
+// achievement (K.O. placement), otherwise a plain Teilnehmerurkunde. The
+// numeric rank shown is the overall standing (Gesamtwertung), not the
+// base-round rank alone.
+export default function Urkunden({ gesamt, bracket, competitionName, year }: UrkundenProps) {
   const champion = winnerTeam(bracket.final);
   const finalist = loserTeam(bracket.final);
   const semiIds = new Set(
@@ -39,9 +41,8 @@ export default function Urkunden({ ranked, bracket, competitionName, year }: Urk
     return "Teilnehmerurkunde";
   };
 
-  const entries: UrkundeEntry[] = ranked.map((t, i) => {
-    const p = t.punkte ?? 0;
-    const detail = p > 0 ? `Grunddurchgang: Rang ${i + 1} · ${p} Punkte` : "Teilnahme am Grunddurchgang";
+  const entries: UrkundeEntry[] = gesamt.map((t, i) => {
+    const detail = `Gesamtrang ${i + 1}`;
     return { name: t.name, wertung: wertungFor(t), detail };
   });
 
