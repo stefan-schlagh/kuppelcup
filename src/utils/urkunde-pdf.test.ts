@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { buildUrkundenDoc, type UrkundeEntry } from "./urkunde-pdf";
 
 const entries: UrkundeEntry[] = [
-  { name: "FF Buchberg", wertung: "Turniersieger", detail: "Grunddurchgang: Rang 1 · 41.5 Punkte" },
-  { name: "FF Lindau", wertung: "Finalist", detail: "Grunddurchgang: Rang 2 · 42 Punkte" },
-  { name: "FF Stainach", wertung: "Teilnehmerurkunde", detail: "Teilnahme am Grunddurchgang" },
+  { name: "FF Buchberg", wertung: "Turniersieger", detail: "1. Platz" },
+  { name: "FF Lindau", wertung: "Finalist", detail: "2. Platz", extra: "1. Platz (Gemeindewertung)" },
+  { name: "FF Stainach", wertung: "Teilnehmer (außer Konkurrenz)" },
 ];
 
 describe("buildUrkundenDoc", () => {

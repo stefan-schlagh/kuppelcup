@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
 import { AuthNotice } from "./backend";
-import { seedTeams, withRandomResults, randomKoResults, makeTeam, PHASE_LABELS } from "./utils/helpers";
+import { seedTeams, withRandomResults, randomKoResults, makeTeam, reassignStart, PHASE_LABELS } from "./utils/helpers";
 import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest, gesamtwertung } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
 import Bestenliste, { Gemeindewertung, Tagesbestzeit, Gesamtwertung } from "./components/Bestenliste";
@@ -123,6 +123,23 @@ export default function KuppelCup() {
     setTeams(teams.filter((t) => t.id !== id));
   };
 
+  // Renaming is only meaningful while teams are still being registered.
+  const renameTeam = (id: string, name: string) => {
+    if (phase !== "anmeldung") return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setTeams(teams.map((t) => (t.id === id ? { ...t, name: trimmed } : t)));
+  };
+
+  // Unlike name/roster changes, the start number may need correcting even
+  // after registration has closed (e.g. a running-order mistake). Colliding
+  // with another team's number shifts everyone in between instead of
+  // creating a duplicate -- see reassignStart.
+  const updateTeamStart = (id: string, start: number) => {
+    if (locked) return;
+    setTeams(reassignStart(teams, id, start));
+  };
+
   const loadSampleTeams = () => phase === "anmeldung" && setTeams(seedTeams());
 
   // Test/showcase helper: fill both the Grunddurchgang and the K.O. phase.
@@ -202,7 +219,7 @@ export default function KuppelCup() {
         )}
         {tab === "urkunden" && authed && (
           <Urkunden
-            ranked={ranked}
+            gesamt={gesamt}
             bracket={bracket}
             competitionName={competitionName}
             year={2026}
@@ -224,6 +241,8 @@ export default function KuppelCup() {
             locked={locked}
             addTeam={addTeam}
             removeTeam={removeTeam}
+            renameTeam={renameTeam}
+            updateTeamStart={updateTeamStart}
             loadSampleTeams={loadSampleTeams}
             fillRandomResults={fillRandomResults}
             account={account}

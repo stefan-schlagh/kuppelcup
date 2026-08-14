@@ -81,6 +81,22 @@ export const PHASE_LABELS: Record<EventPhase, string> = {
   abgeschlossen: "Abgeschlossen",
 };
 
+// Moves a team to a new start number, shifting every team between the old
+// and new position by one so start numbers stay unique (like reordering a
+// start list) instead of creating a duplicate.
+export function reassignStart(teams: Team[], id: string, start: number): Team[] {
+  const team = teams.find((t) => t.id === id);
+  const newStart = Math.max(1, Math.round(start));
+  if (!team || team.start === newStart) return teams;
+  const oldStart = team.start;
+  return teams.map((t) => {
+    if (t.id === id) return { ...t, start: newStart };
+    if (newStart > oldStart && t.start > oldStart && t.start <= newStart) return { ...t, start: t.start - 1 };
+    if (newStart < oldStart && t.start >= newStart && t.start < oldStart) return { ...t, start: t.start + 1 };
+    return t;
+  });
+}
+
 // Create a fresh team with empty runs and a unique id.
 export function makeTeam(name: string, start: number): Team {
   return {
