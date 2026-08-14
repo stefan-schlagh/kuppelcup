@@ -17,13 +17,18 @@ export interface RankedTeam extends Team {
   cutoffContested?: boolean;
 }
 
-// The Live-Monitor view: which runs just finished, are up, and are next.
+// The Live-Monitor view: which runs just finished, are up, and are coming
+// after that. `next` holds the upcoming heats in order (soonest first) --
+// each entry is one heat's runners, not a single flattened list.
 export interface MonitorView {
   status: "empty" | "running" | "finished";
   former: MonitorRunner[];
   current: MonitorRunner[];
-  next: MonitorRunner[];
+  next: MonitorRunner[][];
 }
+
+// How many upcoming heats the Live-Monitor shows ahead of the current one.
+const NEXT_HEATS_SHOWN = 2;
 
 // Start order for the base rounds (strictly by starting number).
 export function sortByStart(teams: Team[]): Team[] {
@@ -259,7 +264,7 @@ export function buildMonitorQueue(scheduledTeams: Team[], bracket: BracketData, 
     status: "running",
     former: currentHeatIndex > 0 ? heats[currentHeatIndex - 1] : [],
     current: heats[currentHeatIndex],
-    next: currentHeatIndex + 1 < heats.length ? heats[currentHeatIndex + 1] : [],
+    next: heats.slice(currentHeatIndex + 1, currentHeatIndex + 1 + NEXT_HEATS_SHOWN),
   };
 }
 

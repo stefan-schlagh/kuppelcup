@@ -226,7 +226,8 @@ describe("buildMonitorQueue", () => {
     expect(view.status).toBe("running");
     expect(view.current.map((r) => [r.name, r.label])).toEqual([["FF a", "DG1"], ["FF b", "DG1"]]);
     expect(view.former).toEqual([]);
-    expect(view.next.map((r) => r.label)).toEqual(["DG2", "DG2"]);
+    expect(view.next).toHaveLength(1); // only one heat left after this one
+    expect(view.next[0].map((r) => r.label)).toEqual(["DG2", "DG2"]);
   });
 
   it("advances to the next heat once a heat has times", () => {
@@ -253,6 +254,16 @@ describe("buildMonitorQueue", () => {
     const view = buildMonitorQueue(sortByStart(teams8), bracket, 2);
     expect(view.status).toBe("running");
     expect(view.current.map((r) => r.label)).toEqual(["Viertelfinale", "Viertelfinale"]);
+  });
+
+  it("caps the upcoming queue at the next two heats, even when far more remain", () => {
+    const teams8 = Array.from({ length: 8 }, (_, i) => team(`s${i}`, i + 1, [20 + i, 0], [20 + i, 0]));
+    const bracket = buildBracket(selectTop8(rankTeams(teams8)), {});
+    const view = buildMonitorQueue(sortByStart(teams8), bracket, 2);
+    // Base rounds are all done, K.O. hasn't started: qf1 is current, and
+    // there are still qf2/qf3/qf4 + sf + final left -- only 2 are shown.
+    expect(view.next).toHaveLength(2);
+    expect(view.next.every((heat) => heat.every((r) => r.label === "Viertelfinale"))).toBe(true);
   });
 
   it("flags both runners of a tied K.O. heat, but never a base-round entry", () => {
@@ -285,7 +296,8 @@ describe("buildMonitorQueue", () => {
     // has already moved on to DG2's first heat (a, b), not a DG1/DG2 mix.
     expect(view.former.map((r) => [r.name, r.label])).toEqual([["FF c", "DG1"]]);
     expect(view.current.map((r) => [r.name, r.label])).toEqual([["FF a", "DG2"], ["FF b", "DG2"]]);
-    expect(view.next.map((r) => [r.name, r.label])).toEqual([["FF c", "DG2"]]);
+    expect(view.next).toHaveLength(1);
+    expect(view.next[0].map((r) => [r.name, r.label])).toEqual([["FF c", "DG2"]]);
   });
 
   it("with an odd team count, the last team in a phase runs alone rather than joining the next phase", () => {
@@ -295,7 +307,10 @@ describe("buildMonitorQueue", () => {
     const view = buildMonitorQueue([a, b, c], emptyBracket, 2);
     expect(view.status).toBe("running");
     expect(view.current.map((r) => [r.name, r.label])).toEqual([["FF c", "DG1"]]);
-    expect(view.next.map((r) => [r.name, r.label])).toEqual([["FF a", "DG2"], ["FF b", "DG2"]]);
+    // Both remaining heats show: DG2's [a, b] heat, then c's solo DG2 heat.
+    expect(view.next).toHaveLength(2);
+    expect(view.next[0].map((r) => [r.name, r.label])).toEqual([["FF a", "DG2"], ["FF b", "DG2"]]);
+    expect(view.next[1].map((r) => [r.name, r.label])).toEqual([["FF c", "DG2"]]);
   });
 });
 
