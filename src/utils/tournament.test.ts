@@ -7,6 +7,7 @@ import {
   buildMonitorQueue,
   dailyBest,
   gesamtwertung,
+  urkundePlacements,
 } from "./tournament";
 import type { Team, KoState } from "../types";
 
@@ -355,5 +356,55 @@ describe("gesamtwertung", () => {
     const ranked = rankTeams(teams10);
     const result = gesamtwertung(ranked, buildBracket([], {}));
     expect(result.map((t) => t.id)).toEqual(ranked.map((t) => t.id));
+  });
+});
+
+describe("urkundePlacements", () => {
+  it("numbers everyone sequentially when no one is außer Konkurrenz", () => {
+    const ranked = rankTeams([
+      team("a", 1, [20, 0], [20, 0]),
+      team("b", 2, [10, 0], [10, 0]),
+      team("c", 3, [30, 0], [30, 0]),
+    ]);
+    const placements = urkundePlacements(ranked);
+    expect(placements.get("b")?.platz).toBe(1); // fastest
+    expect(placements.get("a")?.platz).toBe(2);
+    expect(placements.get("c")?.platz).toBe(3);
+  });
+
+  it("skips Gastgeber teams so real competitors keep their rightful place", () => {
+    const ranked = rankTeams([
+      team("a", 1, [20, 0], [20, 0]),
+      team("host", 2, [5, 0], [5, 0], { gastgeber: true }), // fastest, but außer Konkurrenz
+      team("b", 3, [10, 0], [10, 0]),
+    ]);
+    const placements = urkundePlacements(ranked);
+    expect(placements.get("host")?.platz).toBeUndefined();
+    expect(placements.get("b")?.platz).toBe(1); // takes 1st, not 2nd
+    expect(placements.get("a")?.platz).toBe(2);
+  });
+
+  it("numbers the Gemeindewertung separately for teams flagged gemeinde", () => {
+    const ranked = rankTeams([
+      team("a", 1, [10, 0], [10, 0], { gemeinde: true }),
+      team("b", 2, [20, 0], [20, 0]),
+      team("c", 3, [30, 0], [30, 0], { gemeinde: true }),
+    ]);
+    const placements = urkundePlacements(ranked);
+    expect(placements.get("a")).toEqual({ platz: 1, gemeindePlatz: 1 });
+    expect(placements.get("b")).toEqual({ platz: 2, gemeindePlatz: undefined });
+    expect(placements.get("c")).toEqual({ platz: 3, gemeindePlatz: 2 });
+  });
+
+  it("still gives a Gemeindewertung placement to a Gastgeber team excluded from the main ranking", () => {
+    const ranked = rankTeams([
+      team("host", 1, [5, 0], [5, 0], { gastgeber: true, gemeinde: true }),
+      team("a", 2, [10, 0], [10, 0], { gemeinde: true }),
+      team("b", 3, [20, 0], [20, 0]),
+    ]);
+    const placements = urkundePlacements(ranked);
+    expect(placements.get("host")).toEqual({ platz: undefined, gemeindePlatz: 1 });
+    expect(placements.get("a")).toEqual({ platz: 1, gemeindePlatz: 2 });
+    expect(placements.get("b")).toEqual({ platz: 2, gemeindePlatz: undefined });
   });
 });

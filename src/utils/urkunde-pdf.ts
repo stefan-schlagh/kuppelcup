@@ -3,7 +3,8 @@ import { jsPDF } from "jspdf";
 export interface UrkundeEntry {
   name: string;
   wertung: string;
-  detail: string;
+  detail?: string;
+  extra?: string;
 }
 
 interface UrkundeMeta {
@@ -68,17 +69,18 @@ export function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMeta): js
     doc.setFontSize(18);
     doc.text(e.wertung.toUpperCase(), cx, 120, { align: "center" });
 
-    // Detail
+    // Detail (+ optional Gemeindewertung line)
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(13);
-    doc.text(e.detail, cx, 132, { align: "center" });
+    if (e.detail) doc.text(e.detail, cx, 132, { align: "center" });
+    if (e.extra) doc.text(e.extra, cx, e.detail ? 140 : 132, { align: "center" });
 
     // Team name
     color(DARK);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(34);
-    doc.text(e.name, cx, 168, { align: "center", maxWidth: W - 50 });
+    doc.text(e.name, cx, 172, { align: "center", maxWidth: W - 50 });
 
     // Signature lines
     const sy = 250;

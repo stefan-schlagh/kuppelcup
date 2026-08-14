@@ -1,5 +1,6 @@
 import type { BracketData, Match, Team } from "../types";
 import { generateUrkundenPdf, type UrkundeEntry } from "../utils/urkunde-pdf";
+import { urkundePlacements, type RankedTeam } from "../utils/tournament";
 
 function winnerTeam(m: Match): Team | null {
   if (!m.winnerId) return null;
@@ -9,10 +10,6 @@ function winnerTeam(m: Match): Team | null {
 function loserTeam(m: Match): Team | null {
   if (!m.winnerId) return null;
   return m.winnerId === m.teamA?.id ? m.teamB : m.teamA;
-}
-
-interface RankedTeam extends Team {
-  punkte?: number;
 }
 
 interface UrkundenProps {
@@ -41,9 +38,12 @@ export default function Urkunden({ gesamt, bracket, competitionName, year }: Urk
     return "Teilnehmerurkunde";
   };
 
-  const entries: UrkundeEntry[] = gesamt.map((t, i) => {
-    const detail = `${i + 1}. Platz`;
-    return { name: t.name, wertung: wertungFor(t), detail };
+  const placements = urkundePlacements(gesamt);
+  const entries: UrkundeEntry[] = gesamt.map((t) => {
+    const { platz, gemeindePlatz } = placements.get(t.id) ?? {};
+    const detail = platz ? `${platz}. Platz` : undefined;
+    const extra = gemeindePlatz ? `Gemeindewertung: ${gemeindePlatz}. Platz` : undefined;
+    return { name: t.name, wertung: wertungFor(t), detail, extra };
   });
 
   return (
@@ -76,7 +76,8 @@ export default function Urkunden({ gesamt, bracket, competitionName, year }: Urk
               <p className="urkunde-event">{competitionName} {year}</p>
               <div className="urkunde-rule" />
               <p className="urkunde-wertung">{e.wertung}</p>
-              <p className="urkunde-platz">{e.detail}</p>
+              {e.detail && <p className="urkunde-platz">{e.detail}</p>}
+              {e.extra && <p className="urkunde-platz">{e.extra}</p>}
               <p className="urkunde-team">{e.name}</p>
               <div className="urkunde-signatures">
                 <span className="urkunde-sig">Datum</span>
