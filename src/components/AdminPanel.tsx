@@ -164,6 +164,10 @@ export default function AdminPanel({
     if (confirm(`Event „${name}" löschen? Alle Teams und Ergebnisse gehen verloren.`)) deleteEvent(id);
   };
 
+  const handleRemoveTeam = (id: string, name: string) => {
+    if (confirm(`Team „${name}" entfernen?`)) removeTeam(id);
+  };
+
   const handleRenameEvent = (id: string, name: string) => {
     const next = prompt("Neuer Event-Name:", name);
     if (next && next.trim() && next.trim() !== name) renameEvent(id, next);
@@ -380,7 +384,7 @@ export default function AdminPanel({
                     </td>
                     {isAnmeldung && (
                       <td style={{ textAlign: "center" }}>
-                        <button className="remove-btn" onClick={() => removeTeam(t.id)} title="Team entfernen">✕</button>
+                        <button className="remove-btn" onClick={() => handleRemoveTeam(t.id, t.name)} title="Team entfernen">✕</button>
                       </td>
                     )}
                   </tr>

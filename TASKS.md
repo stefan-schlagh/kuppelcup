@@ -405,4 +405,14 @@ backlog:
   else's relative order, no duplicates) but now only commits on explicit OK
   (or Enter), not on every keystroke. e2e-tested: arrow swap + swap-back,
   and jump-then-OK with an assertion that nothing moves before OK is
-  pressed.)
+  pressed. Follow-up polish, requested after seeing it live: the widget
+  first shipped as a two-row layout that read as cluttered/misaligned, then
+  a single compact row grouped in one bordered widget, with the native
+  spinner arrows removed from the jump input since the dedicated ▲/▼
+  buttons already cover the one-step case.)
+- [x] add a confirmation dialog to team deletion
+  (the ✕ "Team entfernen" button removed a team immediately, with no undo
+  and no confirmation -- unlike deleting an *event*, which already confirms.
+  Added the same `confirm()` pattern, naming the team so it's clear what's
+  about to go. e2e-tested: dismissing the dialog leaves the team in place,
+  accepting it removes it.)

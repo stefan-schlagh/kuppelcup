@@ -364,6 +364,27 @@ test("Gastgeber and Gemeindewertung checkboxes toggle a team's flags and persist
   await expect(teamsTable.locator("tbody tr").first().locator('input[type="checkbox"]').nth(1)).toBeChecked();
 });
 
+test("removing a team asks for confirmation and only removes it once accepted", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+
+  const teamsTable = page.locator(".data-table").nth(1);
+  const firstRowName = () => teamsTable.locator("tbody tr").first().locator(".input-field-name").inputValue();
+  const nameBefore = await firstRowName();
+
+  page.once("dialog", (d) => {
+    expect(d.message()).toContain(nameBefore);
+    d.dismiss();
+  });
+  await teamsTable.getByTitle("Team entfernen").first().click();
+  await expect.poll(firstRowName).toBe(nameBefore); // cancelled -- nothing removed
+
+  page.once("dialog", (d) => d.accept());
+  await teamsTable.getByTitle("Team entfernen").first().click();
+  await expect.poll(firstRowName).not.toBe(nameBefore); // confirmed -- team removed
+});
+
 test("teams can only be added/removed during Anmeldung, and everything locks once abgeschlossen", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
