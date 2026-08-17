@@ -406,4 +406,20 @@ backlog:
   (or Enter), not on every keystroke. e2e-tested: arrow swap + swap-back,
   and jump-then-OK with an assertion that nothing moves before OK is
   pressed.)
-- login with email link does not work
+- [ ] login with email link does not work
+  (confirmed with the user: clicking "Link per E-Mail (passwortlos)" throws
+  `auth/operation-not-allowed`. Reviewed the whole flow -- `signInWithEmail`
+  (`FirebaseBackend.ts`), the login form, and `completeEmailLinkSignIn` --
+  and it's already correct and unit-tested end to end (send, notice,
+  return-visit completion); the SDK itself is rejecting the request
+  project-side. This is the exact same root cause already diagnosed earlier
+  in this file (see "on 'Mit E-Mail anmelden' i get auth/operation-not-
+  allowed" under TODO 20260807): the "Email link (passwordless sign-in)"
+  method is a separate toggle from plain Email/Password under Firebase
+  console → Authentication → Sign-in method → Email/Password, off by
+  default, and `firebase.json`'s `auth.providers` config can't turn it on
+  (no Firebase/gcloud config file or CLI covers it, and this sandbox has no
+  credentials for the live project either way -- not something fixable from
+  the repo). **Manual step (still not done):** enable that toggle for
+  project `kuppelcup-dfe34`, and confirm the production domain is under
+  Authentication → Settings → Authorized domains.)
