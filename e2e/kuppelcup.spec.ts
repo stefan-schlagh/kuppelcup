@@ -98,6 +98,34 @@ test("a base-round tie within places 1-7 is flagged as Gleichstand", async ({ pa
   await expect(page.getByText("Stechlauf", { exact: true })).toHaveCount(0);
 });
 
+test("teams with no run yet are hidden from Bestenliste and Gemeindewertung until they have a result", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+
+  // Mark the first team (already Gastgeber) for Gemeindewertung too.
+  const teamsTable = page.locator(".data-table").nth(1);
+  const firstRow = teamsTable.locator("tbody tr").first();
+  const firstName = await firstRow.locator(".input-field-name").inputValue();
+  await firstRow.locator('input[type="checkbox"]').nth(1).check();
+
+  await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
+  const bestenlisteSection = page.locator("h2", { hasText: "Bestenliste — Grunddurchgang" }).locator("xpath=..");
+  const gemeindeSection = page.locator("h2", { hasText: "Bestenliste — Gemeindewertung" }).locator("xpath=..");
+  // Nobody has run yet -- both standings are empty, not full of 0-point rows.
+  await expect(bestenlisteSection.locator(".data-table tbody tr")).toHaveCount(0);
+  await expect(gemeindeSection.locator(".data-table tbody tr")).toHaveCount(0);
+
+  await page.getByRole("button", { name: /^Admin$/ }).click();
+  await page.getByRole("button", { name: "Grunddurchgang erfassen" }).click();
+  await page.locator(".input-field").first().fill("21.00"); // first team's DG1 zeit
+
+  await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
+  await expect(bestenlisteSection.locator(".data-table tbody tr")).toHaveCount(1);
+  await expect(bestenlisteSection.locator(".td-name")).toContainText(firstName);
+  await expect(gemeindeSection.locator(".data-table tbody tr")).toHaveCount(1);
+  await expect(gemeindeSection.locator(".td-name")).toHaveText(firstName);
+});
+
 test("Gemeindewertung follows the overall (K.O.-aware) standings, not raw base rank", async ({ page }) => {
   await loginAsAdmin(page);
   await loadSampleTeamsWithResults(page);
@@ -245,6 +273,20 @@ test("a wrong password shows an inline error and does not sign in", async ({ pag
   await page.getByRole("button", { name: "Anmelden" }).click();
   await expect(page.locator(".pin-error")).toBeVisible();
   await expect(page.getByText("Meine Events")).toHaveCount(0);
+});
+
+test("login persists across a reload", async ({ page }) => {
+  await loginAsAdmin(page);
+  await expect(page.getByText("Meine Events")).toBeVisible();
+
+  await page.reload();
+  // Tab selection itself isn't persisted -- back on "Bestenliste" -- but the
+  // signed-in session should be, so Admin goes straight to the panel again
+  // instead of the login form.
+  await page.getByRole("button", { name: /^Admin$/ }).click();
+
+  await expect(page.getByRole("button", { name: /Abmelden \(admin\)/ })).toBeVisible();
+  await expect(page.getByText("Meine Events")).toBeVisible();
 });
 
 test("passwordless e-mail sign-in logs in immediately against the local backend", async ({ page }) => {

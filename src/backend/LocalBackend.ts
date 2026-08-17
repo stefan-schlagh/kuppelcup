@@ -121,7 +121,7 @@ export class LocalBackend implements Backend {
   }
 
   auth = {
-    currentAccount: (): Account | null => {
+    currentAccount: async (): Promise<Account | null> => {
       const raw = this.store.get(ACCOUNT_KEY);
       if (!raw) return null;
       try { return JSON.parse(raw) as Account; } catch { return null; }

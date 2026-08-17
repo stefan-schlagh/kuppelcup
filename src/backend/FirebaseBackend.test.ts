@@ -12,7 +12,10 @@ vi.mock("../firebaseConfig", () => ({ firebaseConfig: {} }));
 vi.mock("../sentry", () => ({ reportError: vi.fn() }));
 vi.mock("firebase/app", () => ({ initializeApp: vi.fn(() => ({})) }));
 
-const mockAuthInstance: { currentUser: unknown } = { currentUser: null };
+const mockAuthInstance: { currentUser: unknown; authStateReady: () => Promise<void> } = {
+  currentUser: null,
+  authStateReady: () => Promise.resolve(),
+};
 
 vi.mock("firebase/auth", () => ({
   getAuth: vi.fn(() => mockAuthInstance),
@@ -82,27 +85,41 @@ describe("FirebaseBackend", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthInstance.currentUser = null;
+    mockAuthInstance.authStateReady = () => Promise.resolve();
     vi.stubGlobal("window", makeWindowStub());
   });
 
   describe("auth", () => {
-    it("has no current account until sign-in", () => {
+    it("has no current account until sign-in", async () => {
       const be = new FirebaseBackend();
-      expect(be.auth.currentAccount()).toBeNull();
+      await expect(be.auth.currentAccount()).resolves.toBeNull();
     });
 
-    it("maps the signed-in Firebase user to an Account", () => {
+    it("maps the signed-in Firebase user to an Account", async () => {
       mockAuthInstance.currentUser = { uid: "u1", displayName: "Alice", email: "a@x.com" };
       const be = new FirebaseBackend();
-      expect(be.auth.currentAccount()).toEqual({ id: "u1", name: "Alice" });
+      await expect(be.auth.currentAccount()).resolves.toEqual({ id: "u1", name: "Alice" });
     });
 
-    it("falls back to email, then \"Admin\", when displayName is missing", () => {
+    it("falls back to email, then \"Admin\", when displayName is missing", async () => {
       mockAuthInstance.currentUser = { uid: "u1", displayName: null, email: "a@x.com" };
-      expect(new FirebaseBackend().auth.currentAccount()).toEqual({ id: "u1", name: "a@x.com" });
+      await expect(new FirebaseBackend().auth.currentAccount()).resolves.toEqual({ id: "u1", name: "a@x.com" });
 
       mockAuthInstance.currentUser = { uid: "u1", displayName: null, email: null };
-      expect(new FirebaseBackend().auth.currentAccount()).toEqual({ id: "u1", name: "Admin" });
+      await expect(new FirebaseBackend().auth.currentAccount()).resolves.toEqual({ id: "u1", name: "Admin" });
+    });
+
+    it("waits for the SDK to finish restoring a persisted session before reporting signed-out", async () => {
+      // currentUser is still null when currentAccount() is called (SDK
+      // hasn't restored the session yet) but becomes available by the time
+      // authStateReady() resolves -- simulates a fresh page load.
+      let resolveReady!: () => void;
+      mockAuthInstance.authStateReady = () => new Promise((resolve) => { resolveReady = resolve; });
+      const be = new FirebaseBackend();
+      const pending = be.auth.currentAccount();
+      mockAuthInstance.currentUser = { uid: "u1", displayName: "Alice", email: "a@x.com" };
+      resolveReady();
+      await expect(pending).resolves.toEqual({ id: "u1", name: "Alice" });
     });
 
     it("signs in with username + password via signInWithEmailAndPassword", async () => {
