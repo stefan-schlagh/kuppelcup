@@ -743,6 +743,118 @@ span.nav-icon{
   font-family: 'IBM Plex Mono', monospace;
 }
 
+.input-field-name {
+  width: 100%;
+  min-width: 240px;
+  padding: 6px 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-main);
+}
+
+/* Start-number cell: current value + one-step move arrows, plus a
+   separate jump-to-position input that only applies on explicit OK.
+   All in a single row, grouped in one bordered widget so it reads as
+   one control instead of loose floating pieces. */
+.start-nr-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+}
+
+.start-nr-value {
+  min-width: 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.start-nr-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.start-nr-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 13px;
+  padding: 0;
+  line-height: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.start-nr-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+.start-nr-btn:not(:disabled):hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.start-nr-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.start-nr-jump {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 6px;
+  border-left: 1px solid var(--border-color);
+}
+
+.start-nr-jump-input {
+  width: 32px;
+  padding: 4px 5px;
+  /* This is a deliberate jump-to-position value, not a live spinner --
+     the up/down arrows already cover the one-step case, so the
+     browser's native spin buttons would just be visual noise here. */
+  -moz-appearance: textfield;
+}
+
+.start-nr-jump-input::-webkit-outer-spin-button,
+.start-nr-jump-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.start-nr-ok {
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.start-nr-ok:not(:disabled):hover {
+  border-color: var(--color-primary);
+}
+
+.start-nr-ok:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Event management */
 .phase-stepper {
   display: flex;

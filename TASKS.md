@@ -379,3 +379,40 @@ backlog:
   Playwright script against a real browser, removed after), `tsc -b`, unit
   tests, lint, and the full e2e suite (11/11) all still pass with the
   renamed flag.
+
+
+20260817
+
+- [x] team name input is to small - show full team name
+  (Admin → Event & Teams team list: the name field shared `.input-field`
+  with the numeric time/penalty inputs, fixed at 90px — plenty for
+  "123.45" but not for a team name. New `.input-field-name` class (full
+  width of the cell, 240px minimum) applied to just that input.)
+- [x] start number change is too unintuitive:(e.g. down moves the team up)
+    - remove number selector: set arrows up / down that intuitevily do what i want
+    - number input: only after additional ok: place team to new place, keep the order of all other teams
+  (the old control was a single native number-spinner input that wrote on
+  every keystroke via `reassignStart`'s shift-everyone-in-between logic --
+  correct in isolation, but its up/down spinner arrows change the *typed
+  value*, not the team's position, so the direction you clicked didn't map
+  to which way the row visually moved. Replaced with two explicit controls:
+  ▲/▼ buttons that swap the team with its immediate neighbour in start
+  order -- one arrow, one step, in the direction it points -- via a new
+  `moveTeamStart`/`moveTeamUp`/`moveTeamDown` (`KuppelCup.tsx`) built on the
+  existing tested `reassignStart`; and a separate small "jump to position"
+  number input + OK button for setting an arbitrary start number, which
+  still uses `reassignStart` (shifts the teams in between, keeps everyone
+  else's relative order, no duplicates) but now only commits on explicit OK
+  (or Enter), not on every keystroke. e2e-tested: arrow swap + swap-back,
+  and jump-then-OK with an assertion that nothing moves before OK is
+  pressed. Follow-up polish, requested after seeing it live: the widget
+  first shipped as a two-row layout that read as cluttered/misaligned, then
+  a single compact row grouped in one bordered widget, with the native
+  spinner arrows removed from the jump input since the dedicated ▲/▼
+  buttons already cover the one-step case.)
+- [x] add a confirmation dialog to team deletion
+  (the ✕ "Team entfernen" button removed a team immediately, with no undo
+  and no confirmation -- unlike deleting an *event*, which already confirms.
+  Added the same `confirm()` pattern, naming the team so it's clear what's
+  about to go. e2e-tested: dismissing the dialog leaves the team in place,
+  accepting it removes it.)
