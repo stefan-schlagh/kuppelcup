@@ -388,7 +388,22 @@ backlog:
   with the numeric time/penalty inputs, fixed at 90px — plenty for
   "123.45" but not for a team name. New `.input-field-name` class (full
   width of the cell, 240px minimum) applied to just that input.)
-- [ ] start number change is too unintuitive:(e.g. down moves the team up)
+- [x] start number change is too unintuitive:(e.g. down moves the team up)
     - remove number selector: set arrows up / down that intuitevily do what i want
     - number input: only after additional ok: place team to new place, keep the order of all other teams
+  (the old control was a single native number-spinner input that wrote on
+  every keystroke via `reassignStart`'s shift-everyone-in-between logic --
+  correct in isolation, but its up/down spinner arrows change the *typed
+  value*, not the team's position, so the direction you clicked didn't map
+  to which way the row visually moved. Replaced with two explicit controls:
+  ▲/▼ buttons that swap the team with its immediate neighbour in start
+  order -- one arrow, one step, in the direction it points -- via a new
+  `moveTeamStart`/`moveTeamUp`/`moveTeamDown` (`KuppelCup.tsx`) built on the
+  existing tested `reassignStart`; and a separate small "jump to position"
+  number input + OK button for setting an arbitrary start number, which
+  still uses `reassignStart` (shifts the teams in between, keeps everyone
+  else's relative order, no duplicates) but now only commits on explicit OK
+  (or Enter), not on every keystroke. e2e-tested: arrow swap + swap-back,
+  and jump-then-OK with an assertion that nothing moves before OK is
+  pressed.)
 - login with email link does not work

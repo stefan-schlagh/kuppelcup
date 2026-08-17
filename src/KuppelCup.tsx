@@ -140,6 +140,19 @@ export default function KuppelCup() {
     setTeams(reassignStart(teams, id, start));
   };
 
+  // Swaps a team with its immediate neighbour in start order -- the
+  // intuitive "one step up/down the list" move, as opposed to typing an
+  // arbitrary target number (updateTeamStart).
+  const moveTeamStart = (id: string, direction: -1 | 1) => {
+    if (locked) return;
+    const idx = scheduledTeams.findIndex((t) => t.id === id);
+    const neighbor = scheduledTeams[idx + direction];
+    if (idx === -1 || !neighbor) return;
+    setTeams(reassignStart(teams, id, neighbor.start));
+  };
+  const moveTeamUp = (id: string) => moveTeamStart(id, -1);
+  const moveTeamDown = (id: string) => moveTeamStart(id, 1);
+
   const loadSampleTeams = () => phase === "anmeldung" && setTeams(seedTeams());
 
   // Test/showcase helper: fill both the Grunddurchgang and the K.O. phase.
@@ -243,6 +256,8 @@ export default function KuppelCup() {
             removeTeam={removeTeam}
             renameTeam={renameTeam}
             updateTeamStart={updateTeamStart}
+            moveTeamUp={moveTeamUp}
+            moveTeamDown={moveTeamDown}
             loadSampleTeams={loadSampleTeams}
             fillRandomResults={fillRandomResults}
             account={account}

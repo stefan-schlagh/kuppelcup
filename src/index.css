@@ -753,6 +753,69 @@ span.nav-icon{
   color: var(--text-main);
 }
 
+/* Start-number cell: current value + one-step move arrows, plus a
+   separate jump-to-position input that only applies on explicit OK. */
+.start-nr-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.start-nr-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.start-nr-value {
+  min-width: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: right;
+}
+
+.start-nr-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.start-nr-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 16px;
+  padding: 0;
+  line-height: 1;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.start-nr-btn:not(:disabled):hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.start-nr-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.start-nr-jump {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.start-nr-jump .input-field-small {
+  width: 46px;
+}
+
 /* Event management */
 .phase-stepper {
   display: flex;

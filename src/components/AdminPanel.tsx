@@ -8,7 +8,7 @@ import { toDataURL } from "qrcode";
 import type { Team, EventPhase, BracketData, KoState, Account, EventMeta, EventDoc } from '../types'
 import type { RankedTeam } from "../utils/tournament";
 import type { PdfMeta } from "../pdf/pdfDocs";
-import { LogOut } from 'lucide-react';
+import { LogOut, ChevronUp, ChevronDown } from 'lucide-react';
 
 type RunField = "zeit" | "strafe";
 
@@ -28,6 +28,8 @@ interface AdminPanelProps {
   removeTeam: (id: string) => void;
   renameTeam: (id: string, name: string) => void;
   updateTeamStart: (id: string, start: number) => void;
+  moveTeamUp: (id: string) => void;
+  moveTeamDown: (id: string) => void;
   loadSampleTeams: () => void;
   fillRandomResults: () => void;
   account: Account | null;
@@ -62,6 +64,8 @@ export default function AdminPanel({
   removeTeam,
   renameTeam,
   updateTeamStart,
+  moveTeamUp,
+  moveTeamDown,
   loadSampleTeams,
   fillRandomResults,
   account,
@@ -83,6 +87,15 @@ export default function AdminPanel({
   const [newName, setNewName] = useState("");
   const [newEventName, setNewEventName] = useState("");
   const [qr, setQr] = useState<{ name: string; url: string; dataUrl: string } | null>(null);
+  // Jump-to-position start number, per team row -- only applied once the
+  // user confirms via the "OK" button (or Enter), not on every keystroke.
+  const [jumpValues, setJumpValues] = useState<Record<string, string>>({});
+
+  const commitJump = (id: string) => {
+    const parsed = parseInt(jumpValues[id] || "", 10);
+    if (!Number.isNaN(parsed) && parsed >= 1) updateTeamStart(id, parsed);
+    setJumpValues((prev) => ({ ...prev, [id]: "" }));
+  };
 
   const isAnmeldung = phase === "anmeldung";
 
@@ -296,18 +309,58 @@ export default function AdminPanel({
                 {teams.length === 0 && (
                   <tr><td colSpan={isAnmeldung ? 5 : 4} className="hint-text">Noch keine Teams angemeldet.</td></tr>
                 )}
-                {teams.map((t: Team) => (
+                {teams.map((t: Team, idx: number) => (
                   <tr key={t.id}>
                     <td className="td-rank">
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        disabled={locked}
-                        value={t.start}
-                        onChange={(e) => updateTeamStart(t.id, Math.max(1, parseInt(e.target.value || "1", 10)))}
-                        className="input-field-small"
-                      />
+                      <div className="start-nr-cell">
+                        <div className="start-nr-top">
+                          <span className="start-nr-value">{t.start}</span>
+                          <div className="start-nr-moves">
+                            <button
+                              type="button"
+                              className="start-nr-btn"
+                              disabled={locked || idx === 0}
+                              onClick={() => moveTeamUp(t.id)}
+                              title="Team eine Position nach oben verschieben"
+                              aria-label="Nach oben verschieben"
+                            >
+                              <ChevronUp size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="start-nr-btn"
+                              disabled={locked || idx === teams.length - 1}
+                              onClick={() => moveTeamDown(t.id)}
+                              title="Team eine Position nach unten verschieben"
+                              aria-label="Nach unten verschieben"
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="start-nr-jump">
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            disabled={locked}
+                            placeholder="Nr."
+                            value={jumpValues[t.id] ?? ""}
+                            onChange={(e) => setJumpValues((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === "Enter" && commitJump(t.id)}
+                            className="input-field-small"
+                          />
+                          <button
+                            type="button"
+                            className="remove-btn switch-btn"
+                            disabled={locked || !jumpValues[t.id]}
+                            onClick={() => commitJump(t.id)}
+                            title="Team auf diese Startnummer setzen, Reihenfolge der anderen Teams bleibt erhalten"
+                          >
+                            OK
+                          </button>
+                        </div>
+                      </div>
                     </td>
                     <td className="td-name">
                       {isAnmeldung ? (

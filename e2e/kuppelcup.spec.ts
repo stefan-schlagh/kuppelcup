@@ -385,6 +385,42 @@ test("teams can only be added/removed during Anmeldung, and everything locks onc
   await expect(page.locator(".input-field").first()).toBeDisabled();
 });
 
+test("start number: up/down arrows move a team by one position, jump input moves it to an exact position", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
+
+  const rows = page.locator(".data-table tbody tr:has(.start-nr-value)");
+  const nameAt = (i: number) => rows.nth(i).locator(".input-field-name").inputValue();
+  const firstName = await nameAt(0);
+  const secondName = await nameAt(1);
+  const thirdName = await nameAt(2);
+  const fourthName = await nameAt(3);
+
+  // Up arrow on the 2nd row swaps it with the 1st -- moves it up the list.
+  await rows.nth(1).locator(".start-nr-btn").first().click();
+  await expect.poll(() => nameAt(0)).toBe(secondName);
+  await expect.poll(() => nameAt(1)).toBe(firstName);
+
+  // Down arrow on the (now first) row swaps it back.
+  await rows.nth(0).locator(".start-nr-btn").nth(1).click();
+  await expect.poll(() => nameAt(0)).toBe(firstName);
+  await expect.poll(() => nameAt(1)).toBe(secondName);
+
+  // Typing a target position only applies once "OK" is pressed -- moves the
+  // team there while keeping every other team's relative order.
+  await rows.nth(0).locator(".start-nr-jump input").fill("4");
+  await expect(nameAt(0)).resolves.toBe(firstName); // not applied yet
+  await rows.nth(0).locator(".start-nr-jump button").click();
+
+  await expect.poll(() => nameAt(0)).toBe(secondName);
+  await expect.poll(() => nameAt(1)).toBe(thirdName);
+  await expect.poll(() => nameAt(2)).toBe(fourthName);
+  await expect.poll(() => nameAt(3)).toBe(firstName);
+
+  const starts = await page.locator(".data-table tbody .start-nr-value").allInnerTexts();
+  expect(new Set(starts).size).toBe(starts.length); // still unique, no gaps/duplicates
+});
+
 test("the theme toggle switches between dark and light and persists across a reload", async ({ page }) => {
   await page.goto("/");
   const theme = () => page.evaluate(() => document.documentElement.getAttribute("data-theme"));
