@@ -315,7 +315,7 @@ export default function AdminPanel({
                           type="text"
                           value={t.name}
                           onChange={(e) => renameTeam(t.id, e.target.value)}
-                          className="input-field"
+                          className="input-field-name"
                         />
                       ) : (
                         t.name

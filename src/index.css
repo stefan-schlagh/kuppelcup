@@ -743,6 +743,16 @@ span.nav-icon{
   font-family: 'IBM Plex Mono', monospace;
 }
 
+.input-field-name {
+  width: 100%;
+  min-width: 240px;
+  padding: 6px 8px;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-main);
+}
+
 /* Event management */
 .phase-stepper {
   display: flex;

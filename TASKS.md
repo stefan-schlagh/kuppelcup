@@ -379,3 +379,16 @@ backlog:
   Playwright script against a real browser, removed after), `tsc -b`, unit
   tests, lint, and the full e2e suite (11/11) all still pass with the
   renamed flag.
+
+
+20260817
+
+- [x] team name input is to small - show full team name
+  (Admin → Event & Teams team list: the name field shared `.input-field`
+  with the numeric time/penalty inputs, fixed at 90px — plenty for
+  "123.45" but not for a team name. New `.input-field-name` class (full
+  width of the cell, 240px minimum) applied to just that input.)
+- [ ] start number change is too unintuitive:(e.g. down moves the team up)
+    - remove number selector: set arrows up / down that intuitevily do what i want
+    - number input: only after additional ok: place team to new place, keep the order of all other teams
+- login with email link does not work
