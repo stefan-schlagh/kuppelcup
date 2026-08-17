@@ -247,6 +247,20 @@ test("a wrong password shows an inline error and does not sign in", async ({ pag
   await expect(page.getByText("Meine Events")).toHaveCount(0);
 });
 
+test("login persists across a reload", async ({ page }) => {
+  await loginAsAdmin(page);
+  await expect(page.getByText("Meine Events")).toBeVisible();
+
+  await page.reload();
+  // Tab selection itself isn't persisted -- back on "Bestenliste" -- but the
+  // signed-in session should be, so Admin goes straight to the panel again
+  // instead of the login form.
+  await page.getByRole("button", { name: /^Admin$/ }).click();
+
+  await expect(page.getByRole("button", { name: /Abmelden \(admin\)/ })).toBeVisible();
+  await expect(page.getByText("Meine Events")).toBeVisible();
+});
+
 test("passwordless e-mail sign-in logs in immediately against the local backend", async ({ page }) => {
   // FirebaseBackend can't sign in synchronously (real email-link flow), but
   // LocalBackend's stub does -- e2e always runs on LocalBackend, so this is

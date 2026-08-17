@@ -416,3 +416,18 @@ backlog:
   Added the same `confirm()` pattern, naming the team so it's clear what's
   about to go. e2e-tested: dismissing the dialog leaves the team in place,
   accepting it removes it.)
+- [x] persist login status after reload
+  (LocalBackend already persisted the session to localStorage, so this was
+  a Firebase-only bug: `FirebaseBackend.auth.currentAccount()` read
+  `fbAuth.currentUser` synchronously, but the Firebase Auth SDK restores a
+  persisted session from IndexedDB *asynchronously* on a fresh page load --
+  `currentUser` is still null at that point even though a session is about
+  to come back a moment later. `useEvents`' init effect called
+  `currentAccount()` immediately on mount, so it always saw "signed out" on
+  reload and silently fell back to the public landing event. Fixed by
+  awaiting the SDK's own `authStateReady()` before reading `currentUser`;
+  `currentAccount()` is now `Promise<Account | null>` across the `Backend`
+  interface (LocalBackend's version was already effectively synchronous,
+  just wrapped in `async` to match). Unit-tested (simulates the race:
+  `currentUser` still null when called, resolves once `authStateReady()`
+  resolves) and e2e-tested (log in, reload, confirm still signed in).)

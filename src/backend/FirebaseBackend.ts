@@ -55,7 +55,12 @@ export class FirebaseBackend implements Backend {
   private fbAuth = getAuth(this.app);
 
   auth = {
-    currentAccount: (): Account | null => {
+    currentAccount: async (): Promise<Account | null> => {
+      // `fbAuth.currentUser` is null until the SDK finishes restoring a
+      // persisted session from IndexedDB, which hasn't happened yet on a
+      // fresh page load -- reading it immediately would report "signed
+      // out" even when a session is about to come back a moment later.
+      await this.fbAuth.authStateReady();
       const u = this.fbAuth.currentUser;
       return u ? { id: u.uid, name: u.displayName ?? u.email ?? "Admin" } : null;
     },

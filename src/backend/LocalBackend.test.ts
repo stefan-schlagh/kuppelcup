@@ -14,7 +14,7 @@ function memStore(): KeyValueStore {
 describe("LocalBackend", () => {
   it("seeds a default admin with a starter event and nobody signed in", async () => {
     const be = new LocalBackend(memStore());
-    expect(be.auth.currentAccount()).toBeNull();
+    await expect(be.auth.currentAccount()).resolves.toBeNull();
     const landing = await be.landingEvent();
     expect(landing?.name).toBe("1. Geissberg KUPPELCUP");
     expect(landing?.ownerId).toBe("local-admin");
@@ -26,9 +26,9 @@ describe("LocalBackend", () => {
     await expect(be.auth.signIn("nobody", "admin")).rejects.toThrow();
     const acc = await be.auth.signIn("admin", "admin");
     expect(acc).toEqual({ id: "local-admin", name: "admin" });
-    expect(be.auth.currentAccount()).toEqual({ id: "local-admin", name: "admin" });
+    await expect(be.auth.currentAccount()).resolves.toEqual({ id: "local-admin", name: "admin" });
     await be.auth.signOut();
-    expect(be.auth.currentAccount()).toBeNull();
+    await expect(be.auth.currentAccount()).resolves.toBeNull();
   });
 
   it("signs in passwordless by email, creating the admin on first use", async () => {
@@ -36,7 +36,7 @@ describe("LocalBackend", () => {
     await expect(be.auth.signInWithEmail("not-an-email")).rejects.toThrow();
     const first = await be.auth.signInWithEmail("chef@ff-buchberg.at");
     expect(first.name).toBe("chef@ff-buchberg.at");
-    expect(be.auth.currentAccount()?.id).toBe(first.id);
+    expect((await be.auth.currentAccount())?.id).toBe(first.id);
     // same email signs into the same account (not a duplicate)
     await be.auth.signOut();
     const again = await be.auth.signInWithEmail("Chef@FF-Buchberg.at");
