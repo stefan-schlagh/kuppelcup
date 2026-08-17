@@ -313,31 +313,29 @@ export default function AdminPanel({
                   <tr key={t.id}>
                     <td className="td-rank">
                       <div className="start-nr-cell">
-                        <div className="start-nr-top">
-                          <span className="start-nr-value">{t.start}</span>
-                          <div className="start-nr-moves">
-                            <button
-                              type="button"
-                              className="start-nr-btn"
-                              disabled={locked || idx === 0}
-                              onClick={() => moveTeamUp(t.id)}
-                              title="Team eine Position nach oben verschieben"
-                              aria-label="Nach oben verschieben"
-                            >
-                              <ChevronUp size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className="start-nr-btn"
-                              disabled={locked || idx === teams.length - 1}
-                              onClick={() => moveTeamDown(t.id)}
-                              title="Team eine Position nach unten verschieben"
-                              aria-label="Nach unten verschieben"
-                            >
-                              <ChevronDown size={14} />
-                            </button>
-                          </div>
+                        <div className="start-nr-moves">
+                          <button
+                            type="button"
+                            className="start-nr-btn"
+                            disabled={locked || idx === 0}
+                            onClick={() => moveTeamUp(t.id)}
+                            title="Team eine Position nach oben verschieben"
+                            aria-label="Nach oben verschieben"
+                          >
+                            <ChevronUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="start-nr-btn"
+                            disabled={locked || idx === teams.length - 1}
+                            onClick={() => moveTeamDown(t.id)}
+                            title="Team eine Position nach unten verschieben"
+                            aria-label="Nach unten verschieben"
+                          >
+                            <ChevronDown size={14} />
+                          </button>
                         </div>
+                        <span className="start-nr-value">{t.start}</span>
                         <div className="start-nr-jump">
                           <input
                             type="number"
@@ -348,11 +346,11 @@ export default function AdminPanel({
                             value={jumpValues[t.id] ?? ""}
                             onChange={(e) => setJumpValues((prev) => ({ ...prev, [t.id]: e.target.value }))}
                             onKeyDown={(e) => e.key === "Enter" && commitJump(t.id)}
-                            className="input-field-small"
+                            className="input-field-small start-nr-jump-input"
                           />
                           <button
                             type="button"
-                            className="remove-btn switch-btn"
+                            className="start-nr-ok"
                             disabled={locked || !jumpValues[t.id]}
                             onClick={() => commitJump(t.id)}
                             title="Team auf diese Startnummer setzen, Reihenfolge der anderen Teams bleibt erhalten"
