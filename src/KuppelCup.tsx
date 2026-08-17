@@ -92,9 +92,14 @@ export default function KuppelCup() {
   const dailyBestTimes = useMemo(() => dailyBest(ranked, bracket), [ranked, bracket]);
   const gesamt = useMemo(() => gesamtwertung(ranked, bracket), [ranked, bracket]);
 
+  // Bestenliste/Gemeindewertung are standings -- a team with no run yet has
+  // nothing to rank, so it's just noise there (still counted everywhere
+  // else: team management, Urkunden certificates for all participants, ...).
+  const rankedWithResult = useMemo(() => ranked.filter((t) => t.punkte > 0), [ranked]);
+
   // Gemeindewertung follows the overall standings (K.O. placement for the
   // top 8, base-round rank for the rest), not raw base-round order.
-  const gemeinde = gesamt.filter((t) => t.gemeinde);
+  const gemeinde = gesamt.filter((t) => t.gemeinde && t.punkte > 0);
 
   // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
   const locked = phase === "abgeschlossen"; // no changes possible once finished
@@ -218,7 +223,7 @@ export default function KuppelCup() {
         )}
         {tab === "liste" && (
           <FullscreenPanel>
-            <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
+            <Bestenliste ranked={rankedWithResult} top8Ids={new Set(top8.map(t => t.id))} />
             <Gemeindewertung ranked={gemeinde} />
             <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
             <Gesamtwertung ranked={gesamt} />
@@ -268,7 +273,7 @@ export default function KuppelCup() {
             deleteEvent={deleteEvent}
             selectEvent={selectEvent}
             logout={logout}
-            ranked={ranked}
+            ranked={rankedWithResult}
             top8Ids={new Set(top8.map(t => t.id))}
             gemeinde={gemeinde}
             dailyBestTimes={dailyBestTimes}

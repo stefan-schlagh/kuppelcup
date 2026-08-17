@@ -431,3 +431,20 @@ backlog:
   just wrapped in `async` to match). Unit-tested (simulates the race:
   `currentUser` still null when called, resolves once `authStateReady()`
   resolves) and e2e-tested (log in, reload, confirm still signed in).)
+- [x] in the Bestenliste / Gemeindewertung, teams with 0 points (no run yet)
+  should not be shown
+  (both are standings, and a team with no result has nothing to rank --
+  showing it as a "0 Punkte" / last-place row was noise, not information.
+  Filtered right where they're rendered (`rankedWithResult`/`gemeinde` in
+  `KuppelCup.tsx`, `t.punkte > 0`), not inside `rankTeams`/`gesamtwertung`
+  themselves -- those stay untouched since they still need every team for
+  other consumers: top-8/K.O. qualification already has its own punkte!==0
+  filter, and Urkunden certificates are for *all* participants regardless
+  of results. Applied to the PDF export's Grunddurchgang/Gemeindewertung
+  tables too, since they reuse the same `ranked`/`gemeinde` data and should
+  match what's on screen. Tagesbestzeit/Gesamtwertung untouched (not asked
+  for, and a no-result team was already never going to appear in either --
+  the former is top-3-by-best-time, the latter falls back to base rank
+  where it was already sorted last). e2e-tested: both sections start empty
+  with an unraced roster, then show exactly the one team once it gets a
+  result.)
