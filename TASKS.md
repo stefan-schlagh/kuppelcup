@@ -519,4 +519,19 @@ backlog:
   toggle with a simulated fullscreen state (real `requestFullscreen()`
   isn't reliable headless), the split tab is hidden at a phone-sized
   viewport, and pane `scrollHeight`/`clientHeight` confirm the long pane
-  scrolls on its own while the short one and the outer page don't.)
+  scrolls on its own while the short one and the outer page don't.
+  Two more fixes from watching it live: (4) `.main-content` (used by every
+  tab) has a `max-width: 1000px` reading-width cap; Split-Ansicht opts out
+  of it (`.main-content:has(.split-tab) { max-width: none }`) since two
+  panes side by side is the whole point of the feature and needs the room.
+  (5) That extra width surfaced an unwanted horizontal scrollbar in the
+  Live-Monitor pane: its 3-column grid used a bare `1fr` per track, which
+  per spec can't shrink below its content's min-content width, so a
+  narrower pane forced the row wider than the container instead of
+  wrapping. Switched to `minmax(0, 1fr)`/`minmax(0, 1.5fr)` tracks (same
+  proportions, but now allowed to shrink), and made `.split-pane-content`'s
+  `overflow-x: hidden` explicit rather than left to default -- setting only
+  `overflow-y` computes `overflow-x` to `auto` too, so any future overflow
+  there would silently grow a horizontal scrollbar again instead of just
+  wrapping/clipping. e2e-tested: `.main-content` width at a wide viewport,
+  and no element (page or any pane) has `scrollWidth > clientWidth`.)

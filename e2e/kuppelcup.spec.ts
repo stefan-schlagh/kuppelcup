@@ -153,6 +153,29 @@ test("Split-Ansicht panes scroll independently -- a long pane doesn't drag a sho
   expect(bodyOverflows).toBe(false);
 });
 
+test("Split-Ansicht uses the full screen width and never scrolls horizontally", async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  // Not capped at the 1000px reading width the other tabs use.
+  const mainContentWidth = await page.locator(".main-content").evaluate((el) => el.getBoundingClientRect().width);
+  expect(mainContentWidth).toBeGreaterThan(1500);
+
+  // No horizontal scrollbar anywhere -- neither on the page nor inside a
+  // pane (Live-Monitor's 3-column grid used to force one on a narrow pane).
+  const overflow = await page.evaluate(() => {
+    const panes = Array.from(document.querySelectorAll<HTMLElement>(".split-pane-content"));
+    return {
+      body: document.body.scrollWidth > window.innerWidth,
+      panes: panes.some((p) => p.scrollWidth > p.clientWidth),
+    };
+  });
+  expect(overflow.body).toBe(false);
+  expect(overflow.panes).toBe(false);
+});
+
 test("Split-Ansicht tab is hidden on small screens", async ({ page }) => {
   // loginAsAdmin clicks the "Admin" nav button by its accessible name, which
   // the smartphone layout hides (icon-only nav) -- log in at normal size

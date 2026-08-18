@@ -220,6 +220,12 @@ span.nav-icon{
   margin: 0 auto;
 }
 
+/* Split-Ansicht needs the whole screen -- that's the point of it -- so it
+   opts out of the 1000px reading-width cap the other tabs use. */
+.main-content:has(.split-tab) {
+  max-width: none;
+}
+
 /* Tighten the header and content padding on phones. */
 @media (max-width: 560px) {
   .app-header {
@@ -378,6 +384,11 @@ span.nav-icon{
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    /* Explicit, not left to default: setting only overflow-y would compute
+       overflow-x to auto too (per spec), and a wide grid inside (e.g.
+       Live-Monitor's 3-column layout) could then trigger an unwanted
+       horizontal scrollbar even where nothing actually needs it. */
+    overflow-x: hidden;
   }
 
   .fs-panel.is-fullscreen .split-view {
@@ -1209,7 +1220,10 @@ span.nav-icon{
 @media(min-width: 768px) {
   .monitor-container {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 1fr;
+    /* minmax(0, ...), not plain fr: a bare 1fr track can't shrink below its
+       content's min-content width, which is how a narrower container (e.g.
+       a Split-Ansicht pane) ended up forcing a horizontal scrollbar. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
     align-items: stretch;
   }
 }
