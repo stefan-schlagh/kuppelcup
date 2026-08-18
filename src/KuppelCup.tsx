@@ -227,6 +227,7 @@ export default function KuppelCup() {
           ] as [string, string, React.ReactNode][]).map(([key, label, icon]) => (
             <button
               key={key}
+              data-tab={key}
               onClick={() => setTab(key)}
               className={`nav-btn ${tab === key ? "active" : ""}`}
             >
@@ -263,15 +264,20 @@ export default function KuppelCup() {
           </FullscreenPanel>
         )}
         {tab === "split" && (
-          <FullscreenPanel>
-            <SplitView
-              options={splitOptions}
-              left={splitLeft}
-              right={splitRight}
-              onLeftChange={setSplitLeft}
-              onRightChange={setSplitRight}
-            />
-          </FullscreenPanel>
+          <div className="split-tab">
+            <p className="split-too-small hint-text">
+              Die Split-Ansicht ist für große Bildschirme gedacht und auf kleinen nicht verfügbar.
+            </p>
+            <FullscreenPanel>
+              <SplitView
+                options={splitOptions}
+                left={splitLeft}
+                right={splitRight}
+                onLeftChange={setSplitLeft}
+                onRightChange={setSplitRight}
+              />
+            </FullscreenPanel>
+          </div>
         )}
         {tab === "urkunden" && authed && (
           <Urkunden

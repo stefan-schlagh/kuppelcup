@@ -349,6 +349,10 @@ span.nav-icon{
 .fs-panel.is-fullscreen .empty-msg.giant-text { font-size: 40px; }
 
 /* Split-Ansicht: two presentation views side by side on one big screen. */
+.split-too-small {
+  display: none;
+}
+
 .split-view {
   display: flex;
   flex-direction: column;
@@ -356,9 +360,28 @@ span.nav-icon{
 }
 
 @media (min-width: 1000px) {
+  /* Each pane scrolls on its own once side by side, so a long list (e.g.
+     Bestenliste) doesn't drag a short one (e.g. Live-Monitor, which then
+     needs no scrolling at all) out of view with it. Below 1000px the panes
+     stack instead, where one shared page scroll is the natural behaviour. */
   .split-view {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: stretch;
+    height: calc(100vh - 190px);
+  }
+
+  .split-pane {
+    min-height: 0;
+  }
+
+  .split-pane-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .fs-panel.is-fullscreen .split-view {
+    height: calc(100vh - 90px);
   }
 }
 
@@ -385,7 +408,9 @@ span.nav-icon{
   min-width: 0;
 }
 
-.fs-panel.is-fullscreen .split-pane-select { font-size: 15px; padding: 8px 14px; }
+/* Hide the pane pickers in fullscreen -- a beamer audience doesn't need
+   controls, and the fullscreen toggle already gets you back to change them. */
+.fs-panel.is-fullscreen .split-pane-select { display: none; }
 
 /* Tables & Leaderboard */
 .table-wrap {
@@ -1551,6 +1576,21 @@ span.nav-icon{
 
   .nav-btn:last-child{
     margin-right: 10px;
+  }
+
+  /* Split-Ansicht is a big-screen feature (two panes need the room) --
+     hide the tab and, in case it was already open before the window
+     shrank, swap its content for an explanatory note instead. */
+  .nav-btn[data-tab="split"] {
+    display: none;
+  }
+
+  .split-tab .fs-panel {
+    display: none;
+  }
+
+  .split-tab .split-too-small {
+    display: block;
   }
 
   .nav-btn.active{

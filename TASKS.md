@@ -497,7 +497,26 @@ backlog:
   layout can go full-screen on a beamer, same as the other three views;
   reuses their exact render output (no new components, just the same JSX
   the "liste"/"monitor"/"baum" tabs already render). Panes stack vertically
-  below 1000px viewport width rather than disappearing, so it isn't broken
-  on a laptop-sized window. e2e-tested: both panes render at once, swapping
-  one pane's selection swaps its content without affecting the other, and
-  the choice survives a reload.)
+  between the smartphone breakpoint and 1000px rather than disappearing, so
+  it isn't broken on a laptop-sized window. e2e-tested: both panes render at
+  once, swapping one pane's selection swaps its content without affecting
+  the other, and the choice survives a reload.
+  Follow-up polish, requested after seeing it live: (1) the per-pane
+  `<select>` pickers are now hidden while fullscreen (`.fs-panel.is-
+  fullscreen .split-pane-select { display: none }`) -- a beamer audience
+  doesn't need them, and leaving fullscreen brings them back. (2) The tab
+  is hidden below the existing 768px "Smartphone-Layout" breakpoint
+  (`.nav-btn[data-tab="split"]`) -- it's a big-screen feature by definition,
+  and two panes don't fit a phone; if the tab was already open before the
+  window shrank, its content is swapped for an explanatory note instead of
+  silently breaking. (3) Each pane now scrolls independently
+  (`.split-pane-content { overflow-y: auto }` within a `.split-view` height
+  bounded to the viewport) once side by side, so a long pane (e.g.
+  Bestenliste) no longer drags a short one (e.g. Live-Monitor, which needs
+  no scrolling at all) out of view with it -- below 1000px, where panes
+  stack instead, one shared page scroll is still the natural behaviour, so
+  this only applies in the side-by-side layout. e2e-tested: pane pickers
+  toggle with a simulated fullscreen state (real `requestFullscreen()`
+  isn't reliable headless), the split tab is hidden at a phone-sized
+  viewport, and pane `scrollHeight`/`clientHeight` confirm the long pane
+  scrolls on its own while the short one and the outer page don't.)

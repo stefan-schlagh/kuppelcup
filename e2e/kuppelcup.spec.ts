@@ -115,6 +115,54 @@ test("Split-Ansicht shows two chosen views at once, and the choice persists acro
   await expect(page.locator(".bracket-col-final")).toBeVisible();
 });
 
+test("Split-Ansicht hides the pane pickers while fullscreen", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  const leftSelect = page.getByLabel("Linke Ansicht");
+  await expect(leftSelect).toBeVisible();
+
+  // requestFullscreen() needs a real user gesture and isn't reliable in
+  // headless Chromium, so drive the same CSS state (.fs-panel.is-fullscreen)
+  // that FullscreenPanel's fullscreenchange handler would apply, rather
+  // than relying on the browser's actual fullscreen API.
+  await page.locator(".fs-panel").evaluate((el) => el.classList.add("is-fullscreen"));
+  await expect(leftSelect).toBeHidden();
+
+  await page.locator(".fs-panel").evaluate((el) => el.classList.remove("is-fullscreen"));
+  await expect(leftSelect).toBeVisible();
+});
+
+test("Split-Ansicht panes scroll independently -- a long pane doesn't drag a short one out of view", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page); // 20 teams -- Bestenliste overflows, Live-Monitor doesn't
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  const panes = page.locator(".split-pane-content");
+  const [leftOverflows, rightOverflows] = await panes.evaluateAll((els) =>
+    els.map((el) => el.scrollHeight > el.clientHeight),
+  );
+  expect(leftOverflows).toBe(true); // Bestenliste: needs its own scroll
+  expect(rightOverflows).toBe(false); // Live-Monitor: fits, no scroll needed
+
+  // The page itself shouldn't have scrolled away to reveal the rest of the
+  // left pane -- that's the whole point of each pane scrolling on its own.
+  const bodyOverflows = await page.evaluate(() => document.body.scrollHeight > window.innerHeight + 20);
+  expect(bodyOverflows).toBe(false);
+});
+
+test("Split-Ansicht tab is hidden on small screens", async ({ page }) => {
+  // loginAsAdmin clicks the "Admin" nav button by its accessible name, which
+  // the smartphone layout hides (icon-only nav) -- log in at normal size
+  // first, then shrink the viewport to check the small-screen behaviour.
+  await loginAsAdmin(page);
+  await expect(page.locator('.nav-btn[data-tab="split"]')).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 700 });
+  await expect(page.locator('.nav-btn[data-tab="split"]')).toBeHidden();
+});
+
 test("a base-round tie within places 1-7 is flagged as Gleichstand", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
