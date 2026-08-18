@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { teamsToCsv, csvToTeams, backupToCsv, csvToBackup, slugifyFilename } from "./backup";
+import { teamsToCsv, csvToTeams, backupToCsv, csvToBackup, slugifyFilename, guessEventNameFromFilename } from "./backup";
 import type { KoState, Team } from "../types";
 
 const teams: Team[] = [
@@ -103,5 +103,21 @@ describe("slugifyFilename", () => {
 
   it("trims leading/trailing hyphens produced by leading/trailing punctuation", () => {
     expect(slugifyFilename("  #KuppelCup 2026!  ")).toBe("kuppelcup-2026");
+  });
+});
+
+describe("guessEventNameFromFilename", () => {
+  it("strips the backup prefix and date suffix, then title-cases the slug", () => {
+    expect(guessEventNameFromFilename("kuppelcup-backup-1-geissberg-kuppelcup-2026-08-18.csv")).toBe(
+      "1 Geissberg Kuppelcup",
+    );
+  });
+
+  it("returns an empty string for an old-format export with no event slug", () => {
+    expect(guessEventNameFromFilename("kuppelcup-backup-2026-08-18.csv")).toBe("");
+  });
+
+  it("falls back to title-casing whatever filename it's given", () => {
+    expect(guessEventNameFromFilename("my_teams.csv")).toBe("My Teams");
   });
 });

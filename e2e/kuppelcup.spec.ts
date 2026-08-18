@@ -202,7 +202,7 @@ test("CSV backup includes K.O. results and restores them on import", async ({ pa
 
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Backup" }).click();
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[type="file"]').first().setInputFiles({
     name: "backup.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(csv),
@@ -210,6 +210,51 @@ test("CSV backup includes K.O. results and restores them on import", async ({ pa
 
   await page.getByRole("button", { name: "K.O.-Ergebnisse" }).click();
   await expect(timeInputs.first()).toHaveValue(originalQf1RunA);
+});
+
+test("importing a CSV can create a brand-new event instead of overwriting the current one", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  await page.getByRole("button", { name: "Backup" }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export als CSV" }).click();
+  const download = await downloadPromise;
+  const suggestedName = download.suggestedFilename();
+  const csv = await readFile((await download.path())!, "utf8");
+
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+  const eventRows = page.locator(".data-table").first().locator("tbody tr");
+  await expect(eventRows).toHaveCount(1);
+
+  // "Neues Event aus CSV" lives next to "Event anlegen +", not in Backup --
+  // event creation happens in one place.
+  let dialogMessage = "";
+  let dialogDefault = "";
+  page.once("dialog", (d) => {
+    dialogMessage = d.message();
+    dialogDefault = d.defaultValue();
+    // Accept the pre-filled default (guessed from the filename's slug)
+    // instead of typing one, to prove that wiring, not just that a prompt appears.
+    // dialog.accept() with no argument submits an empty string, not the
+    // pre-filled default -- it must be passed explicitly.
+    void d.accept(dialogDefault);
+  });
+  await page.locator('input[type="file"]').setInputFiles({
+    name: suggestedName,
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+
+  await expect(eventRows).toHaveCount(2);
+  expect(dialogMessage).toContain("Name für das neue Event");
+  expect(dialogDefault).toMatch(/Geissberg/);
+  // Guessed from the filename's slug: no period, "Kuppelcup" not "KUPPELCUP"
+  // -- distinct from the starter event's literal name "1. Geissberg KUPPELCUP".
+  const newRow = page.locator("tr", { hasText: "1 Geissberg Kuppelcup" });
+  await expect(newRow).toBeVisible();
+  await expect(newRow).toHaveClass(/row-qualified/); // becomes current immediately
+  await expect(page.getByText("Teams (20)")).toBeVisible();
 });
 
 test("Urkunden preview stays light-mode even when the app is in dark mode", async ({ page }) => {

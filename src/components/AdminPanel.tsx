@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS, PHASES, PHASE_LABELS } from "../utils/helpers";
-import { backupToCsv, csvToBackup, downloadCsv, slugifyFilename } from "../utils/backup";
+import { backupToCsv, csvToBackup, downloadCsv, slugifyFilename, guessEventNameFromFilename } from "../utils/backup";
 import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
@@ -21,6 +21,7 @@ interface AdminPanelProps {
   ko: KoState;
   updateKoRun: (matchId: string, side: "runA" | "runB", field: RunField, value: number | null) => void;
   onImportBackup: (data: Partial<EventDoc>) => void;
+  onImportAsNewEvent: (name: string, teams: Team[], ko: KoState) => void;
   phase: EventPhase;
   setPhase: (phase: EventPhase) => void;
   locked: boolean;
@@ -57,6 +58,7 @@ export default function AdminPanel({
   ko,
   updateKoRun,
   onImportBackup,
+  onImportAsNewEvent,
   phase,
   setPhase,
   locked,
@@ -139,6 +141,24 @@ export default function AdminPanel({
         // recorded for this event.
         onImportBackup(hasKo ? { teams: parsed, ko: parsedKo } : { teams: parsed });
       }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleImportAsNewEvent = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const { teams: parsed, ko: parsedKo } = csvToBackup(String(reader.result ?? ""));
+      if (parsed.length === 0) {
+        alert("Keine Teams in der Datei gefunden.");
+        return;
+      }
+      const guessedName = guessEventNameFromFilename(file.name);
+      const name = prompt("Name für das neue Event:", guessedName);
+      if (name && name.trim()) onImportAsNewEvent(name.trim(), parsed, parsedKo);
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -250,6 +270,10 @@ export default function AdminPanel({
               className="pin-input add-team-input"
             />
             <button className="pin-btn add-team-btn" onClick={handleCreateEvent}>Event anlegen +</button>
+            <label className="pin-btn add-team-btn backup-import">
+              Neues Event aus CSV ⬆
+              <input type="file" accept=".csv,text/csv" onChange={handleImportAsNewEvent} hidden />
+            </label>
           </div>
 
           <h3 className="panel-title" style={{ marginTop: 24 }}>Event-Phase</h3>
@@ -444,7 +468,7 @@ export default function AdminPanel({
               <input type="file" accept=".csv,text/csv" onChange={handleImport} hidden />
             </label>
           </div>
-          <p className="hint-text">Beim Import werden die vorhandenen Teams ersetzt (K.O.-Ergebnisse bleiben unberührt).</p>
+          <p className="hint-text">Beim Import werden die vorhandenen Teams ersetzt (K.O.-Ergebnisse bleiben unberührt). Um stattdessen ein neues Event aus einer CSV-Datei anzulegen, siehe „Event &amp; Teams".</p>
 
           <p className="hint-text">Grunddurchgang, Gemeindewertung, Tagesbestzeit, Gesamtwertung und Turnierbaum als ein A4-Gesamtbericht.</p>
           <div className="backup-actions">

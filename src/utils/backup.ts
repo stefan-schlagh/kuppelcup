@@ -175,6 +175,19 @@ export function slugifyFilename(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+// Best-effort reverse of the slug baked into an export's filename (see
+// handleExport), to pre-fill a name when creating a new event from an
+// imported file. Lossy by nature (the slug already dropped case, umlauts,
+// punctuation) -- callers should let the user confirm/edit it, not use it
+// unattended.
+export function guessEventNameFromFilename(filename: string): string {
+  let base = filename.replace(/\.csv$/i, "").replace(/^kuppelcup-backup-/, "");
+  base = base.replace(/-\d{4}-\d{2}-\d{2}$/, "");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(base)) return ""; // old export with no event slug at all
+  const words = base.split(/[-_]+/).filter(Boolean);
+  return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
 // Trigger a browser download of the given text content.
 export function downloadCsv(filename: string, content: string): void {
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });

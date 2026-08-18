@@ -460,6 +460,21 @@ backlog:
   slug, e.g. `kuppelcup-backup-1-geissberg-kuppelcup-2026-08-18.csv`.
   Unit-tested and e2e-tested (asserts the downloaded filename against the
   starter event's name).)
-- add an option to create event from imported csv -> automatically take event name from export
+- [x] add an option to create event from imported csv -> automatically take event name from export
+  (import in the Backup tab always overwrote the *current* event's teams --
+  no way to bring in a CSV as a separate event. New "Neues Event aus CSV ⬆"
+  control, next to "Event anlegen +" in Event & Teams (event creation lives
+  in one place, not split across tabs), reads the file, then `prompt()`s for
+  a name pre-filled via `guessEventNameFromFilename()` -- a best-effort
+  reverse of the slug the previous task baked into the export filename
+  (strips the `kuppelcup-backup-`/date wrapper, title-cases the rest). It's
+  lossy by construction (the slug already dropped case/umlauts/punctuation),
+  so it's an editable suggestion, not silently trusted. New
+  `createEventFromImport()` in `useEvents.ts` creates the event, then seeds
+  it with the parsed teams/K.O. data in one local+debounced-save step
+  (mirrors `createEvent` + `patchEvent` combined). Unit-tested
+  (`guessEventNameFromFilename`) and e2e-tested end-to-end (export, re-import
+  as a new event, confirm both events now exist with the guessed name and
+  the imported team count).)
 - add fullscreen support for live-monitor
 - for big screens: add a split screen so i can e.g. show Bestenliste and Live-Monitor or Turnierbaum and Live-Monitor at once on a small screen.

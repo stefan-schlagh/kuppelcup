@@ -34,6 +34,7 @@ export default function KuppelCup() {
     patchEvent,
     selectEvent,
     createEvent,
+    createEventFromImport,
     renameEvent,
     deleteEvent,
   } = useEvents();
@@ -254,6 +255,7 @@ export default function KuppelCup() {
             ko={ko}
             updateKoRun={updateKoRun}
             onImportBackup={patchEvent}
+            onImportAsNewEvent={createEventFromImport}
             phase={phase}
             setPhase={setPhase}
             locked={locked}
