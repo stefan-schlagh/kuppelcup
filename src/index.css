@@ -359,41 +359,48 @@ span.nav-icon{
   display: none;
 }
 
+.split-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.split-toolbar-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.split-layout-btn {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.split-layout-btn.active {
+  color: var(--text-main);
+  border-color: var(--color-accent);
+}
+
+/* Hide the layout picker and pane pickers in fullscreen -- a beamer
+   audience doesn't need controls, and the fullscreen toggle already gets
+   you back to change them. */
+.fs-panel.is-fullscreen .split-toolbar,
+.fs-panel.is-fullscreen .split-pane-select { display: none; }
+
+/* Default: panes stacked, full width each -- the right layout when a pane's
+   content (e.g. Turnierbaum's bracket) needs the whole screen's width to
+   fit rather than being squeezed to half of it. Also the fallback below
+   1000px, where there isn't room to go side by side regardless of choice. */
 .split-view {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-@media (min-width: 1000px) {
-  /* Each pane scrolls on its own once side by side, so a long list (e.g.
-     Bestenliste) doesn't drag a short one (e.g. Live-Monitor, which then
-     needs no scrolling at all) out of view with it. Below 1000px the panes
-     stack instead, where one shared page scroll is the natural behaviour. */
-  .split-view {
-    flex-direction: row;
-    align-items: stretch;
-    height: calc(100vh - 190px);
-  }
-
-  .split-pane {
-    min-height: 0;
-  }
-
-  .split-pane-content {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    /* Explicit, not left to default: setting only overflow-y would compute
-       overflow-x to auto too (per spec), and a wide grid inside (e.g.
-       Live-Monitor's 3-column layout) could then trigger an unwanted
-       horizontal scrollbar even where nothing actually needs it. */
-    overflow-x: hidden;
-  }
-
-  .fs-panel.is-fullscreen .split-view {
-    height: calc(100vh - 90px);
-  }
 }
 
 .split-pane {
@@ -419,9 +426,37 @@ span.nav-icon{
   min-width: 0;
 }
 
-/* Hide the pane pickers in fullscreen -- a beamer audience doesn't need
-   controls, and the fullscreen toggle already gets you back to change them. */
-.fs-panel.is-fullscreen .split-pane-select { display: none; }
+@media (min-width: 1000px) {
+  /* Side by side, opt-in via the layout toggle (.split-row). Each pane
+     scrolls on its own here, so a long list (e.g. Bestenliste) doesn't drag
+     a short one (e.g. Live-Monitor, which then needs no scrolling at all)
+     out of view with it -- stacked panes don't need that, one shared page
+     scroll is already the natural behaviour there. */
+  .split-view.split-row {
+    flex-direction: row;
+    align-items: stretch;
+    height: calc(100vh - 230px);
+  }
+
+  .split-row .split-pane {
+    min-height: 0;
+  }
+
+  .split-row .split-pane-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Explicit, not left to default: setting only overflow-y would compute
+       overflow-x to auto too (per spec), and a wide grid inside (e.g.
+       Live-Monitor's 3-column layout) could then trigger an unwanted
+       horizontal scrollbar even where nothing actually needs it. */
+    overflow-x: hidden;
+  }
+
+  .fs-panel.is-fullscreen .split-view.split-row {
+    height: calc(100vh - 90px);
+  }
+}
 
 /* Tables & Leaderboard */
 .table-wrap {

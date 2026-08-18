@@ -176,6 +176,32 @@ test("Split-Ansicht uses the full screen width and never scrolls horizontally", 
   expect(overflow.panes).toBe(false);
 });
 
+test("Split-Ansicht layout toggle switches between side-by-side and stacked panes, and persists", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  const splitView = page.locator(".split-view");
+  await expect(splitView).toHaveClass(/split-row/); // side-by-side by default
+  await expect(page.getByLabel("Linke Ansicht")).toBeVisible();
+
+  await page.getByRole("button", { name: "Untereinander" }).click();
+  await expect(splitView).not.toHaveClass(/split-row/);
+  await expect(page.getByLabel("Obere Ansicht")).toBeVisible();
+  await expect(page.getByLabel("Untere Ansicht")).toBeVisible();
+
+  // Stacked panes render at full width -- confirms this isn't just a class
+  // flip but an actual layout change.
+  const paneWidth = await page.locator(".split-pane").first().evaluate((el) => el.getBoundingClientRect().width);
+  expect(paneWidth).toBeGreaterThan(1400);
+
+  await page.reload();
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+  await expect(splitView).not.toHaveClass(/split-row/);
+  await expect(page.getByRole("button", { name: "Untereinander" })).toHaveClass(/active/);
+});
+
 test("Split-Ansicht tab is hidden on small screens", async ({ page }) => {
   // loginAsAdmin clicks the "Admin" nav button by its accessible name, which
   // the smartphone layout hides (icon-only nav) -- log in at normal size

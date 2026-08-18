@@ -12,6 +12,7 @@ import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
 import SplitView from "./components/SplitView";
+import type { SplitLayout } from "./components/SplitView";
 import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check, Columns2 } from 'lucide-react';
 
 const numberOfParallelRounds = 2
@@ -108,6 +109,9 @@ export default function KuppelCup() {
   // The choice per side is persisted, not just session state.
   const [splitLeft, setSplitLeft] = useStorage<string>("kuppelcup:split-left", "liste");
   const [splitRight, setSplitRight] = useStorage<string>("kuppelcup:split-right", "monitor");
+  // Side by side by default; stacked ("column") is the better fit for wide
+  // content like Turnierbaum's bracket, which can be too cramped at half width.
+  const [splitLayout, setSplitLayout] = useStorage<SplitLayout>("kuppelcup:split-layout", "row");
   const splitOptions = [
     {
       key: "liste", label: "Bestenliste", render: () => (
@@ -275,6 +279,8 @@ export default function KuppelCup() {
                 right={splitRight}
                 onLeftChange={setSplitLeft}
                 onRightChange={setSplitRight}
+                layout={splitLayout}
+                onLayoutChange={setSplitLayout}
               />
             </FullscreenPanel>
           </div>

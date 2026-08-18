@@ -535,3 +535,23 @@ backlog:
   there would silently grow a horizontal scrollbar again instead of just
   wrapping/clipping. e2e-tested: `.main-content` width at a wide viewport,
   and no element (page or any pane) has `scrollWidth > clientWidth`.)
+- [x] Turnierbaum can be too cramped squeezed into half the screen in
+  Split-Ansicht (side by side) -- add a stacked ("below each other") layout
+  as an option, for combos like Live-Monitor + Turnierbaum.
+  (new "Anordnung: Nebeneinander / Untereinander" toggle in `SplitView.tsx`,
+  persisted via `useStorage` like the pane choices. Reworked the CSS so the
+  side-by-side layout (height-bounded, independently scrolling panes) is
+  now gated behind a `.split-row` modifier class the component adds only
+  for "Nebeneinander" -- "Untereinander" falls back to the same full-width-
+  stacked rules already used below the 1000px breakpoint (plain page flow,
+  no per-pane scroll), so a wide pane like Turnierbaum's bracket gets the
+  whole screen's width instead of half of it. The toggle itself hides in
+  fullscreen along with the pane pickers, same reasoning as before.
+  e2e-tested: default is side by side (`.split-row` present, "Linke/Rechte
+  Ansicht" labels), switching to "Untereinander" removes the row layout,
+  relabels the pickers "Obere/Untere Ansicht", visibly widens each pane to
+  the full screen, and the choice survives a reload. Also had to widen the
+  side-by-side height budget (`calc(100vh - 190px)` -> `-230px`) to make
+  room for the new toolbar row -- it had pushed the page a little taller
+  than the old budget accounted for, re-triggering the whole-page scroll
+  the independent-pane-scroll change was there to prevent.)
