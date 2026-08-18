@@ -555,3 +555,16 @@ backlog:
   room for the new toolbar row -- it had pushed the page a little taller
   than the old budget accounted for, re-triggering the whole-page scroll
   the independent-pane-scroll change was there to prevent.)
+- [x] team-name edit field wouldn't let you type a trailing space (needed
+  e.g. to rename "example" to "example 2")
+  (`renameTeam` in `KuppelCup.tsx` called `.trim()` on every keystroke --
+  the field is live-bound with no separate "commit" step, so a trailing
+  space the user just typed was stripped from state and the controlled
+  input snapped back to the untrimmed value before the next character
+  could be typed after it, silently swallowing the space. Now only guards
+  against a fully blank name (`!name.trim()`) rather than trimming the
+  stored value itself. e2e-tested with `pressSequentially` (not `fill()`,
+  which sets the value in one shot and wouldn't have caught this --
+  reproducing the bug needs one keystroke, and thus one onChange, at a
+  time); confirmed the test fails against the old code and passes against
+  the fix.)

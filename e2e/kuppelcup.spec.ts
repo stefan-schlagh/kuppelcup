@@ -585,6 +585,24 @@ test("Gastgeber and Gemeindewertung checkboxes toggle a team's flags and persist
   await expect(teamsTable.locator("tbody tr").first().locator('input[type="checkbox"]').nth(1)).toBeChecked();
 });
 
+test("team name field keeps a trailing space while typing (regression)", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByPlaceholder("Teamname, z.B. FF Buchberg").fill("Example");
+  await page.getByRole("button", { name: "Hinzufügen +" }).click();
+
+  const nameInput = page.locator(".input-field-name").first();
+  await expect(nameInput).toHaveValue("Example");
+
+  // pressSequentially fires one keystroke (and onChange) at a time, unlike
+  // fill() -- needed to reproduce the bug where the live-bound name field
+  // trimmed on every keystroke, so a trailing space vanished before the
+  // next character could be typed after it.
+  await nameInput.click();
+  await nameInput.press("End");
+  await nameInput.pressSequentially(" 2");
+  await expect(nameInput).toHaveValue("Example 2");
+});
+
 test("removing a team asks for confirmation and only removes it once accepted", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();

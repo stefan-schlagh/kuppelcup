@@ -155,11 +155,13 @@ export default function KuppelCup() {
   };
 
   // Renaming is only meaningful while teams are still being registered.
+  // Only guard against a fully blank name here -- don't trim the live value,
+  // or a trailing space the user just typed (e.g. to turn "example" into
+  // "example 2") gets stripped before they can type the next character.
   const renameTeam = (id: string, name: string) => {
     if (phase !== "anmeldung") return;
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setTeams(teams.map((t) => (t.id === id ? { ...t, name: trimmed } : t)));
+    if (!name.trim()) return;
+    setTeams(teams.map((t) => (t.id === id ? { ...t, name } : t)));
   };
 
   // Unlike name/roster changes, the start number may need correcting even
