@@ -11,7 +11,9 @@ import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
-import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check } from 'lucide-react';
+import SplitView from "./components/SplitView";
+import type { SplitLayout } from "./components/SplitView";
+import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check, Columns2 } from 'lucide-react';
 
 const numberOfParallelRounds = 2
 
@@ -34,6 +36,7 @@ export default function KuppelCup() {
     patchEvent,
     selectEvent,
     createEvent,
+    createEventFromImport,
     renameEvent,
     deleteEvent,
   } = useEvents();
@@ -101,6 +104,29 @@ export default function KuppelCup() {
   // top 8, base-round rank for the rest), not raw base-round order.
   const gemeinde = gesamt.filter((t) => t.gemeinde && t.punkte > 0);
 
+  // Split-Ansicht: two of the presentation views side by side on one big
+  // screen (e.g. Bestenliste + Live-Monitor when there's only one beamer).
+  // The choice per side is persisted, not just session state.
+  const [splitLeft, setSplitLeft] = useStorage<string>("kuppelcup:split-left", "liste");
+  const [splitRight, setSplitRight] = useStorage<string>("kuppelcup:split-right", "monitor");
+  // Side by side by default; stacked ("column") is the better fit for wide
+  // content like Turnierbaum's bracket, which can be too cramped at half width.
+  const [splitLayout, setSplitLayout] = useStorage<SplitLayout>("kuppelcup:split-layout", "row");
+  const splitOptions = [
+    {
+      key: "liste", label: "Bestenliste", render: () => (
+        <>
+          <Bestenliste ranked={rankedWithResult} top8Ids={new Set(top8.map(t => t.id))} />
+          <Gemeindewertung ranked={gemeinde} />
+          <Tagesbestzeit ranked={dailyBestTimes.slice(0, 3)} />
+          <Gesamtwertung ranked={gesamt} />
+        </>
+      ),
+    },
+    { key: "monitor", label: "Live-Monitor", render: () => <LiveMonitor data={monitorData} /> },
+    { key: "baum", label: "Turnierbaum", render: () => <Turnierbaum bracket={bracket} editable={false} /> },
+  ];
+
   // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
   const locked = phase === "abgeschlossen"; // no changes possible once finished
 
@@ -129,11 +155,13 @@ export default function KuppelCup() {
   };
 
   // Renaming is only meaningful while teams are still being registered.
+  // Only guard against a fully blank name here -- don't trim the live value,
+  // or a trailing space the user just typed (e.g. to turn "example" into
+  // "example 2") gets stripped before they can type the next character.
   const renameTeam = (id: string, name: string) => {
     if (phase !== "anmeldung") return;
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setTeams(teams.map((t) => (t.id === id ? { ...t, name: trimmed } : t)));
+    if (!name.trim()) return;
+    setTeams(teams.map((t) => (t.id === id ? { ...t, name } : t)));
   };
 
   // Unlike name/roster changes, the start number may need correcting even
@@ -198,12 +226,14 @@ export default function KuppelCup() {
             ["liste", "Bestenliste", <ListOrdered />],
             ["monitor", "Live-Monitor", <TvMinimalPlay />],
             ["baum", "Turnierbaum", <Network />],
+            ["split", "Split-Ansicht", <Columns2 />],
             // Urkunden are only for the organiser
             ...(authed ? [["urkunden", "Urkunden", <ScrollText />]] : []),
             ["admin", "Admin", <User />],
           ] as [string, string, React.ReactNode][]).map(([key, label, icon]) => (
             <button
               key={key}
+              data-tab={key}
               onClick={() => setTab(key)}
               className={`nav-btn ${tab === key ? "active" : ""}`}
             >
@@ -229,11 +259,33 @@ export default function KuppelCup() {
             <Gesamtwertung ranked={gesamt} />
           </FullscreenPanel>
         )}
-        {tab === "monitor" && <LiveMonitor data={monitorData} />}
+        {tab === "monitor" && (
+          <FullscreenPanel>
+            <LiveMonitor data={monitorData} />
+          </FullscreenPanel>
+        )}
         {tab === "baum" && (
           <FullscreenPanel>
             <Turnierbaum bracket={bracket} editable={false} />
           </FullscreenPanel>
+        )}
+        {tab === "split" && (
+          <div className="split-tab">
+            <p className="split-too-small hint-text">
+              Die Split-Ansicht ist für große Bildschirme gedacht und auf kleinen nicht verfügbar.
+            </p>
+            <FullscreenPanel>
+              <SplitView
+                options={splitOptions}
+                left={splitLeft}
+                right={splitRight}
+                onLeftChange={setSplitLeft}
+                onRightChange={setSplitRight}
+                layout={splitLayout}
+                onLayoutChange={setSplitLayout}
+              />
+            </FullscreenPanel>
+          </div>
         )}
         {tab === "urkunden" && authed && (
           <Urkunden
@@ -254,6 +306,7 @@ export default function KuppelCup() {
             ko={ko}
             updateKoRun={updateKoRun}
             onImportBackup={patchEvent}
+            onImportAsNewEvent={createEventFromImport}
             phase={phase}
             setPhase={setPhase}
             locked={locked}

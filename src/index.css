@@ -220,6 +220,12 @@ span.nav-icon{
   margin: 0 auto;
 }
 
+/* Split-Ansicht needs the whole screen -- that's the point of it -- so it
+   opts out of the 1000px reading-width cap the other tabs use. */
+.main-content:has(.split-tab) {
+  max-width: none;
+}
+
 /* Tighten the header and content padding on phones. */
 @media (max-width: 560px) {
   .app-header {
@@ -341,6 +347,116 @@ span.nav-icon{
 .fs-panel.is-fullscreen .team-name-span { font-size: 20px; }
 .fs-panel.is-fullscreen .bracket-time-display { font-size: 17px; }
 .fs-panel.is-fullscreen .fs-toggle { font-size: 16px; padding: 8px 16px; }
+.fs-panel.is-fullscreen .monitor-team-name { font-size: 26px; }
+.fs-panel.is-fullscreen .monitor-team-name.giant-text { font-size: 56px; }
+.fs-panel.is-fullscreen .monitor-meta { font-size: 17px; }
+.fs-panel.is-fullscreen .monitor-meta.giant-meta { font-size: 22px; }
+.fs-panel.is-fullscreen .monitor-badge { font-size: 14px; padding: 4px 12px; }
+.fs-panel.is-fullscreen .empty-msg.giant-text { font-size: 40px; }
+
+/* Split-Ansicht: two presentation views side by side on one big screen. */
+.split-too-small {
+  display: none;
+}
+
+.split-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.split-toolbar-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.split-layout-btn {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.split-layout-btn.active {
+  color: var(--text-main);
+  border-color: var(--color-accent);
+}
+
+/* Hide the layout picker and pane pickers in fullscreen -- a beamer
+   audience doesn't need controls, and the fullscreen toggle already gets
+   you back to change them. */
+.fs-panel.is-fullscreen .split-toolbar,
+.fs-panel.is-fullscreen .split-pane-select { display: none; }
+
+/* Default: panes stacked, full width each -- the right layout when a pane's
+   content (e.g. Turnierbaum's bracket) needs the whole screen's width to
+   fit rather than being squeezed to half of it. Also the fallback below
+   1000px, where there isn't room to go side by side regardless of choice. */
+.split-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.split-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.split-pane-select {
+  align-self: flex-start;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.split-pane-content {
+  min-width: 0;
+}
+
+@media (min-width: 1000px) {
+  /* Side by side, opt-in via the layout toggle (.split-row). Each pane
+     scrolls on its own here, so a long list (e.g. Bestenliste) doesn't drag
+     a short one (e.g. Live-Monitor, which then needs no scrolling at all)
+     out of view with it -- stacked panes don't need that, one shared page
+     scroll is already the natural behaviour there. */
+  .split-view.split-row {
+    flex-direction: row;
+    align-items: stretch;
+    height: calc(100vh - 230px);
+  }
+
+  .split-row .split-pane {
+    min-height: 0;
+  }
+
+  .split-row .split-pane-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* Explicit, not left to default: setting only overflow-y would compute
+       overflow-x to auto too (per spec), and a wide grid inside (e.g.
+       Live-Monitor's 3-column layout) could then trigger an unwanted
+       horizontal scrollbar even where nothing actually needs it. */
+    overflow-x: hidden;
+  }
+
+  .fs-panel.is-fullscreen .split-view.split-row {
+    height: calc(100vh - 90px);
+  }
+}
 
 /* Tables & Leaderboard */
 .table-wrap {
@@ -1139,7 +1255,10 @@ span.nav-icon{
 @media(min-width: 768px) {
   .monitor-container {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 1fr;
+    /* minmax(0, ...), not plain fr: a bare 1fr track can't shrink below its
+       content's min-content width, which is how a narrower container (e.g.
+       a Split-Ansicht pane) ended up forcing a horizontal scrollbar. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
     align-items: stretch;
   }
 }
@@ -1506,6 +1625,21 @@ span.nav-icon{
 
   .nav-btn:last-child{
     margin-right: 10px;
+  }
+
+  /* Split-Ansicht is a big-screen feature (two panes need the room) --
+     hide the tab and, in case it was already open before the window
+     shrank, swap its content for an explanatory note instead. */
+  .nav-btn[data-tab="split"] {
+    display: none;
+  }
+
+  .split-tab .fs-panel {
+    display: none;
+  }
+
+  .split-tab .split-too-small {
+    display: block;
   }
 
   .nav-btn.active{

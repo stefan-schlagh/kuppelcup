@@ -80,6 +80,138 @@ test("a tied K.O. heat shows a Stechlauf notice on the Live-Monitor", async ({ p
   await expect(page.getByText("Unentschieden — Stechlauf nötig")).toHaveCount(2);
 });
 
+test("Live-Monitor has a fullscreen toggle, like Bestenliste and Turnierbaum", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  await page.getByRole("button", { name: "Live-Monitor" }).click();
+  const toggle = page.getByRole("button", { name: "Vollbild" });
+  await expect(toggle).toBeVisible();
+  // monitor-container should render inside the same fs-panel wrapper used
+  // by Bestenliste/Turnierbaum, not just have an unrelated button nearby.
+  await expect(page.locator(".fs-panel").locator(".monitor-container")).toBeVisible();
+});
+
+test("Split-Ansicht shows two chosen views at once, and the choice persists across a reload", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  // Defaults: Bestenliste on the left, Live-Monitor on the right -- both
+  // visible together, proving this is a real split, not a single tab.
+  await expect(page.getByText("Bestenliste — Grunddurchgang")).toBeVisible();
+  await expect(page.locator(".monitor-container")).toBeVisible();
+
+  // Switch the right pane to Turnierbaum; Live-Monitor should disappear.
+  await page.getByLabel("Rechte Ansicht").selectOption("baum");
+  await expect(page.locator(".monitor-container")).toHaveCount(0);
+  await expect(page.getByText("Bestenliste — Grunddurchgang")).toBeVisible();
+  await expect(page.locator(".bracket-col-final")).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+  await expect(page.getByLabel("Rechte Ansicht")).toHaveValue("baum");
+  await expect(page.locator(".bracket-col-final")).toBeVisible();
+});
+
+test("Split-Ansicht hides the pane pickers while fullscreen", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  const leftSelect = page.getByLabel("Linke Ansicht");
+  await expect(leftSelect).toBeVisible();
+
+  // requestFullscreen() needs a real user gesture and isn't reliable in
+  // headless Chromium, so drive the same CSS state (.fs-panel.is-fullscreen)
+  // that FullscreenPanel's fullscreenchange handler would apply, rather
+  // than relying on the browser's actual fullscreen API.
+  await page.locator(".fs-panel").evaluate((el) => el.classList.add("is-fullscreen"));
+  await expect(leftSelect).toBeHidden();
+
+  await page.locator(".fs-panel").evaluate((el) => el.classList.remove("is-fullscreen"));
+  await expect(leftSelect).toBeVisible();
+});
+
+test("Split-Ansicht panes scroll independently -- a long pane doesn't drag a short one out of view", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page); // 20 teams -- Bestenliste overflows, Live-Monitor doesn't
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  const panes = page.locator(".split-pane-content");
+  const [leftOverflows, rightOverflows] = await panes.evaluateAll((els) =>
+    els.map((el) => el.scrollHeight > el.clientHeight),
+  );
+  expect(leftOverflows).toBe(true); // Bestenliste: needs its own scroll
+  expect(rightOverflows).toBe(false); // Live-Monitor: fits, no scroll needed
+
+  // The page itself shouldn't have scrolled away to reveal the rest of the
+  // left pane -- that's the whole point of each pane scrolling on its own.
+  const bodyOverflows = await page.evaluate(() => document.body.scrollHeight > window.innerHeight + 20);
+  expect(bodyOverflows).toBe(false);
+});
+
+test("Split-Ansicht uses the full screen width and never scrolls horizontally", async ({ page }) => {
+  await page.setViewportSize({ width: 1800, height: 1000 });
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  // Not capped at the 1000px reading width the other tabs use.
+  const mainContentWidth = await page.locator(".main-content").evaluate((el) => el.getBoundingClientRect().width);
+  expect(mainContentWidth).toBeGreaterThan(1500);
+
+  // No horizontal scrollbar anywhere -- neither on the page nor inside a
+  // pane (Live-Monitor's 3-column grid used to force one on a narrow pane).
+  const overflow = await page.evaluate(() => {
+    const panes = Array.from(document.querySelectorAll<HTMLElement>(".split-pane-content"));
+    return {
+      body: document.body.scrollWidth > window.innerWidth,
+      panes: panes.some((p) => p.scrollWidth > p.clientWidth),
+    };
+  });
+  expect(overflow.body).toBe(false);
+  expect(overflow.panes).toBe(false);
+});
+
+test("Split-Ansicht layout toggle switches between side-by-side and stacked panes, and persists", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  const splitView = page.locator(".split-view");
+  await expect(splitView).toHaveClass(/split-row/); // side-by-side by default
+  await expect(page.getByLabel("Linke Ansicht")).toBeVisible();
+
+  await page.getByRole("button", { name: "Untereinander" }).click();
+  await expect(splitView).not.toHaveClass(/split-row/);
+  await expect(page.getByLabel("Obere Ansicht")).toBeVisible();
+  await expect(page.getByLabel("Untere Ansicht")).toBeVisible();
+
+  // Stacked panes render at full width -- confirms this isn't just a class
+  // flip but an actual layout change.
+  const paneWidth = await page.locator(".split-pane").first().evaluate((el) => el.getBoundingClientRect().width);
+  expect(paneWidth).toBeGreaterThan(1400);
+
+  await page.reload();
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+  await expect(splitView).not.toHaveClass(/split-row/);
+  await expect(page.getByRole("button", { name: "Untereinander" })).toHaveClass(/active/);
+});
+
+test("Split-Ansicht tab is hidden on small screens", async ({ page }) => {
+  // loginAsAdmin clicks the "Admin" nav button by its accessible name, which
+  // the smartphone layout hides (icon-only nav) -- log in at normal size
+  // first, then shrink the viewport to check the small-screen behaviour.
+  await loginAsAdmin(page);
+  await expect(page.locator('.nav-btn[data-tab="split"]')).toBeVisible();
+  await page.setViewportSize({ width: 375, height: 700 });
+  await expect(page.locator('.nav-btn[data-tab="split"]')).toBeHidden();
+});
+
 test("a base-round tie within places 1-7 is flagged as Gleichstand", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
@@ -189,6 +321,8 @@ test("CSV backup includes K.O. results and restores them on import", async ({ pa
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export als CSV" }).click();
   const download = await downloadPromise;
+  // Starter event is "1. Geissberg KUPPELCUP" -- filename should carry its slug.
+  expect(download.suggestedFilename()).toMatch(/^kuppelcup-backup-1-geissberg-kuppelcup-\d{4}-\d{2}-\d{2}\.csv$/);
   const csv = await readFile((await download.path())!, "utf8");
   expect(csv).toContain("match,side,zeit,strafe");
 
@@ -200,7 +334,7 @@ test("CSV backup includes K.O. results and restores them on import", async ({ pa
 
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Backup" }).click();
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[type="file"]').first().setInputFiles({
     name: "backup.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(csv),
@@ -208,6 +342,51 @@ test("CSV backup includes K.O. results and restores them on import", async ({ pa
 
   await page.getByRole("button", { name: "K.O.-Ergebnisse" }).click();
   await expect(timeInputs.first()).toHaveValue(originalQf1RunA);
+});
+
+test("importing a CSV can create a brand-new event instead of overwriting the current one", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  await page.getByRole("button", { name: "Backup" }).click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export als CSV" }).click();
+  const download = await downloadPromise;
+  const suggestedName = download.suggestedFilename();
+  const csv = await readFile((await download.path())!, "utf8");
+
+  await page.getByRole("button", { name: "Event & Teams" }).click();
+  const eventRows = page.locator(".data-table").first().locator("tbody tr");
+  await expect(eventRows).toHaveCount(1);
+
+  // "Neues Event aus CSV" lives next to "Event anlegen +", not in Backup --
+  // event creation happens in one place.
+  let dialogMessage = "";
+  let dialogDefault = "";
+  page.once("dialog", (d) => {
+    dialogMessage = d.message();
+    dialogDefault = d.defaultValue();
+    // Accept the pre-filled default (guessed from the filename's slug)
+    // instead of typing one, to prove that wiring, not just that a prompt appears.
+    // dialog.accept() with no argument submits an empty string, not the
+    // pre-filled default -- it must be passed explicitly.
+    void d.accept(dialogDefault);
+  });
+  await page.locator('input[type="file"]').setInputFiles({
+    name: suggestedName,
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  });
+
+  await expect(eventRows).toHaveCount(2);
+  expect(dialogMessage).toContain("Name für das neue Event");
+  expect(dialogDefault).toMatch(/Geissberg/);
+  // Guessed from the filename's slug: no period, "Kuppelcup" not "KUPPELCUP"
+  // -- distinct from the starter event's literal name "1. Geissberg KUPPELCUP".
+  const newRow = page.locator("tr", { hasText: "1 Geissberg Kuppelcup" });
+  await expect(newRow).toBeVisible();
+  await expect(newRow).toHaveClass(/row-qualified/); // becomes current immediately
+  await expect(page.getByText("Teams (20)")).toBeVisible();
 });
 
 test("Urkunden preview stays light-mode even when the app is in dark mode", async ({ page }) => {
@@ -404,6 +583,24 @@ test("Gastgeber and Gemeindewertung checkboxes toggle a team's flags and persist
   await page.getByRole("button", { name: "Event & Teams" }).click();
   await expect(teamsTable.locator("tbody tr").first().locator('input[type="checkbox"]').nth(0)).not.toBeChecked();
   await expect(teamsTable.locator("tbody tr").first().locator('input[type="checkbox"]').nth(1)).toBeChecked();
+});
+
+test("team name field keeps a trailing space while typing (regression)", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.getByPlaceholder("Teamname, z.B. FF Buchberg").fill("Example");
+  await page.getByRole("button", { name: "Hinzufügen +" }).click();
+
+  const nameInput = page.locator(".input-field-name").first();
+  await expect(nameInput).toHaveValue("Example");
+
+  // pressSequentially fires one keystroke (and onChange) at a time, unlike
+  // fill() -- needed to reproduce the bug where the live-bound name field
+  // trimmed on every keystroke, so a trailing space vanished before the
+  // next character could be typed after it.
+  await nameInput.click();
+  await nameInput.press("End");
+  await nameInput.pressSequentially(" 2");
+  await expect(nameInput).toHaveValue("Example 2");
 });
 
 test("removing a team asks for confirmation and only removes it once accepted", async ({ page }) => {
