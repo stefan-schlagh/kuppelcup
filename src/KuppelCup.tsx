@@ -11,7 +11,8 @@ import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
-import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check } from 'lucide-react';
+import SplitView from "./components/SplitView";
+import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check, Columns2 } from 'lucide-react';
 
 const numberOfParallelRounds = 2
 
@@ -101,6 +102,26 @@ export default function KuppelCup() {
   // Gemeindewertung follows the overall standings (K.O. placement for the
   // top 8, base-round rank for the rest), not raw base-round order.
   const gemeinde = gesamt.filter((t) => t.gemeinde && t.punkte > 0);
+
+  // Split-Ansicht: two of the presentation views side by side on one big
+  // screen (e.g. Bestenliste + Live-Monitor when there's only one beamer).
+  // The choice per side is persisted, not just session state.
+  const [splitLeft, setSplitLeft] = useStorage<string>("kuppelcup:split-left", "liste");
+  const [splitRight, setSplitRight] = useStorage<string>("kuppelcup:split-right", "monitor");
+  const splitOptions = [
+    {
+      key: "liste", label: "Bestenliste", render: () => (
+        <>
+          <Bestenliste ranked={rankedWithResult} top8Ids={new Set(top8.map(t => t.id))} />
+          <Gemeindewertung ranked={gemeinde} />
+          <Tagesbestzeit ranked={dailyBestTimes.slice(0, 3)} />
+          <Gesamtwertung ranked={gesamt} />
+        </>
+      ),
+    },
+    { key: "monitor", label: "Live-Monitor", render: () => <LiveMonitor data={monitorData} /> },
+    { key: "baum", label: "Turnierbaum", render: () => <Turnierbaum bracket={bracket} editable={false} /> },
+  ];
 
   // --- EVENT LIFECYCLE + TEAM MANAGEMENT ---
   const locked = phase === "abgeschlossen"; // no changes possible once finished
@@ -199,6 +220,7 @@ export default function KuppelCup() {
             ["liste", "Bestenliste", <ListOrdered />],
             ["monitor", "Live-Monitor", <TvMinimalPlay />],
             ["baum", "Turnierbaum", <Network />],
+            ["split", "Split-Ansicht", <Columns2 />],
             // Urkunden are only for the organiser
             ...(authed ? [["urkunden", "Urkunden", <ScrollText />]] : []),
             ["admin", "Admin", <User />],
@@ -238,6 +260,17 @@ export default function KuppelCup() {
         {tab === "baum" && (
           <FullscreenPanel>
             <Turnierbaum bracket={bracket} editable={false} />
+          </FullscreenPanel>
+        )}
+        {tab === "split" && (
+          <FullscreenPanel>
+            <SplitView
+              options={splitOptions}
+              left={splitLeft}
+              right={splitRight}
+              onLeftChange={setSplitLeft}
+              onRightChange={setSplitRight}
+            />
           </FullscreenPanel>
         )}
         {tab === "urkunden" && authed && (

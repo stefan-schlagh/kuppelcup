@@ -348,6 +348,45 @@ span.nav-icon{
 .fs-panel.is-fullscreen .monitor-badge { font-size: 14px; padding: 4px 12px; }
 .fs-panel.is-fullscreen .empty-msg.giant-text { font-size: 40px; }
 
+/* Split-Ansicht: two presentation views side by side on one big screen. */
+.split-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 1000px) {
+  .split-view {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.split-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.split-pane-select {
+  align-self: flex-start;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.split-pane-content {
+  min-width: 0;
+}
+
+.fs-panel.is-fullscreen .split-pane-select { font-size: 15px; padding: 8px 14px; }
+
 /* Tables & Leaderboard */
 .table-wrap {
   overflow-x: auto;

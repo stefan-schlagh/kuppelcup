@@ -487,4 +487,17 @@ backlog:
   bracket. e2e-tested (toggle button present, monitor renders inside the
   same `.fs-panel` wrapper) -- not the actual browser Fullscreen API, which
   headless Chromium doesn't reliably support without a real user gesture.)
-- for big screens: add a split screen so i can e.g. show Bestenliste and Live-Monitor or Turnierbaum and Live-Monitor at once on a small screen.
+- [x] for big screens: add a split screen so i can e.g. show Bestenliste and
+  Live-Monitor or Turnierbaum and Live-Monitor at once on a small screen.
+  (new "Split-Ansicht" nav tab (`SplitView.tsx`) shows two independently
+  chosen views side by side -- one `<select>` per pane over Bestenliste /
+  Live-Monitor / Turnierbaum, defaulting to Bestenliste + Live-Monitor (the
+  example given), each choice persisted via `useStorage` so it survives a
+  reload. Wrapped in the existing `FullscreenPanel` so the whole split
+  layout can go full-screen on a beamer, same as the other three views;
+  reuses their exact render output (no new components, just the same JSX
+  the "liste"/"monitor"/"baum" tabs already render). Panes stack vertically
+  below 1000px viewport width rather than disappearing, so it isn't broken
+  on a laptop-sized window. e2e-tested: both panes render at once, swapping
+  one pane's selection swaps its content without affecting the other, and
+  the choice survives a reload.)

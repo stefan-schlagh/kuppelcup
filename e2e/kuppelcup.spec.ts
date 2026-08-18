@@ -92,6 +92,29 @@ test("Live-Monitor has a fullscreen toggle, like Bestenliste and Turnierbaum", a
   await expect(page.locator(".fs-panel").locator(".monitor-container")).toBeVisible();
 });
 
+test("Split-Ansicht shows two chosen views at once, and the choice persists across a reload", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+
+  // Defaults: Bestenliste on the left, Live-Monitor on the right -- both
+  // visible together, proving this is a real split, not a single tab.
+  await expect(page.getByText("Bestenliste — Grunddurchgang")).toBeVisible();
+  await expect(page.locator(".monitor-container")).toBeVisible();
+
+  // Switch the right pane to Turnierbaum; Live-Monitor should disappear.
+  await page.getByLabel("Rechte Ansicht").selectOption("baum");
+  await expect(page.locator(".monitor-container")).toHaveCount(0);
+  await expect(page.getByText("Bestenliste — Grunddurchgang")).toBeVisible();
+  await expect(page.locator(".bracket-col-final")).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("button", { name: "Split-Ansicht" }).click();
+  await expect(page.getByLabel("Rechte Ansicht")).toHaveValue("baum");
+  await expect(page.locator(".bracket-col-final")).toBeVisible();
+});
+
 test("a base-round tie within places 1-7 is flagged as Gleichstand", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
