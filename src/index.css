@@ -341,6 +341,12 @@ span.nav-icon{
 .fs-panel.is-fullscreen .team-name-span { font-size: 20px; }
 .fs-panel.is-fullscreen .bracket-time-display { font-size: 17px; }
 .fs-panel.is-fullscreen .fs-toggle { font-size: 16px; padding: 8px 16px; }
+.fs-panel.is-fullscreen .monitor-team-name { font-size: 26px; }
+.fs-panel.is-fullscreen .monitor-team-name.giant-text { font-size: 56px; }
+.fs-panel.is-fullscreen .monitor-meta { font-size: 17px; }
+.fs-panel.is-fullscreen .monitor-meta.giant-meta { font-size: 22px; }
+.fs-panel.is-fullscreen .monitor-badge { font-size: 14px; padding: 4px 12px; }
+.fs-panel.is-fullscreen .empty-msg.giant-text { font-size: 40px; }
 
 /* Tables & Leaderboard */
 .table-wrap {

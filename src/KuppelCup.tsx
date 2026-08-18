@@ -230,7 +230,11 @@ export default function KuppelCup() {
             <Gesamtwertung ranked={gesamt} />
           </FullscreenPanel>
         )}
-        {tab === "monitor" && <LiveMonitor data={monitorData} />}
+        {tab === "monitor" && (
+          <FullscreenPanel>
+            <LiveMonitor data={monitorData} />
+          </FullscreenPanel>
+        )}
         {tab === "baum" && (
           <FullscreenPanel>
             <Turnierbaum bracket={bracket} editable={false} />

@@ -80,6 +80,18 @@ test("a tied K.O. heat shows a Stechlauf notice on the Live-Monitor", async ({ p
   await expect(page.getByText("Unentschieden — Stechlauf nötig")).toHaveCount(2);
 });
 
+test("Live-Monitor has a fullscreen toggle, like Bestenliste and Turnierbaum", async ({ page }) => {
+  await loginAsAdmin(page);
+  await loadSampleTeamsWithResults(page);
+
+  await page.getByRole("button", { name: "Live-Monitor" }).click();
+  const toggle = page.getByRole("button", { name: "Vollbild" });
+  await expect(toggle).toBeVisible();
+  // monitor-container should render inside the same fs-panel wrapper used
+  // by Bestenliste/Turnierbaum, not just have an unrelated button nearby.
+  await expect(page.locator(".fs-panel").locator(".monitor-container")).toBeVisible();
+});
+
 test("a base-round tie within places 1-7 is flagged as Gleichstand", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();

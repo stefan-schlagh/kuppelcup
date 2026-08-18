@@ -476,5 +476,15 @@ backlog:
   (`guessEventNameFromFilename`) and e2e-tested end-to-end (export, re-import
   as a new event, confirm both events now exist with the guessed name and
   the imported team count).)
-- add fullscreen support for live-monitor
+- [x] add fullscreen support for live-monitor
+  (Bestenliste and Turnierbaum already had a "Vollbild" toggle via the
+  shared `FullscreenPanel` wrapper; Live-Monitor was the one full-screen-
+  worthy view (beamer display) missing it. Wrapped it the same way in
+  `KuppelCup.tsx` and added beamer-scaled font-size overrides for its
+  classes (`.monitor-team-name`/`.monitor-meta`/`.monitor-badge`/
+  `.empty-msg.giant-text`) under `.fs-panel.is-fullscreen` in `index.css`,
+  matching the existing pattern for Bestenliste's table and Turnierbaum's
+  bracket. e2e-tested (toggle button present, monitor renders inside the
+  same `.fs-panel` wrapper) -- not the actual browser Fullscreen API, which
+  headless Chromium doesn't reliably support without a real user gesture.)
 - for big screens: add a split screen so i can e.g. show Bestenliste and Live-Monitor or Turnierbaum and Live-Monitor at once on a small screen.
