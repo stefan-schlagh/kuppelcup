@@ -162,6 +162,19 @@ export function csvToBackup(csv: string): Backup {
   };
 }
 
+// Filesystem-safe slug for use in a downloaded filename, e.g. for the event
+// name: German umlauts transliterate instead of just getting stripped, any
+// other run of non-alphanumeric characters collapses to one hyphen.
+export function slugifyFilename(name: string): string {
+  const UMLAUTS: Record<string, string> = { ä: "ae", ö: "oe", ü: "ue", ß: "ss" };
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[äöüß]/g, (c) => UMLAUTS[c])
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // Trigger a browser download of the given text content.
 export function downloadCsv(filename: string, content: string): void {
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });

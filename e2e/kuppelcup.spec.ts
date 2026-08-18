@@ -189,6 +189,8 @@ test("CSV backup includes K.O. results and restores them on import", async ({ pa
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export als CSV" }).click();
   const download = await downloadPromise;
+  // Starter event is "1. Geissberg KUPPELCUP" -- filename should carry its slug.
+  expect(download.suggestedFilename()).toMatch(/^kuppelcup-backup-1-geissberg-kuppelcup-\d{4}-\d{2}-\d{2}\.csv$/);
   const csv = await readFile((await download.path())!, "utf8");
   expect(csv).toContain("match,side,zeit,strafe");
 

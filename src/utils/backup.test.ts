@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { teamsToCsv, csvToTeams, backupToCsv, csvToBackup } from "./backup";
+import { teamsToCsv, csvToTeams, backupToCsv, csvToBackup, slugifyFilename } from "./backup";
 import type { KoState, Team } from "../types";
 
 const teams: Team[] = [
@@ -89,5 +89,19 @@ describe("backup + restore (teams and K.O. heats together)", () => {
     const csv = `${teamsToCsv(teams)}\n\nmatch,side,zeit,strafe\nqf1,A,20,0\nqf1,C,99,0\n,B,50,0`;
     const restored = csvToBackup(csv);
     expect(restored.ko).toEqual({ qf1: { runA: { zeit: 20, strafe: 0 } } });
+  });
+});
+
+describe("slugifyFilename", () => {
+  it("lowercases and hyphenates spaces and punctuation", () => {
+    expect(slugifyFilename("1. Geissberg KUPPELCUP")).toBe("1-geissberg-kuppelcup");
+  });
+
+  it("transliterates German umlauts and eszett instead of dropping them", () => {
+    expect(slugifyFilename("Grüß Gott Übung")).toBe("gruess-gott-uebung");
+  });
+
+  it("trims leading/trailing hyphens produced by leading/trailing punctuation", () => {
+    expect(slugifyFilename("  #KuppelCup 2026!  ")).toBe("kuppelcup-2026");
   });
 });

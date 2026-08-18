@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS, PHASES, PHASE_LABELS } from "../utils/helpers";
-import { backupToCsv, csvToBackup, downloadCsv } from "../utils/backup";
+import { backupToCsv, csvToBackup, downloadCsv, slugifyFilename } from "../utils/backup";
 import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
@@ -101,7 +101,8 @@ export default function AdminPanel({
 
   const handleExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCsv(`kuppelcup-backup-${stamp}.csv`, backupToCsv(teams, ko));
+    const eventSlug = current ? `${slugifyFilename(current.name)}-` : "";
+    downloadCsv(`kuppelcup-backup-${eventSlug}${stamp}.csv`, backupToCsv(teams, ko));
   };
 
   // Dynamically imported: @react-pdf/renderer is large (~500kB gzipped) and

@@ -448,3 +448,18 @@ backlog:
   where it was already sorted last). e2e-tested: both sections start empty
   with an unraced roster, then show exactly the one team once it gets a
   result.)
+
+20260818
+
+- [x] add event name to csv export name
+  (the CSV backup filename was just `kuppelcup-backup-<date>.csv` -- with
+  multiple events, exports for different ones were indistinguishable once
+  downloaded. New `slugifyFilename()` in `utils/backup.ts` (lowercase,
+  German umlauts/ß transliterated rather than dropped, everything else
+  collapsed to hyphens) turns the current event's name into a filename-safe
+  slug, e.g. `kuppelcup-backup-1-geissberg-kuppelcup-2026-08-18.csv`.
+  Unit-tested and e2e-tested (asserts the downloaded filename against the
+  starter event's name).)
+- add an option to create event from imported csv -> automatically take event name from export
+- add fullscreen support for live-monitor
+- for big screens: add a split screen so i can e.g. show Bestenliste and Live-Monitor or Turnierbaum and Live-Monitor at once on a small screen.
