@@ -133,6 +133,15 @@ export default function KuppelCup() {
     patchEvent({ teams: withResults, ko: randomKoResults(withResults) });
   };
 
+  const hasKoStarted = useMemo(() => {
+    return Object.values(ko).some((match) => match?.runA?.zeit != null || match?.runB?.zeit != null);
+  }, [ko]);
+
+  const isKoFinished = useMemo(() => {
+    const finalMatch = ko["final"] || ko["f1"];
+    return finalMatch?.runA?.zeit != null && finalMatch?.runB?.zeit != null;
+  }, [ko]);
+
   if (!loaded) return <div className="loading-screen">Lade Daten…</div>;
 
   return (
@@ -189,8 +198,9 @@ export default function KuppelCup() {
         {tab === "liste" && (
           <div className="bestenliste">
             <div className="dashboard"> 
-              <SummaryBestenliste ranked={ranked.slice(0,3)} />
-              <DisplayTagesbestzeit ranked={ranked.slice(0,1)} />
+              {!hasKoStarted && (<SummaryBestenliste ranked={ranked.slice(0,3)} />)}
+              {hasKoStarted && isKoFinished && (<SummaryBestenliste ranked={gesamt.slice(0,3)} />)}
+              <DisplayTagesbestzeit ranked={dailyBestTimes.slice(0,1)} />
             </div>
             <FullscreenPanel>
               <Bestenliste ranked={ranked} top8Ids={new Set(top8.map(t => t.id))} />
