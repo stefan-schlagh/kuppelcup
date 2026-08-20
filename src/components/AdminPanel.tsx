@@ -188,9 +188,9 @@ export default function AdminPanel({
               <tbody>
                 {events.map((ev) => (
                   <tr key={ev.id} className={current?.id === ev.id ? "row-qualified" : ""}>
-                    <td className="td-name">{ev.name}</td>
-                    <td>{PHASE_LABELS[ev.phase as EventPhase]}</td>
-                    <td style={{ textAlign: "center" }}>
+                    <td className="td-name" data-cell="event">{ev.name}</td>
+                    <td data-cell="phase">{PHASE_LABELS[ev.phase as EventPhase]}</td>
+                    <td data-cell="aktion" style={{ textAlign: "center" }}>
                       {current?.id !== ev.id && (
                         <button className="remove-btn switch-btn" onClick={() => selectEvent(ev.id)} title="Zu diesem Event wechseln">Öffnen</button>
                       )}
@@ -294,12 +294,12 @@ export default function AdminPanel({
                 )}
                 {teams.map((t: Team) => (
                   <tr key={t.id}>
-                    <td className="td-rank">{t.start}</td>
-                    <td className="td-name">{t.name}</td>
-                    <td style={{ textAlign: "center" }}>
+                    <td className="td-rank" data-cell="start-nummer">{t.start}</td>
+                    <td className="td-name" data-cell="team">{t.name}</td>
+                    <td data-cell="gastgeber" style={{ textAlign: "center" }}>
                       <input type="checkbox" disabled={locked} checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
                     </td>
-                    <td style={{ textAlign: "center" }}>
+                    <td data-cell="gemeindewertung" style={{ textAlign: "center" }}>
                       <input type="checkbox" disabled={locked} checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
                     </td>
                     {isAnmeldung && (
@@ -330,14 +330,14 @@ export default function AdminPanel({
                   <th>DG2 Strafe (s)</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="grunddurchgang">
                 {teams.map((t: Team) => (
                   <tr key={t.id}>
-                    <td className="td-name">{t.name}</td>
-                    <td><input type="number" step="0.01" disabled={locked} value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
-                    <td><input type="number" min="0" step="5" disabled={locked} value={t.dg1.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg1", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
-                    <td><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
-                    <td><input type="number" min="0" step="5" disabled={locked} value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
+                    <td className="td-name" data-cell="team">{t.name}</td>
+                    <td data-cell="DG-1 zeit (s)"><input type="number" step="0.01" disabled={locked} value={t.dg1.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg1", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
+                    <td data-cell="DG-1 strafe (s)"><input type="number" min="0" step="5" disabled={locked} value={t.dg1.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg1", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
+                    <td data-cell="DG-2 zeit (s)"><input type="number" step="0.01" disabled={locked} value={t.dg2.zeit ?? ""} onChange={(e) => updateRun(t.id, "dg2", "zeit", e.target.value ? parseFloat(e.target.value) : null)} className="input-field" /></td>
+                    <td data-cell="DG-2 strafe (s)"><input type="number" min="0" step="5" disabled={locked} value={t.dg2.strafe ?? 0} onChange={(e) => updateRun(t.id, "dg2", "strafe", parseInt(e.target.value || '0'))} className="input-field-small" /></td>
                   </tr>
                 ))}
               </tbody>
