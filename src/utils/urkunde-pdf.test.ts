@@ -8,13 +8,13 @@ const entries: UrkundeEntry[] = [
 ];
 
 describe("buildUrkundenDoc", () => {
-  it("renders one page per participant", () => {
-    const doc = buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
+  it("renders one page per participant", async () => {
+    const doc = await buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
     expect(doc.getNumberOfPages()).toBe(3);
   });
 
-  it("uses A4 portrait (Hochformat) pages", () => {
-    const doc = buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
+  it("uses A4 portrait (Hochformat) pages", async () => {
+    const doc = await buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
     const w = doc.internal.pageSize.getWidth();
     const h = doc.internal.pageSize.getHeight();
     expect(Math.round(w)).toBe(210);
@@ -22,8 +22,8 @@ describe("buildUrkundenDoc", () => {
     expect(w).toBeLessThan(h);
   });
 
-  it("produces a non-empty PDF blob", () => {
-    const doc = buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
+  it("produces a non-empty PDF blob", async () => {
+    const doc = await buildUrkundenDoc(entries, { competitionName: "Test Cup", year: 2026 });
     const bytes = doc.output("arraybuffer");
     expect(bytes.byteLength).toBeGreaterThan(0);
   });
