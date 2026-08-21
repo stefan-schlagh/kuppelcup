@@ -1,5 +1,33 @@
-import { describe, it, expect } from "vitest";
+// @vitest-environment jsdom
+import { describe, it, expect, vi } from "vitest";
 import { buildUrkundenDoc, type UrkundeEntry } from "./urkunde-pdf";
+
+Object.defineProperty(global.Image.prototype, "src", {
+  set(_src) {
+    setTimeout(() => {
+      if (this.onload) this.onload();
+    }, 0);
+  },
+});
+
+HTMLCanvasElement.prototype.toDataURL = vi.fn().mockReturnValue(
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+);
+
+HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+  fillRect: vi.fn(),
+  clearRect: vi.fn(),
+  getImageData: vi.fn(() => ({ data: [] })),
+  putImageData: vi.fn(),
+  createImageData: vi.fn(),
+  setTransform: vi.fn(),
+  drawImage: vi.fn(),
+  save: vi.fn(),
+  restore: vi.fn(),
+  beginPath: vi.fn(),
+  roundRect: vi.fn(),
+  clip: vi.fn(),
+}) as any;
 
 const entries: UrkundeEntry[] = [
   { name: "FF Buchberg", wertung: "Turniersieger", detail: "1. Platz" },
