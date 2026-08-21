@@ -1172,6 +1172,30 @@ span.nav-icon{
   padding: 30px 20px;
 }
 
+.app-footer-link {
+  background: none;
+  border: none;
+  color: var(--text-footer);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 30px 20px;
+  display: block;
+  margin: 0 auto;
+}
+
+.impressum h4 {
+  font-size: 14px;
+  margin: 20px 0 4px;
+}
+
+.impressum p {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .match-team-row {
   display: flex;
   flex-direction: column;
