@@ -15,9 +15,9 @@ describe("LocalBackend", () => {
   it("seeds a default admin with a starter event and nobody signed in", async () => {
     const be = new LocalBackend(memStore());
     await expect(be.auth.currentAccount()).resolves.toBeNull();
-    const landing = await be.landingEvent();
-    expect(landing?.name).toBe("1. Geissberg KUPPELCUP");
-    expect(landing?.ownerId).toBe("local-admin");
+    const [starter] = await be.listEvents("local-admin");
+    expect(starter?.name).toBe("1. Geissberg KUPPELCUP");
+    expect(starter?.ownerId).toBe("local-admin");
   });
 
   it("signs in with username + password and persists the session (no password leaked)", async () => {

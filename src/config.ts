@@ -19,3 +19,10 @@ export const BACKEND: BackendKind = "firebase";
 // (localStorage only, no Firebase project touched at all), and by
 // playwright.config.ts so `npm run test:e2e` always runs the same way.
 export const FIREBASE_WIRED = import.meta.env.VITE_FORCE_LOCAL_BACKEND === "true" ? false : true;
+
+// The event shown on the public landing page when nobody is signed in and no
+// ?event=<id> is given. Deliberately a source constant, not an admin-UI
+// setting or Firestore doc: any signed-up admin could otherwise repoint the
+// shared public landing page at their own event. Only editing this file (and
+// deploying) changes it. null means no event is shown on the bare landing page.
+export const DEFAULT_EVENT_ID: string | null = "lOk8zTrHZnU1RGDbsYQQ";

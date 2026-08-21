@@ -174,14 +174,6 @@ export class LocalBackend implements Backend {
     },
   };
 
-  async landingEvent(): Promise<EventDoc | null> {
-    // The default admin's first event powers the public landing page.
-    const mine = this.readEvents()
-      .filter((e) => e.ownerId === DEFAULT_ADMIN.id)
-      .sort((a, b) => b.createdAt - a.createdAt);
-    return mine[0] ?? null;
-  }
-
   async listEvents(ownerId: string): Promise<EventMeta[]> {
     return this.readEvents()
       .filter((e) => e.ownerId === ownerId)
