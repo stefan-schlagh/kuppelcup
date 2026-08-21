@@ -52,7 +52,7 @@ export function useEvents() {
       // If the user just followed an emailed sign-in link back into the
       // app, complete it before reading currentAccount() (no-op otherwise).
       await backend.auth.completeEmailLinkSignIn?.();
-      const acc = backend.auth.currentAccount(); // persisted session, or null
+      const acc = await backend.auth.currentAccount(); // persisted session, or null
       setAccount(acc);
       const list = acc ? await backend.listEvents(acc.id) : [];
       setEvents(list);
@@ -175,6 +175,18 @@ export function useEvents() {
     syncUrl(meta.id);
   }, [account, flush]);
 
+  // Create a brand-new event pre-populated with an imported CSV's teams/K.O.
+  // data, instead of overwriting the currently open event.
+  const createEventFromImport = useCallback(async (name: string, teams: Team[], ko: KoState) => {
+    if (!account) return;
+    flush();
+    const meta = await backend.createEvent(name, account.id);
+    const doc = await backend.getEvent(meta.id);
+    setEvents((prev) => [meta, ...prev]);
+    syncUrl(meta.id);
+    if (doc) applyLocal({ ...doc, teams, ko });
+  }, [account, flush, applyLocal]);
+
   const renameEvent = useCallback(async (id: string, name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -270,6 +282,7 @@ export function useEvents() {
     setPhase,
     selectEvent,
     createEvent,
+    createEventFromImport,
     renameEvent,
     deleteEvent,
   };

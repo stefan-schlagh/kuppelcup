@@ -17,13 +17,18 @@ export interface RankedTeam extends Team {
   cutoffContested?: boolean;
 }
 
-// The Live-Monitor view: which runs just finished, are up, and are next.
+// The Live-Monitor view: which runs just finished, are up, and are coming
+// after that. `next` holds the upcoming heats in order (soonest first) --
+// each entry is one heat's runners, not a single flattened list.
 export interface MonitorView {
   status: "empty" | "running" | "finished";
   former: MonitorRunner[];
   current: MonitorRunner[];
-  next: MonitorRunner[];
+  next: MonitorRunner[][];
 }
+
+// How many upcoming heats the Live-Monitor shows ahead of the current one.
+const NEXT_HEATS_SHOWN = 2;
 
 // Start order for the base rounds (strictly by starting number).
 export function sortByStart(teams: Team[]): Team[] {
@@ -197,6 +202,24 @@ export function gesamtwertung(ranked: RankedTeam[], bracket: BracketData): Ranke
   return rows;
 }
 
+export interface UrkundePlacement {
+  platz?: number;
+  gemeindePlatz?: number;
+}
+
+// Placement numbers shown on certificates. Gastgeber teams (außer
+// Konkurrenz) don't take a place in the final ranking -- they're skipped
+// entirely so real competitors keep their rightful number. Teams in the
+// Gemeindewertung additionally get their own community placement, numbered
+// separately in the same overall order.
+export function urkundePlacements(gesamt: RankedTeam[]): Map<string, UrkundePlacement> {
+  const platzById = new Map(gesamt.filter((t) => !t.gastgeber).map((t, i) => [t.id, i + 1]));
+  const gemeindePlatzById = new Map(gesamt.filter((t) => t.gemeinde).map((t, i) => [t.id, i + 1]));
+  return new Map(
+    gesamt.map((t) => [t.id, { platz: platzById.get(t.id), gemeindePlatz: gemeindePlatzById.get(t.id) }]),
+  );
+}
+
 const koLabel = (id: string): string =>
   id.startsWith("qf") ? "Viertelfinale" : id.startsWith("sf") ? "Halbfinale" : "Finale";
 
@@ -241,7 +264,7 @@ export function buildMonitorQueue(scheduledTeams: Team[], bracket: BracketData, 
     status: "running",
     former: currentHeatIndex > 0 ? heats[currentHeatIndex - 1] : [],
     current: heats[currentHeatIndex],
-    next: currentHeatIndex + 1 < heats.length ? heats[currentHeatIndex + 1] : [],
+    next: heats.slice(currentHeatIndex + 1, currentHeatIndex + 1 + NEXT_HEATS_SHOWN),
   };
 }
 

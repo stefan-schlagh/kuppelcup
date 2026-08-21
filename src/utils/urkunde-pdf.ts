@@ -3,7 +3,8 @@ import { jsPDF } from "jspdf";
 export interface UrkundeEntry {
   name: string;
   wertung: string;
-  detail: string;
+  detail?: string;
+  extra?: string;
 }
 
 interface UrkundeMeta {
@@ -183,7 +184,8 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10.5);
-    doc.text(e.detail, cx, 154, { align: "center" });
+    if (e.detail) doc.text(e.detail, cx, 132, { align: "center" });
+    if (e.extra) doc.text(e.extra, cx, e.detail ? 140 : 132, { align: "center" })
 
     // 10. Team Name ("FF Greifenstein")
     color(DARK);

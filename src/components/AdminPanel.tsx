@@ -1,14 +1,14 @@
 import { useState } from "react";
 import Turnierbaum from "./Turnierbaum";
 import { PENALTY_OPTIONS, PHASES, PHASE_LABELS } from "../utils/helpers";
-import { backupToCsv, csvToBackup, downloadCsv } from "../utils/backup";
+import { backupToCsv, csvToBackup, downloadCsv, slugifyFilename, guessEventNameFromFilename } from "../utils/backup";
 import { eventUrl } from "../utils/eventUrl";
 import { ENABLE_TEST_DATA } from "../config";
 import { toDataURL } from "qrcode";
 import type { Team, EventPhase, BracketData, KoState, Account, EventMeta, EventDoc } from '../types'
 import type { RankedTeam } from "../utils/tournament";
 import type { PdfMeta } from "../pdf/pdfDocs";
-import { LogOut } from 'lucide-react';
+import { LogOut, ChevronUp, ChevronDown } from 'lucide-react';
 
 type RunField = "zeit" | "strafe";
 
@@ -21,11 +21,16 @@ interface AdminPanelProps {
   ko: KoState;
   updateKoRun: (matchId: string, side: "runA" | "runB", field: RunField, value: number | null) => void;
   onImportBackup: (data: Partial<EventDoc>) => void;
+  onImportAsNewEvent: (name: string, teams: Team[], ko: KoState) => void;
   phase: EventPhase;
   setPhase: (phase: EventPhase) => void;
   locked: boolean;
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
+  renameTeam: (id: string, name: string) => void;
+  updateTeamStart: (id: string, start: number) => void;
+  moveTeamUp: (id: string) => void;
+  moveTeamDown: (id: string) => void;
   loadSampleTeams: () => void;
   fillRandomResults: () => void;
   account: Account | null;
@@ -53,11 +58,16 @@ export default function AdminPanel({
   ko,
   updateKoRun,
   onImportBackup,
+  onImportAsNewEvent,
   phase,
   setPhase,
   locked,
   addTeam,
   removeTeam,
+  renameTeam,
+  updateTeamStart,
+  moveTeamUp,
+  moveTeamDown,
   loadSampleTeams,
   fillRandomResults,
   account,
@@ -79,12 +89,22 @@ export default function AdminPanel({
   const [newName, setNewName] = useState("");
   const [newEventName, setNewEventName] = useState("");
   const [qr, setQr] = useState<{ name: string; url: string; dataUrl: string } | null>(null);
+  // Jump-to-position start number, per team row -- only applied once the
+  // user confirms via the "OK" button (or Enter), not on every keystroke.
+  const [jumpValues, setJumpValues] = useState<Record<string, string>>({});
+
+  const commitJump = (id: string) => {
+    const parsed = parseInt(jumpValues[id] || "", 10);
+    if (!Number.isNaN(parsed) && parsed >= 1) updateTeamStart(id, parsed);
+    setJumpValues((prev) => ({ ...prev, [id]: "" }));
+  };
 
   const isAnmeldung = phase === "anmeldung";
 
   const handleExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
-    downloadCsv(`kuppelcup-backup-${stamp}.csv`, backupToCsv(teams, ko));
+    const eventSlug = current ? `${slugifyFilename(current.name)}-` : "";
+    downloadCsv(`kuppelcup-backup-${eventSlug}${stamp}.csv`, backupToCsv(teams, ko));
   };
 
   // Dynamically imported: @react-pdf/renderer is large (~500kB gzipped) and
@@ -126,6 +146,24 @@ export default function AdminPanel({
     e.target.value = "";
   };
 
+  const handleImportAsNewEvent = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const { teams: parsed, ko: parsedKo } = csvToBackup(String(reader.result ?? ""));
+      if (parsed.length === 0) {
+        alert("Keine Teams in der Datei gefunden.");
+        return;
+      }
+      const guessedName = guessEventNameFromFilename(file.name);
+      const name = prompt("Name für das neue Event:", guessedName);
+      if (name && name.trim()) onImportAsNewEvent(name.trim(), parsed, parsedKo);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
   const handleAddTeam = () => {
     if (!newName.trim()) return;
     addTeam(newName);
@@ -145,6 +183,10 @@ export default function AdminPanel({
 
   const handleDeleteEvent = (id: string, name: string) => {
     if (confirm(`Event „${name}" löschen? Alle Teams und Ergebnisse gehen verloren.`)) deleteEvent(id);
+  };
+
+  const handleRemoveTeam = (id: string, name: string) => {
+    if (confirm(`Team „${name}" entfernen?`)) removeTeam(id);
   };
 
   const handleRenameEvent = (id: string, name: string) => {
@@ -228,6 +270,10 @@ export default function AdminPanel({
               className="pin-input add-team-input"
             />
             <button className="pin-btn add-team-btn" onClick={handleCreateEvent}>Event anlegen +</button>
+            <label className="pin-btn add-team-btn backup-import">
+              Neues Event aus CSV ⬆
+              <input type="file" accept=".csv,text/csv" onChange={handleImportAsNewEvent} hidden />
+            </label>
           </div>
 
           <h3 className="panel-title" style={{ marginTop: 24 }}>Event-Phase</h3>
@@ -292,10 +338,69 @@ export default function AdminPanel({
                 {teams.length === 0 && (
                   <tr><td colSpan={isAnmeldung ? 5 : 4} className="hint-text">Noch keine Teams angemeldet.</td></tr>
                 )}
-                {teams.map((t: Team) => (
+                {teams.map((t: Team, idx: number) => (
                   <tr key={t.id}>
-                    <td className="td-rank" data-cell="start-nummer">{t.start}</td>
-                    <td className="td-name" data-cell="team">{t.name}</td>
+                    <td className="td-rank" data-cell="start-nummer">
+                      <div className="start-nr-cell">
+                        <div className="start-nr-moves">
+                          <button
+                            type="button"
+                            className="start-nr-btn"
+                            disabled={locked || idx === 0}
+                            onClick={() => moveTeamUp(t.id)}
+                            title="Team eine Position nach oben verschieben"
+                            aria-label="Nach oben verschieben"
+                          >
+                            <ChevronUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="start-nr-btn"
+                            disabled={locked || idx === teams.length - 1}
+                            onClick={() => moveTeamDown(t.id)}
+                            title="Team eine Position nach unten verschieben"
+                            aria-label="Nach unten verschieben"
+                          >
+                            <ChevronDown size={14} />
+                          </button>
+                        </div>
+                        <span className="start-nr-value">{t.start}</span>
+                        <div className="start-nr-jump">
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            disabled={locked}
+                            placeholder="Nr."
+                            value={jumpValues[t.id] ?? ""}
+                            onChange={(e) => setJumpValues((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === "Enter" && commitJump(t.id)}
+                            className="input-field-small start-nr-jump-input"
+                          />
+                          <button
+                            type="button"
+                            className="start-nr-ok"
+                            disabled={locked || !jumpValues[t.id]}
+                            onClick={() => commitJump(t.id)}
+                            title="Team auf diese Startnummer setzen, Reihenfolge der anderen Teams bleibt erhalten"
+                          >
+                            OK
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="td-name" data-cell="team">
+                      {isAnmeldung ? (
+                        <input
+                          type="text"
+                          value={t.name}
+                          onChange={(e) => renameTeam(t.id, e.target.value)}
+                          className="input-field-name"
+                        />
+                      ) : (
+                        t.name
+                      )}
+                    </td>
                     <td data-cell="gastgeber" style={{ textAlign: "center" }}>
                       <input type="checkbox" disabled={locked} checked={!!t.gastgeber} onChange={() => toggleGastgeber(t.id)} />
                     </td>
@@ -304,7 +409,7 @@ export default function AdminPanel({
                     </td>
                     {isAnmeldung && (
                       <td style={{ textAlign: "center" }}>
-                        <button className="remove-btn" onClick={() => removeTeam(t.id)} title="Team entfernen">✕</button>
+                        <button className="remove-btn" onClick={() => handleRemoveTeam(t.id, t.name)} title="Team entfernen">✕</button>
                       </td>
                     )}
                   </tr>
@@ -363,7 +468,7 @@ export default function AdminPanel({
               <input type="file" accept=".csv,text/csv" onChange={handleImport} hidden />
             </label>
           </div>
-          <p className="hint-text">Beim Import werden die vorhandenen Teams ersetzt (K.O.-Ergebnisse bleiben unberührt).</p>
+          <p className="hint-text">Beim Import werden die vorhandenen Teams ersetzt (K.O.-Ergebnisse bleiben unberührt). Um stattdessen ein neues Event aus einer CSV-Datei anzulegen, siehe „Event &amp; Teams".</p>
 
           <p className="hint-text">Grunddurchgang, Gemeindewertung, Tagesbestzeit, Gesamtwertung und Turnierbaum als ein A4-Gesamtbericht.</p>
           <div className="backup-actions">

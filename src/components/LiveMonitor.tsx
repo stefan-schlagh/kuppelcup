@@ -6,7 +6,7 @@ interface LiveMonitorProps {
     status?: "empty" | "running" | "finished";
     former: MonitorRunner[];
     current: MonitorRunner[];
-    next: MonitorRunner[];
+    next: MonitorRunner[][];
   };
 }
 
@@ -67,21 +67,24 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
         )}
       </div>
 
-      {/* 3. NEXT RUNNER(S) */}
+      {/* 3. NEXT RUNNER(S) — the upcoming heat plus the one after it */}
       <div className="monitor-card card-dim">
         <span className="monitor-badge badge-future">Nächster Aufruf</span>
         {next.length > 0 ? (
-          <div className="monitor-parallel-group">
-            {next.map((entry, i) => (
-              <div key={i} className="monitor-entry">
-                <h3 className="monitor-team-name">{entry.name}</h3>
-                <p className="monitor-meta">
-                  Start-Nr: {entry.start} | {entry.label}
-                </p>
-                <div className="monitor-next-box">In Vorbereitung...</div>
-              </div>
-            ))}
-          </div>
+          next.map((heat, hi) => (
+            <div key={hi} className={`monitor-parallel-group${hi > 0 ? " monitor-upcoming-heat" : ""}`}>
+              {hi > 0 && <p className="monitor-upcoming-label">Danach</p>}
+              {heat.map((entry, i) => (
+                <div key={i} className="monitor-entry">
+                  <h3 className="monitor-team-name">{entry.name}</h3>
+                  <p className="monitor-meta">
+                    Start-Nr: {entry.start} | {entry.label}
+                  </p>
+                  <div className="monitor-next-box">In Vorbereitung...</div>
+                </div>
+              ))}
+            </div>
+          ))
         ) : (
           <p className="empty-msg">
             {status === "running" ? "Letztes Team läuft bereits" : "Keine weiteren Läufe"}

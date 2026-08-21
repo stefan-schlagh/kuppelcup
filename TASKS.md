@@ -379,3 +379,192 @@ backlog:
   Playwright script against a real browser, removed after), `tsc -b`, unit
   tests, lint, and the full e2e suite (11/11) all still pass with the
   renamed flag.
+
+
+20260817
+
+- [x] team name input is to small - show full team name
+  (Admin → Event & Teams team list: the name field shared `.input-field`
+  with the numeric time/penalty inputs, fixed at 90px — plenty for
+  "123.45" but not for a team name. New `.input-field-name` class (full
+  width of the cell, 240px minimum) applied to just that input.)
+- [x] start number change is too unintuitive:(e.g. down moves the team up)
+    - remove number selector: set arrows up / down that intuitevily do what i want
+    - number input: only after additional ok: place team to new place, keep the order of all other teams
+  (the old control was a single native number-spinner input that wrote on
+  every keystroke via `reassignStart`'s shift-everyone-in-between logic --
+  correct in isolation, but its up/down spinner arrows change the *typed
+  value*, not the team's position, so the direction you clicked didn't map
+  to which way the row visually moved. Replaced with two explicit controls:
+  ▲/▼ buttons that swap the team with its immediate neighbour in start
+  order -- one arrow, one step, in the direction it points -- via a new
+  `moveTeamStart`/`moveTeamUp`/`moveTeamDown` (`KuppelCup.tsx`) built on the
+  existing tested `reassignStart`; and a separate small "jump to position"
+  number input + OK button for setting an arbitrary start number, which
+  still uses `reassignStart` (shifts the teams in between, keeps everyone
+  else's relative order, no duplicates) but now only commits on explicit OK
+  (or Enter), not on every keystroke. e2e-tested: arrow swap + swap-back,
+  and jump-then-OK with an assertion that nothing moves before OK is
+  pressed. Follow-up polish, requested after seeing it live: the widget
+  first shipped as a two-row layout that read as cluttered/misaligned, then
+  a single compact row grouped in one bordered widget, with the native
+  spinner arrows removed from the jump input since the dedicated ▲/▼
+  buttons already cover the one-step case.)
+- [x] add a confirmation dialog to team deletion
+  (the ✕ "Team entfernen" button removed a team immediately, with no undo
+  and no confirmation -- unlike deleting an *event*, which already confirms.
+  Added the same `confirm()` pattern, naming the team so it's clear what's
+  about to go. e2e-tested: dismissing the dialog leaves the team in place,
+  accepting it removes it.)
+- [x] persist login status after reload
+  (LocalBackend already persisted the session to localStorage, so this was
+  a Firebase-only bug: `FirebaseBackend.auth.currentAccount()` read
+  `fbAuth.currentUser` synchronously, but the Firebase Auth SDK restores a
+  persisted session from IndexedDB *asynchronously* on a fresh page load --
+  `currentUser` is still null at that point even though a session is about
+  to come back a moment later. `useEvents`' init effect called
+  `currentAccount()` immediately on mount, so it always saw "signed out" on
+  reload and silently fell back to the public landing event. Fixed by
+  awaiting the SDK's own `authStateReady()` before reading `currentUser`;
+  `currentAccount()` is now `Promise<Account | null>` across the `Backend`
+  interface (LocalBackend's version was already effectively synchronous,
+  just wrapped in `async` to match). Unit-tested (simulates the race:
+  `currentUser` still null when called, resolves once `authStateReady()`
+  resolves) and e2e-tested (log in, reload, confirm still signed in).)
+- [x] in the Bestenliste / Gemeindewertung, teams with 0 points (no run yet)
+  should not be shown
+  (both are standings, and a team with no result has nothing to rank --
+  showing it as a "0 Punkte" / last-place row was noise, not information.
+  Filtered right where they're rendered (`rankedWithResult`/`gemeinde` in
+  `KuppelCup.tsx`, `t.punkte > 0`), not inside `rankTeams`/`gesamtwertung`
+  themselves -- those stay untouched since they still need every team for
+  other consumers: top-8/K.O. qualification already has its own punkte!==0
+  filter, and Urkunden certificates are for *all* participants regardless
+  of results. Applied to the PDF export's Grunddurchgang/Gemeindewertung
+  tables too, since they reuse the same `ranked`/`gemeinde` data and should
+  match what's on screen. Tagesbestzeit/Gesamtwertung untouched (not asked
+  for, and a no-result team was already never going to appear in either --
+  the former is top-3-by-best-time, the latter falls back to base rank
+  where it was already sorted last). e2e-tested: both sections start empty
+  with an unraced roster, then show exactly the one team once it gets a
+  result.)
+
+20260818
+
+- [x] add event name to csv export name
+  (the CSV backup filename was just `kuppelcup-backup-<date>.csv` -- with
+  multiple events, exports for different ones were indistinguishable once
+  downloaded. New `slugifyFilename()` in `utils/backup.ts` (lowercase,
+  German umlauts/ß transliterated rather than dropped, everything else
+  collapsed to hyphens) turns the current event's name into a filename-safe
+  slug, e.g. `kuppelcup-backup-1-geissberg-kuppelcup-2026-08-18.csv`.
+  Unit-tested and e2e-tested (asserts the downloaded filename against the
+  starter event's name).)
+- [x] add an option to create event from imported csv -> automatically take event name from export
+  (import in the Backup tab always overwrote the *current* event's teams --
+  no way to bring in a CSV as a separate event. New "Neues Event aus CSV ⬆"
+  control, next to "Event anlegen +" in Event & Teams (event creation lives
+  in one place, not split across tabs), reads the file, then `prompt()`s for
+  a name pre-filled via `guessEventNameFromFilename()` -- a best-effort
+  reverse of the slug the previous task baked into the export filename
+  (strips the `kuppelcup-backup-`/date wrapper, title-cases the rest). It's
+  lossy by construction (the slug already dropped case/umlauts/punctuation),
+  so it's an editable suggestion, not silently trusted. New
+  `createEventFromImport()` in `useEvents.ts` creates the event, then seeds
+  it with the parsed teams/K.O. data in one local+debounced-save step
+  (mirrors `createEvent` + `patchEvent` combined). Unit-tested
+  (`guessEventNameFromFilename`) and e2e-tested end-to-end (export, re-import
+  as a new event, confirm both events now exist with the guessed name and
+  the imported team count).)
+- [x] add fullscreen support for live-monitor
+  (Bestenliste and Turnierbaum already had a "Vollbild" toggle via the
+  shared `FullscreenPanel` wrapper; Live-Monitor was the one full-screen-
+  worthy view (beamer display) missing it. Wrapped it the same way in
+  `KuppelCup.tsx` and added beamer-scaled font-size overrides for its
+  classes (`.monitor-team-name`/`.monitor-meta`/`.monitor-badge`/
+  `.empty-msg.giant-text`) under `.fs-panel.is-fullscreen` in `index.css`,
+  matching the existing pattern for Bestenliste's table and Turnierbaum's
+  bracket. e2e-tested (toggle button present, monitor renders inside the
+  same `.fs-panel` wrapper) -- not the actual browser Fullscreen API, which
+  headless Chromium doesn't reliably support without a real user gesture.)
+- [x] for big screens: add a split screen so i can e.g. show Bestenliste and
+  Live-Monitor or Turnierbaum and Live-Monitor at once on a small screen.
+  (new "Split-Ansicht" nav tab (`SplitView.tsx`) shows two independently
+  chosen views side by side -- one `<select>` per pane over Bestenliste /
+  Live-Monitor / Turnierbaum, defaulting to Bestenliste + Live-Monitor (the
+  example given), each choice persisted via `useStorage` so it survives a
+  reload. Wrapped in the existing `FullscreenPanel` so the whole split
+  layout can go full-screen on a beamer, same as the other three views;
+  reuses their exact render output (no new components, just the same JSX
+  the "liste"/"monitor"/"baum" tabs already render). Panes stack vertically
+  between the smartphone breakpoint and 1000px rather than disappearing, so
+  it isn't broken on a laptop-sized window. e2e-tested: both panes render at
+  once, swapping one pane's selection swaps its content without affecting
+  the other, and the choice survives a reload.
+  Follow-up polish, requested after seeing it live: (1) the per-pane
+  `<select>` pickers are now hidden while fullscreen (`.fs-panel.is-
+  fullscreen .split-pane-select { display: none }`) -- a beamer audience
+  doesn't need them, and leaving fullscreen brings them back. (2) The tab
+  is hidden below the existing 768px "Smartphone-Layout" breakpoint
+  (`.nav-btn[data-tab="split"]`) -- it's a big-screen feature by definition,
+  and two panes don't fit a phone; if the tab was already open before the
+  window shrank, its content is swapped for an explanatory note instead of
+  silently breaking. (3) Each pane now scrolls independently
+  (`.split-pane-content { overflow-y: auto }` within a `.split-view` height
+  bounded to the viewport) once side by side, so a long pane (e.g.
+  Bestenliste) no longer drags a short one (e.g. Live-Monitor, which needs
+  no scrolling at all) out of view with it -- below 1000px, where panes
+  stack instead, one shared page scroll is still the natural behaviour, so
+  this only applies in the side-by-side layout. e2e-tested: pane pickers
+  toggle with a simulated fullscreen state (real `requestFullscreen()`
+  isn't reliable headless), the split tab is hidden at a phone-sized
+  viewport, and pane `scrollHeight`/`clientHeight` confirm the long pane
+  scrolls on its own while the short one and the outer page don't.
+  Two more fixes from watching it live: (4) `.main-content` (used by every
+  tab) has a `max-width: 1000px` reading-width cap; Split-Ansicht opts out
+  of it (`.main-content:has(.split-tab) { max-width: none }`) since two
+  panes side by side is the whole point of the feature and needs the room.
+  (5) That extra width surfaced an unwanted horizontal scrollbar in the
+  Live-Monitor pane: its 3-column grid used a bare `1fr` per track, which
+  per spec can't shrink below its content's min-content width, so a
+  narrower pane forced the row wider than the container instead of
+  wrapping. Switched to `minmax(0, 1fr)`/`minmax(0, 1.5fr)` tracks (same
+  proportions, but now allowed to shrink), and made `.split-pane-content`'s
+  `overflow-x: hidden` explicit rather than left to default -- setting only
+  `overflow-y` computes `overflow-x` to `auto` too, so any future overflow
+  there would silently grow a horizontal scrollbar again instead of just
+  wrapping/clipping. e2e-tested: `.main-content` width at a wide viewport,
+  and no element (page or any pane) has `scrollWidth > clientWidth`.)
+- [x] Turnierbaum can be too cramped squeezed into half the screen in
+  Split-Ansicht (side by side) -- add a stacked ("below each other") layout
+  as an option, for combos like Live-Monitor + Turnierbaum.
+  (new "Anordnung: Nebeneinander / Untereinander" toggle in `SplitView.tsx`,
+  persisted via `useStorage` like the pane choices. Reworked the CSS so the
+  side-by-side layout (height-bounded, independently scrolling panes) is
+  now gated behind a `.split-row` modifier class the component adds only
+  for "Nebeneinander" -- "Untereinander" falls back to the same full-width-
+  stacked rules already used below the 1000px breakpoint (plain page flow,
+  no per-pane scroll), so a wide pane like Turnierbaum's bracket gets the
+  whole screen's width instead of half of it. The toggle itself hides in
+  fullscreen along with the pane pickers, same reasoning as before.
+  e2e-tested: default is side by side (`.split-row` present, "Linke/Rechte
+  Ansicht" labels), switching to "Untereinander" removes the row layout,
+  relabels the pickers "Obere/Untere Ansicht", visibly widens each pane to
+  the full screen, and the choice survives a reload. Also had to widen the
+  side-by-side height budget (`calc(100vh - 190px)` -> `-230px`) to make
+  room for the new toolbar row -- it had pushed the page a little taller
+  than the old budget accounted for, re-triggering the whole-page scroll
+  the independent-pane-scroll change was there to prevent.)
+- [x] team-name edit field wouldn't let you type a trailing space (needed
+  e.g. to rename "example" to "example 2")
+  (`renameTeam` in `KuppelCup.tsx` called `.trim()` on every keystroke --
+  the field is live-bound with no separate "commit" step, so a trailing
+  space the user just typed was stripped from state and the controlled
+  input snapped back to the untrimmed value before the next character
+  could be typed after it, silently swallowing the space. Now only guards
+  against a fully blank name (`!name.trim()`) rather than trimming the
+  stored value itself. e2e-tested with `pressSequentially` (not `fill()`,
+  which sets the value in one shot and wouldn't have caught this --
+  reproducing the bug needs one keystroke, and thus one onChange, at a
+  time); confirmed the test fails against the old code and passes against
+  the fix.)

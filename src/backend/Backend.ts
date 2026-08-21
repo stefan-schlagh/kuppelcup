@@ -17,8 +17,12 @@ export class AuthNotice extends Error {
 // drop in without touching callers.
 export interface Backend {
   auth: {
-    // The signed-in admin, or null if nobody is signed in yet.
-    currentAccount(): Account | null;
+    // The signed-in admin, or null if nobody is signed in yet. Async
+    // because FirebaseBackend has to wait for the SDK to finish restoring
+    // a persisted session from IndexedDB on a fresh page load -- reading
+    // it synchronously right after `getAuth()` returns null even when a
+    // session is about to come back.
+    currentAccount(): Promise<Account | null>;
     // Sign in with username + password; rejects on bad credentials.
     signIn(username: string, password: string): Promise<Account>;
     // Passwordless sign-in with just an email. LocalBackend signs in (or
