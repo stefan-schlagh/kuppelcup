@@ -17,6 +17,22 @@ const RED: RGB = [200, 16, 46];
 const DARK: RGB = [30, 32, 38];
 const MUTED: RGB = [110, 110, 116];
 
+if (typeof Image === "undefined") {
+  global.Image = class {
+    onload: () => void = () => {};
+    onerror: (err?: any) => void = () => {};
+    private _src: string = "";
+
+    set src(value: string) {
+      this._src = value;
+      setTimeout(() => this.onload(), 10);
+    }
+    get src() {
+      return this._src;
+    }
+  } as any;
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
