@@ -237,10 +237,6 @@ describe("FirebaseBackend", () => {
     });
   });
 
-  it("has no implicit landing event (Firebase is reached by URL only)", async () => {
-    await expect(new FirebaseBackend().landingEvent()).resolves.toBeNull();
-  });
-
   it("lists events owned by the given account, mapped to EventMeta", async () => {
     vi.mocked(getDocs).mockResolvedValueOnce({
       docs: [{ data: () => sampleEvent }],

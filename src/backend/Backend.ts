@@ -43,10 +43,6 @@ export interface Backend {
     completeEmailLinkSignIn?(): Promise<Account | null>;
   };
 
-  // The event to show on the public landing page when nobody is signed in and
-  // no ?event=<id> is given (the default admin's first event), or null.
-  landingEvent(): Promise<EventDoc | null>;
-
   // Events owned by the given admin, newest first.
   listEvents(ownerId: string): Promise<EventMeta[]>;
   // Create a new empty event (phase "anmeldung") owned by ownerId.
