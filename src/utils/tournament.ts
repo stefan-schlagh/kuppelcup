@@ -227,9 +227,19 @@ const koLabel = (id: string): string =>
 // per-phase (not sliced across the whole queue) so an odd team count can't
 // pair a team's DG1 run with another team's DG2 run in the same heat — the
 // two lanes running "in parallel" must always be the same Durchgang.
-function chunkHeats(entries: MonitorRunner[], parallel: number): MonitorRunner[][] {
+// `laneOrder` assigns Bahn A/B by position within the heat — DG1 and DG2
+// pass reversed orders so a team's two heat-mates swap lanes between rounds
+// and every team gets both lanes over the base heats (a lone team in an odd
+// heat still gets whichever lane `laneOrder[0]` is for that round).
+function chunkHeats(
+  entries: MonitorRunner[],
+  parallel: number,
+  laneOrder: ("A" | "B")[],
+): MonitorRunner[][] {
   const heats: MonitorRunner[][] = [];
-  for (let i = 0; i < entries.length; i += parallel) heats.push(entries.slice(i, i + parallel));
+  for (let i = 0; i < entries.length; i += parallel) {
+    heats.push(entries.slice(i, i + parallel).map((r, idx) => ({ ...r, lane: laneOrder[idx] })));
+  }
   return heats;
 }
 
@@ -242,12 +252,15 @@ export function buildMonitorQueue(scheduledTeams: Team[], bracket: BracketData, 
   });
 
   const heats: MonitorRunner[][] = [
-    ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG1", t.dg1)), parallel),
-    ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG2", t.dg2)), parallel),
+    ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG1", t.dg1)), parallel, ["A", "B"]),
+    ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG2", t.dg2)), parallel, ["B", "A"]),
   ];
   [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
     if (m.teamA && m.teamB) {
-      heats.push([runner(m.teamA, koLabel(m.id), m.runA, m.tied), runner(m.teamB, koLabel(m.id), m.runB, m.tied)]);
+      heats.push([
+        { ...runner(m.teamA, koLabel(m.id), m.runA, m.tied), lane: "A" },
+        { ...runner(m.teamB, koLabel(m.id), m.runB, m.tied), lane: "B" },
+      ]);
     }
   });
 

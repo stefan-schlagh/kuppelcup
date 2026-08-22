@@ -22,7 +22,10 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
           <div className="monitor-parallel-group">
             {former.map((entry, i) => (
               <div key={i} className="monitor-entry">
-                <h3 className="monitor-team-name">{entry.name}</h3>
+                <h3 className="monitor-team-name">
+                  {entry.name}
+                  {entry.lane && <span className="monitor-lane-tag">Bahn {entry.lane}</span>}
+                </h3>
                 <p className="monitor-meta">
                   Start-Nr: {entry.start} | {entry.label}
                 </p>
@@ -52,7 +55,10 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
           >
             {current.map((entry, i) => (
               <div key={i} className="monitor-entry">
-                <h2 className="monitor-team-name giant-text">{entry.name}</h2>
+                <h2 className="monitor-team-name giant-text">
+                  {entry.name}
+                  {entry.lane && <span className="monitor-lane-tag">Bahn {entry.lane}</span>}
+                </h2>
                 <p className="monitor-meta giant-meta">
                   Startnummer: {entry.start} | {entry.label}
                 </p>
@@ -76,7 +82,10 @@ export default function LiveMonitor({ data }: LiveMonitorProps) {
               {hi > 0 && <p className="monitor-upcoming-label">Danach</p>}
               {heat.map((entry, i) => (
                 <div key={i} className="monitor-entry">
-                  <h3 className="monitor-team-name">{entry.name}</h3>
+                  <h3 className="monitor-team-name">
+                    {entry.name}
+                    {entry.lane && <span className="monitor-lane-tag">Bahn {entry.lane}</span>}
+                  </h3>
                   <p className="monitor-meta">
                     Start-Nr: {entry.start} | {entry.label}
                   </p>
