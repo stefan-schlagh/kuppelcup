@@ -1,5 +1,6 @@
 import { fmtTime, gesamt } from "../utils/helpers";
 import type { RankedTeam } from "../utils/tournament";
+import { Award, Trophy, Timer, Flame } from 'lucide-react';
 
 interface BestenlisteProps {
   ranked: RankedTeam[];
@@ -28,7 +29,7 @@ export default function Bestenliste({ ranked, top8Ids }: BestenlisteProps) {
               const qualified = top8Ids.has(t.id);
               return (
                 <tr key={t.id} className={qualified ? "row-qualified" : ""}>
-                  <td className="td-rank">
+                  <td className="td-rank" data-cell="platzierung">
                     {i + 1}
                     {t.cutoffContested && (
                       <span
@@ -44,18 +45,18 @@ export default function Bestenliste({ ranked, top8Ids }: BestenlisteProps) {
                       </span>
                     )}
                   </td>
-                  <td className="td-name">
+                  <td className="td-name" data-cell="team">
                     {t.name}
                     {t.gastgeber && <span className="host-tag">Gastgeber</span>}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg1))}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg1))}`} data-cell="wertung (DG-1)">
                     {fmtTime(t.dg1.zeit)} {t.dg1.strafe ? <span className="fehler-tag">+{t.dg1.strafe}s</span> : null}
                   </td>
-                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg2))}`}>
+                  <td className="td-mono" title={`Punkte dieses Laufs: ${fmtTime(gesamt(t.dg2))}`} data-cell="wertung (DG-2)">
                     {fmtTime(t.dg2.zeit)} {t.dg2.strafe ? <span className="fehler-tag">+{t.dg2.strafe}s</span> : null}
                   </td>
-                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
-                  <td>
+                  <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2" data-cell="punkte">{t.punkte}</td>
+                  <td data-cell="status">
                     {t.gastgeber ? (
                       <span className="badge-host">Außer Konkurrenz</span>
                     ) : qualified ? (
@@ -88,9 +89,9 @@ function SimpleStandingsTable({ ranked }: { ranked: RankedTeam[] }) {
         <tbody>
           {ranked.map((t, i) => (
             <tr key={t.id}>
-              <td className="td-rank">{i + 1}</td>
-              <td className="td-name">{t.name}</td>
-              <td className="td-best" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
+              <td className="td-rank" data-cell="platzierung">{i + 1}</td>
+              <td className="td-name" data-cell="team">{t.name}</td>
+              <td className="td-best" data-cell="punkte" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">{t.punkte}</td>
             </tr>
           ))}
         </tbody>
@@ -115,6 +116,80 @@ export function Tagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
       <SimpleStandingsTable ranked={ranked} />
     </div>
   );
+}
+
+
+export function SummaryBestenliste({ ranked }: { ranked: RankedTeam[] }) {
+  if (!ranked || ranked.length === 0) {
+    return;
+  } else {
+    return(
+      <div>
+        <h2 className="panel-title">Bestenliste — Leaderboard</h2>
+        <div className="summary-bestenliste">
+        {ranked.map((t, i) => {
+          if (t.punkte ===  0) {
+            return;
+          } else {
+            return(
+              <div key={t.id} className="place">
+                <div className="award-container">{i < 1 ? <Trophy /> : <Award />}</div>
+                <div className="bar">
+                  <span>{i+1}</span>
+                  <div className="points" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">
+                    <span>{t.punkte}</span>
+                  </div>
+                </div>
+                <span className="team-name">
+                  {t.name}
+                </span>
+              </div> 
+            );
+          }
+        })}
+        </div>
+      </div>
+    )
+  }
+}
+
+export function DisplayTagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
+  if (!ranked || ranked.length === 0) {
+    return;
+  } else {
+    return(
+      <div>
+        <h2 className="panel-title">Tagesbestzeit</h2>
+        {ranked.map((t) => {
+          if (t.punkte === 0) {
+            return;
+          } else {
+            return (
+              <div key={t.id} className="display-tagesbestzeit">
+                <h2 className="display-title">
+                  Bestzeit
+                </h2>
+                <h1 className="team-name">
+                  {t.name}
+                </h1>
+                <div className="points-wrapper">
+                  <span className="points" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">
+                    {t.punkte}s
+                  </span>
+                </div>
+                <div className="bg-timer">
+                  <Timer />
+                </div>
+                <div className="bg-flame">
+                  <Flame />
+                </div>
+              </div>
+            );
+          }
+        })}
+      </div>
+    );
+  }
 }
 
 export function Gesamtwertung({ ranked }: { ranked: RankedTeam[] }) {
