@@ -1335,6 +1335,15 @@ span.nav-icon{
   color: var(--color-accent);
 }
 
+.monitor-lane-tag {
+  display: inline-block;
+  vertical-align: top;
+  font-size: 0.5em;
+  font-weight: 400;
+  margin-left: 0.5em;
+  color: var(--text-muted);
+}
+
 .monitor-meta {
   margin: 0;
   font-size: 13px;
