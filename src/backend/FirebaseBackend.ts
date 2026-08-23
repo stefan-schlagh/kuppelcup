@@ -113,11 +113,6 @@ export class FirebaseBackend implements Backend {
     },
   };
 
-  async landingEvent(): Promise<EventDoc | null> {
-    // No implicit public landing event with Firebase — reach events by URL.
-    return null;
-  }
-
   async listEvents(ownerId: string): Promise<EventMeta[]> {
     return logged("listEvents", "Events konnten nicht geladen werden.", async () => {
       const q = query(collection(this.db, "events"), where("ownerId", "==", ownerId), orderBy("createdAt", "desc"));

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { backend } from "../backend";
+import { DEFAULT_EVENT_ID } from "../config";
 import type { Account, EventDoc, EventMeta, EventPhase, KoState, Team } from "../types";
 
 // Frequent edits are persisted on this debounce rather than per keystroke.
@@ -26,6 +27,13 @@ const requestedEventId = (): string | null =>
 const clearUrl = (): void => {
   window.history.replaceState(null, "", window.location.pathname);
 };
+
+// The event to show on the public landing page when nobody is signed in and
+// no ?event=<id> is given. DEFAULT_EVENT_ID is a source constant (config.ts),
+// not an admin-editable setting -- any signed-up admin could otherwise
+// repoint the shared public landing page at their own event.
+const landingEvent = (): Promise<EventDoc | null> =>
+  DEFAULT_EVENT_ID ? backend.getEvent(DEFAULT_EVENT_ID) : Promise.resolve(null);
 
 // Loads the signed-in admin's events, tracks the selected one, and exposes
 // per-event mutators that persist through the backend.
@@ -65,7 +73,7 @@ export function useEvents() {
       if (!doc) {
         doc = acc
           ? (list[0] ? await backend.getEvent(list[0].id) : null)
-          : await backend.landingEvent();
+          : await landingEvent();
       }
       setCurrent(doc);
       if (doc) syncUrl(doc.id);
@@ -258,7 +266,7 @@ export function useEvents() {
     await backend.auth.signOut();
     setAccount(null);
     setEvents([]);
-    const doc = await backend.landingEvent();
+    const doc = await landingEvent();
     setCurrent(doc);
     if (doc) syncUrl(doc.id);
     else clearUrl();

@@ -50,6 +50,8 @@ export interface MonitorRunner {
   // Match.tied) — never set for base-round (DG1/DG2) entries, which don't
   // have an opponent in the same heat to tie against.
   tied?: boolean;
+  // Which physical lane this runner is on, for Live-Monitor display only.
+  lane?: "A" | "B";
 }
 
 // An admin account that owns events. For now this is a local placeholder;

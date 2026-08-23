@@ -10,12 +10,15 @@ import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
 import Urkunden, { DynamicSvg } from "./components/Urkunden";
+import Impressum from "./components/Impressum";
 import FullscreenPanel from "./components/FullscreenPanel";
 import SplitView from "./components/SplitView";
 import type { SplitLayout } from "./components/SplitView";
 import { Sun, Moon, ListOrdered, TvMinimalPlay, Network, User, ScrollText, Check, Columns2 } from 'lucide-react';
 
 const numberOfParallelRounds = 2
+
+const IMPRESSUM_PATH = "/impressum";
 
 export default function KuppelCup() {
   const {
@@ -40,7 +43,10 @@ export default function KuppelCup() {
     renameEvent,
     deleteEvent,
   } = useEvents();
-  const [tab, setTab] = useState<string>("liste");
+  // A direct/bookmarked link to /impressum opens straight into it, on the
+  // Admin tab (its only reachable location -- see the nav/tab section below).
+  const [showImpressum, setShowImpressum] = useState(() => window.location.pathname === IMPRESSUM_PATH);
+  const [tab, setTab] = useState<string>(() => (window.location.pathname === IMPRESSUM_PATH ? "admin" : "liste"));
   const [loginUser, setLoginUser] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
@@ -50,6 +56,18 @@ export default function KuppelCup() {
 
   // "Admin" features are unlocked while an admin account is signed in.
   const authed = !!account;
+
+  const openImpressum = () => {
+    window.history.replaceState(null, "", IMPRESSUM_PATH);
+    setShowImpressum(true);
+  };
+
+  // Leaves /impressum for whatever URL the rest of the app would normally
+  // show (an open event's ?event=<id>, or the bare root).
+  const closeImpressum = () => {
+    window.history.replaceState(null, "", current ? `/?event=${encodeURIComponent(current.id)}` : "/");
+    setShowImpressum(false);
+  };
 
   const runAuth = async (fn: () => Promise<void>) => {
     try {
@@ -251,7 +269,7 @@ export default function KuppelCup() {
             <button
               key={key}
               data-tab={key}
-              onClick={() => setTab(key)}
+              onClick={() => { if (showImpressum) closeImpressum(); setTab(key); }}
               className={`nav-btn ${tab === key ? "active" : ""}`}
             >
               {icon && <span className="nav-icon">{icon}</span>}
@@ -320,7 +338,10 @@ export default function KuppelCup() {
           />
         )}
         {tab === "admin" && (
-          authed ? (
+          showImpressum ? (
+            <Impressum onBack={closeImpressum} />
+          ) : authed ? (
+            <>
             <AdminPanel
             teams={scheduledTeams} /* Passes Fixed Starter Sequence directly down to admin rows */
             updateRun={updateRun}
@@ -357,7 +378,10 @@ export default function KuppelCup() {
             gesamt={gesamt}
             pdfMeta={pdfMeta}
           />
+            <button className="app-footer-link" onClick={openImpressum}>Impressum</button>
+            </>
           ) : (
+            <>
             <div className="login-box">
               <h2 className="panel-title">Admin-Anmeldung</h2>
               <p className="hint-text">Mit E-Mail und Passwort anmelden oder ein neues Admin-Konto anlegen.</p>
@@ -399,6 +423,8 @@ export default function KuppelCup() {
               <button className="pin-btn login-secondary" onClick={handleEmailLogin}>Link per E-Mail (passwortlos)</button>
               {authNotice && <p className="pin-notice">{authNotice}</p>}
             </div>
+            <button className="app-footer-link" onClick={openImpressum}>Impressum</button>
+            </>
           ))}
         </main>
       </div>

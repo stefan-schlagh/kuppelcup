@@ -1516,6 +1516,30 @@ label.pin-btn{
   padding: 30px 20px;
 }
 
+.app-footer-link {
+  background: none;
+  border: none;
+  color: var(--text-footer);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 30px 20px;
+  display: block;
+  margin: 0 auto;
+}
+
+.impressum h4 {
+  font-size: 14px;
+  margin: 20px 0 4px;
+}
+
+.impressum p {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .match-team-row {
   display: flex;
   flex-direction: column;
@@ -1653,6 +1677,15 @@ label.pin-btn{
 .monitor-team-name.giant-text {
   font-size: 36px;
   color: var(--color-accent);
+}
+
+.monitor-lane-tag {
+  display: inline-block;
+  vertical-align: top;
+  font-size: 0.5em;
+  font-weight: 400;
+  margin-left: 0.5em;
+  color: var(--text-muted);
 }
 
 .monitor-meta {

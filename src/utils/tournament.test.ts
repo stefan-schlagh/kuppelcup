@@ -239,6 +239,30 @@ describe("buildMonitorQueue", () => {
     expect(view.next).toEqual([]);
   });
 
+  it("swaps lanes between DG1 and DG2 so each team runs on both", () => {
+    const t1 = team("a", 1, [null, null], [null, null]);
+    const t2 = team("b", 2, [null, null], [null, null]);
+    const view = buildMonitorQueue([t1, t2], emptyBracket, 2);
+    expect(view.current.map((r) => [r.name, r.lane])).toEqual([["FF a", "A"], ["FF b", "B"]]);
+    expect(view.next[0].map((r) => [r.name, r.lane])).toEqual([["FF a", "B"], ["FF b", "A"]]);
+  });
+
+  it("a solo heat (odd team count) runs on Bahn A in DG1 and Bahn B in DG2", () => {
+    const a = team("a", 1, [20, 0], [null, null]);
+    const b = team("b", 2, [21, 0], [null, null]);
+    const c = team("c", 3, [null, null], [null, null]);
+    const view = buildMonitorQueue([a, b, c], emptyBracket, 2);
+    expect(view.current.map((r) => [r.name, r.lane])).toEqual([["FF c", "A"]]);
+    expect(view.next[1].map((r) => [r.name, r.lane])).toEqual([["FF c", "B"]]);
+  });
+
+  it("assigns fixed lanes (teamA=A, teamB=B) for K.O. heats with no swap", () => {
+    const teams8 = Array.from({ length: 8 }, (_, i) => team(`s${i}`, i + 1, [20 + i, 0], [20 + i, 0]));
+    const bracket = buildBracket(selectTop8(rankTeams(teams8)), {});
+    const view = buildMonitorQueue(sortByStart(teams8), bracket, 2);
+    expect(view.current.map((r) => r.lane)).toEqual(["A", "B"]);
+  });
+
   it("reports finished when every run has a time", () => {
     const t1 = team("a", 1, [20, 0], [22, 0]);
     const t2 = team("b", 2, [21, 0], [23, 0]);
