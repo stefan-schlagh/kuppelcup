@@ -9,7 +9,7 @@ import Bestenliste, { DisplayTagesbestzeit, Gemeindewertung, SummaryBestenliste,
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
-import Urkunden from "./components/Urkunden";
+import Urkunden, { DynamicSvg } from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
 import SplitView from "./components/SplitView";
 import type { SplitLayout } from "./components/SplitView";
@@ -211,7 +211,15 @@ export default function KuppelCup() {
     <div className="app-container">
       <header className="app-header">
         <div className="brand-row">
-          <div className="hose-icon">⊃⊂</div>
+          <div className="hose-icon">
+            <DynamicSvg className="icon" src="/favicon.svg" />
+            <svg className="svg-gradient" aria-hidden="true" focusable="false">
+              <radialGradient id="svg-gradient" x2="1" y2="1">
+                <stop offset="0%" stopColor="var(--inner-gradient-color)" />
+                <stop offset="100%" stopColor="var(--outer-gradient-color)" />
+              </radialGradient>
+            </svg>
+          </div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
           <div className="header-right">
             {authed && (
