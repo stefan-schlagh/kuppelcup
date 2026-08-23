@@ -16,6 +16,7 @@ type RGB = [number, number, number];
 const RED: RGB = [200, 16, 46];
 const DARK: RGB = [30, 32, 38];
 const MUTED: RGB = [110, 110, 116];
+const ORANGE: RGB = [255, 117, 31];
 
 if (typeof Image === "undefined") {
   global.Image = class {
@@ -31,6 +32,35 @@ if (typeof Image === "undefined") {
       return this._src;
     }
   } as any;
+}
+
+function toAbsoluteUrl(url: string): string {
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    return url;
+  }
+  // Falls im Browser geladen
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return new URL(url, window.location.origin).href;
+  }
+  // Fallback für Node/Vitest-Testumgebung
+  return `http://localhost${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+async function loadFontAsBase64(url: string): Promise<string> {
+  const response = await fetch(toAbsoluteUrl(url));
+  if (!response.ok) {
+    throw new Error(`Failed to fetch font: ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64data = reader.result as string;
+      resolve(base64data.split(",")[1]);  
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -90,36 +120,74 @@ function processBackgroundImage(image: HTMLImageElement, borderRadius: number ):
   return canvas.toDataURL("image/png");
 }
 
-// Konvertiert das SVG-Logo via Canvas in eine PNG-Data-URL (für jsPDF Kompatibilität)
-function getHoseLogoPngDataUrl(): Promise<string> {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40">
-    <!-- Linkes Element (D): Öffnung nach links, Rundung nach rechts -->
-    <path fill="#C8102E" d="M 10,8 H 36 C 42.5,8 47.5,13 47.5,20 C 47.5,27 42.5,32 36,32 H 10 V 25 H 36 C 38.8,25 41,22.8 41,20 C 41,17.2 38.8,15 36,15 H 10 Z"/>
-    
-    <!-- Rechtes Element (C): Öffnung nach rechts, Rundung nach links -->
-    <path fill="#C8102E" d="M 90,8 H 64 C 57.5,8 52.5,13 52.5,20 C 52.5,27 57.5,32 64,32 H 90 V 25 H 64 C 61.2,25 59,22.8 59,20 C 59,17.2 61.2,15 64,15 H 90 Z"/>
-  </svg>`;
 
+function loadSvgAsPng(src: string, width: number = 300, height: number = 300): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
+    fetch(toAbsoluteUrl(src))
+      .then((res) => res.text())
+      .then((svgText) => {
+        // Fallback für Testumgebungen ohne vollständige DOM-Canvas-Unterstützung
+        if (typeof document === "undefined" || !document.createElement) {
+          return resolve("");
+        }
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 400;
-      canvas.height = 160;
-      const context = canvas.getContext("2d");
-      if (context) {
-        context.drawImage(img, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(url);
-        resolve(canvas.toDataURL("image/png"));
-      } else {
-        reject(new Error("Canvas context missing"));
-      }
-    };
-    img.onerror = (err) => reject(err);
-    img.src = url;
+        const img = new Image();
+        const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+        const url = (typeof URL !== "undefined" && URL.createObjectURL) 
+          ? URL.createObjectURL(svgBlob) 
+          : `data:image/svg+xml;utf8,${encodeURI(svgText)}`;
+
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext("2d");
+          if (context) {
+            context.drawImage(img, 0, 0, width, height);
+            if (typeof URL !== "undefined" && URL.revokeObjectURL && url.startsWith("blob:")) {
+              URL.revokeObjectURL(url);
+            }
+            resolve(canvas.toDataURL("image/png"));
+          } else {
+            reject(new Error("Canvas context failed"));
+          }
+        };
+        img.onerror = (err) => reject(err);
+        img.src = url;
+      })
+      .catch(reject);
+  });
+}
+
+function drawTextWithLetterSpacing(
+  doc: jsPDF,
+  text: string,
+  x: number,
+  y: number,
+  spacingMm: number,
+  options: { align?: "left" | "center" | "right" } = {}
+) {
+  const characters = text.split("");
+  
+  // Gesamtbreite berechnen
+  let totalWidth = 0;
+  characters.forEach((char) => {
+    totalWidth += doc.getTextWidth(char) + spacingMm;
+  });
+  totalWidth -= spacingMm; // Letzten Abstand abziehen
+
+  // Startposition anhand der Ausrichtung ermitteln
+  let currentX = x;
+  if (options.align === "center") {
+    currentX = x - totalWidth / 2;
+  } else if (options.align === "right") {
+    currentX = x - totalWidth;
+  }
+
+  // Buchstaben einzeln zeichnen
+  characters.forEach((char) => {
+    doc.text(char, currentX, y);
+    currentX += doc.getTextWidth(char) + spacingMm;
   });
 }
 
@@ -130,19 +198,30 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
   const H = doc.internal.pageSize.getHeight();
   const cx = W / 2;
 
-  const backgroundImage = await loadImage("/CertificateBackground.png");
-
   const margin = 6;
-
   const borderRadiusMm = 5;
+
+  let hasCustomFont = false;
+  try {
+    const fontBase64 = await loadFontAsBase64("/Oswald-Bold.ttf");
+    doc.addFileToVFS("Oswald-Bold.ttf", fontBase64);
+    doc.addFont("Oswald-Bold.ttf", "Oswald", "bold");
+    hasCustomFont = true;
+  } catch (e) {
+    console.warn("Custom Font Oswald-Bold.ttf konnte nicht geladen werden, verwende Fallback Helvetica.");
+  }
+
+  const [backgroundImage, hoseLogoDataUrl, geissPngDataUrl, ffLogoPngDataUrl] = await Promise.all([
+    loadImage("/CertificateBackground.png"),
+    loadSvgAsPng("/Hose.svg", 400, 150),
+    loadSvgAsPng("/GeissColored.svg", 200, 414),
+    loadSvgAsPng("/ff.svg", 100, 100),
+  ]);
+
   const innerWidthMm = W - 2 * margin;
   const scale = backgroundImage.naturalWidth / innerWidthMm;
   const borderRadiusPx = borderRadiusMm * scale;
-
   const backgroundDataUrl = processBackgroundImage(backgroundImage, borderRadiusPx);
-
-  // Hose-Logo als PNG Data-URL generieren
-  const hoseLogoDataUrl = await getHoseLogoPngDataUrl();
 
   const color = (rgb: RGB): void => {
     doc.setTextColor(rgb[0], rgb[1], rgb[2]);
@@ -163,62 +242,67 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     doc.addImage(backgroundDataUrl, "PNG", margin, margin, innerWidth, innerHeight);
 
     // 3. Äußerer abgerundeter Rahmen
-    doc.setDrawColor(255, 110, 115);
+    color(RED);
     doc.setLineWidth(0.8);
     doc.roundedRect(margin, margin, innerWidth, innerHeight, borderRadiusMm, borderRadiusMm, "S");
 
     // 4. Rotes DC-Logo als PNG gerendert
-    const logoWidth = 18;
-    const logoHeight = 7.2;
-    doc.addImage(hoseLogoDataUrl, "PNG", cx - logoWidth / 2, 87, logoWidth, logoHeight);
+    const logoWidth = 16;
+    const logoHeight = 6.4;
+    doc.addImage(hoseLogoDataUrl, "PNG", cx - logoWidth / 2, 72, logoWidth, logoHeight);
 
     // 5. Title ("URKUNDE")
     color(DARK);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(36);
-    doc.text("URKUNDE", cx, 114, { align: "center" });
+    doc.setFont(hasCustomFont ? "Oswald" : "helvetica", "bold");
+    doc.setFontSize(60);
+    drawTextWithLetterSpacing(doc, "URKUNDE", cx, 112, 1.5875, { align: "center" });
 
     // 6. Event ("1. GEISSBERGKUPPELCUP 2026")
     color(MUTED);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
+    doc.setFontSize(16);
     const eventNameFormatted = `${meta.competitionName} ${meta.year}`.replace(/ß/g, "SS").toUpperCase();
-    doc.text(eventNameFormatted, cx, 125, { align: "center" });
+    doc.text(eventNameFormatted, cx, 123, { align: "center" });
 
     // 7. Trennlinie
     color(RED);
     doc.setLineWidth(0.5);
-    doc.line(cx - 20, 134, cx + 20, 134);
+    doc.line(cx - 24, 132, cx + 24, 132);
 
     // 8. Wertung ("TEILNEHMERURKUNDE")
     color(RED);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text(e.wertung.toUpperCase(), cx, 146, { align: "center" });
+    doc.setFontSize(18);
+    drawTextWithLetterSpacing(doc, e.wertung.toUpperCase(), cx, 144, 0.8, { align: "center" });
 
     // 9. Detail-Text ("Grunddurchgang: Rang 1...")
     color(MUTED);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10.5);
-    if (e.detail) doc.text(e.detail, cx, 132, { align: "center" });
-    if (e.extra) doc.text(e.extra, cx, e.detail ? 140 : 132, { align: "center" })
-
+    doc.setFontSize(16);
+    let nextY = 152;
+    if (e.detail) {
+      doc.text(e.detail, cx, nextY, { align: "center" });
+      nextY += 8;
+    }
+    if (e.extra) {
+      doc.text(e.extra, cx, nextY, { align: "center" });
+    }
     // 10. Team Name ("FF Greifenstein")
     color(DARK);
-    doc.setFont("helvetica", "bold");
-    let teamFontSize = 30;
+    doc.setFont(hasCustomFont ? "Oswald" : "helvetica", "bold");
+    let teamFontSize = 45;
     doc.setFontSize(teamFontSize);
     const maxTeamWidth = W - 50;
-    while (doc.getTextWidth(e.name) > maxTeamWidth && teamFontSize > 14) {
+    while (doc.getTextWidth(e.name) > maxTeamWidth && teamFontSize > 16) {
       teamFontSize--;
       doc.setFontSize(teamFontSize);
     }
-    doc.text(e.name, cx, 178, { align: "center" });
+    doc.text(e.name, cx, 186, { align: "center" });
 
     // 11. Unterschriftenzeilen
-    const sy = 212;
-    const lineLength = 55;
-    const spacingFromCenter = 10;
+    const sy = 224;
+    const lineLength = 52;
+    const spacingFromCenter = 18;
 
     color(MUTED);
     doc.setLineWidth(0.3);
@@ -228,7 +312,7 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     const leftLineEnd = cx - spacingFromCenter;
     doc.line(leftLineStart, sy, leftLineEnd, sy);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.text("Datum", (leftLineStart + leftLineEnd) / 2, sy + 6, { align: "center" });
 
     // Rechte Linie & Beschriftung
@@ -236,6 +320,41 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     const rightLineEnd = cx + spacingFromCenter + lineLength;
     doc.line(rightLineStart, sy, rightLineEnd, sy);
     doc.text("Turnierleitung", (rightLineStart + rightLineEnd) / 2, sy + 6, { align: "center" });
+
+    // 12. Geiß-Logo
+    const geissW = 20;
+    const geissH = 41.4194915254236;
+    doc.addImage(geissPngDataUrl, "PNG", cx - geissW / 2, 198.580508474576 , geissW, geissH);
+
+    //13. Feuerwehr Ringendorf Badge
+    const badgeW = 42;
+    const badgeH = 17;
+    const badgeX = cx - badgeW / 2;
+    const badgeY = 239.5;
+
+    doc.setFillColor(255, 255, 255);
+    color(ORANGE);
+    doc.setLineWidth(0.35);
+    doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 5, 5, "FD");
+
+    const ffLogoW = 6.6;
+    const ffLogoH = 8.5;
+    const ffLogoX = badgeX + 4.3;
+    const ffLogoY = badgeY + (badgeH - ffLogoH) / 2;
+
+    doc.addImage(ffLogoPngDataUrl, "PNG", ffLogoX, ffLogoY , ffLogoW, ffLogoH);
+
+    const textX = ffLogoX + ffLogoW + 2;
+    
+    color(MUTED);
+    doc.setFontSize(7);
+    doc.setFont(hasCustomFont ? "Oswald" : "helvetica" , "bold");
+    doc.text("FREIWILLIGE FEUERWEHR", textX, badgeY + 6.5);
+
+    color(MUTED);
+    doc.setFontSize(13.5);
+    doc.setFont(hasCustomFont ? "Oswald" : "helvetica" , "bold");
+    doc.text("RINGENDORF", textX, badgeY + 12.2);
   });
 
   return doc;
