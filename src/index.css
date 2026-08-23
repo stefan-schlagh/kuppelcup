@@ -95,18 +95,27 @@ body {
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
   row-gap: 8px;
   flex-wrap: wrap;
   /*margin-bottom: 16px;*/ /* * More compact header layout */
 }
 
+.svg-gradient{
+  height: 0;
+  width: 0;
+  position: absolute;
+}
+
 .hose-icon {
-  color: var(--color-primary);
-  /* font-size: 22px; */ /* ? Why is it smaller than the brand title? */
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -2px;
+  aspect-ratio: 1 / 1;
+  height: 26px;
+}
+
+.icon svg {
+  height: 100%;
+  width: 100%;
+  fill: url(#svg-icon-gradient) gray;
 }
 
 .brand-title {
@@ -1068,6 +1077,12 @@ span.nav-icon{
   margin: 8px 0 16px;
 }
 
+label.pin-btn{
+  font-size: 13px;
+  font-family: Arial;
+  font-weight: 600;
+}
+
 /* Admin login & accounts */
 .login-box {
   max-width: 360px;
@@ -1271,6 +1286,7 @@ span.nav-icon{
      the up/down arrows already cover the one-step case, so the
      browser's native spin buttons would just be visual noise here. */
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .start-nr-jump-input::-webkit-outer-spin-button,
@@ -1761,7 +1777,7 @@ span.nav-icon{
 }
 
 .urkunde-inner {
-  border: 3px solid var(--color-primary-variation);
+  border: 3px solid var(--color-primary);
   border-radius: 6px;
   padding: 40px 32px;
   text-align: center;
@@ -1773,27 +1789,109 @@ span.nav-icon{
   background-size: 100% 100%;
   background-position: center;
   background-repeat: no-repeat;
+  position: relative;
+}
+
+.geiss-container{
+  aspect-ratio: 1 / 2.07097457627118;
+  position: absolute;
+  left: calc((100% - 100px / 2.07097457627118) / 2);
+  bottom: calc(12% + 50px);
+  height: 100px;
+  @media screen and (min-width: 0) and (max-width: 768px) {
+    height: 10%;
+    left: calc((100% - 10% / 2.07097457627118) / 2);
+    bottom: calc(5% + 30px);
+  }
+}
+
+#svg-gradient{
+  --inner-gradient-color: #FFA51F;
+  --outer-gradient-color: #FF751F;
+}
+
+.geiss {
+  height: 100%;
+  width: 100%;
+  fill: url(#svg-gradient) gray;
+}
+
+.feuerwehr-title-container{
+  width: 100px;
+  position: absolute;
+  bottom: 12%;
+  left: calc(50% - 60px);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-surface);
+  padding: 10px;
+  border-radius: 15px;
+  border: 1px solid #ff751f;
+  @media screen and (min-width: 0) and (max-width: 768px) {
+    width: 20%;
+    left: calc(50% - (10% + 5px));
+    padding: 5px;
+    bottom: 5%;
+    border-width: 0.5px;
+    border-radius: 10px;
+  }
+}
+
+.feuerwehr-title-container::before{
+  content: '';
+  display: inline-block;
+  background: url(/ff.svg);
+  background-size: 100% 100%;
+  aspect-ratio: 1;
+  height: 30px;
+  @media screen and (min-width: 0) and (max-width: 768px) {
+    height: 20px;
+  }
+}
+
+.feuerwehr-title{
+  font-family: 'Oswald', sans-serif;
+  font-size: clamp(6px, 2vw, 12px);
+  font-weight: 100;
+  margin: 0;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.feuerwehr-title span{
+  font-size: clamp(3px, 1vw, 6px);
 }
 
 .urkunde-hose {
   color: var(--color-primary);
   font-size: 34px;
+  width: 100px;
   font-weight: 700;
   letter-spacing: -3px;
+  position: absolute;
+  left: calc((100% - 100px) / 2);
+  top: 20%;
 }
 
 .urkunde-title {
   font-family: 'Oswald', sans-serif;
   text-transform: uppercase;
   letter-spacing: 6px;
-  font-size: 40px;
+  font-size: 60px;
   margin: 8px 0 4px;
   color: var(--text-main);
 }
 
 .urkunde-event {
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0;
@@ -1810,20 +1908,20 @@ span.nav-icon{
   color: var(--color-primary);
   text-transform: uppercase;
   letter-spacing: 2px;
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 900;
+  font-size: 18px;
   margin: 0 0 4px;
 }
 
 .urkunde-platz {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 16px;
   margin: 0 0 16px;
 }
 
 .urkunde-team {
   font-family: 'Oswald', sans-serif;
-  font-size: 30px;
+  font-size: 40px;
   font-weight: 700;
   margin: 0;
   color: var(--text-main);
@@ -2242,15 +2340,21 @@ span.nav-icon{
   }
 
   .urkunde-hose{
+    position: relative;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: unset;
     font-size: clamp(26px, 4vw, 34px);
   }
 
   .urkunde-title{
-    font-size: clamp(32px, 5vw, 40px);
+    font-size: clamp(28px, 9vw, 56px);
   }
 
   .urkunde-event{
-    font-size: clamp(12px, 2vw, 15px);
+    font-size: clamp(10px, 2vw, 15px);
   }
 
   .urkunde-rule{
@@ -2260,15 +2364,15 @@ span.nav-icon{
   }
 
   .urkunde-wertung{
-    font-size: clamp(13px, 2vw, 16px);
+    font-size: clamp(14px, 3vw, 18px);
   }
 
   .urkunde-platz{
-    font-size: clamp(11px, 2vw, 14px);
+    font-size: clamp(12px, 3vw, 16px);
   }
 
   .urkunde-team{
-    font-size: clamp(22px, 4vw, 30px)
+    font-size: clamp(24px, 6vw, 40px)
   }
 
   .urkunde-signatures{
@@ -2276,7 +2380,11 @@ span.nav-icon{
   }
 
   .urkunde-sig{
-    min-width: 100px;
+    min-width: 30%;
+    @media screen and (min-width: 0) and (max-width: 350px) {
+      font-size: 8px;
+      min-width: 60px;
+    }
   }
 
   /* *Admin-Overlay */
@@ -2330,6 +2438,32 @@ span.nav-icon{
     display: block;
     height: 15.2px;
     width: 15.2px;
+  }
+
+  div.add-team-row{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, 33%);
+    grid-template-rows: auto;
+    grid-template-areas:
+    "item-1 item-1 item-2"
+    "item-3 item-3 item-3";
+  }
+
+  div.add-team-row >:nth-child(1) {
+    grid-area: item-1;
+  }
+
+  div.add-team-row >:nth-child(2) {
+    grid-area: item-2;
+  }
+
+  div.add-team-row >:nth-child(3) {
+    grid-area: item-3;
+  }
+
+  .input-field-name{
+    width: 90%;
+    min-width: unset;
   }
 
   /* Backup-Menu */
