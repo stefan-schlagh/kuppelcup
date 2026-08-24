@@ -192,7 +192,7 @@ body {
 .theme-toggle:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
-  background: #C99A3C20;
+  background: light-dark(#ede8d9, #302d27);
 }
 
 /* Navigation Tabs */
@@ -1077,7 +1077,7 @@ span.nav-icon{
   margin: 8px 0 16px;
 }
 
-label.pin-btn{
+.add-team-row .pin-btn{
   font-size: 13px;
   font-family: Arial;
   font-weight: 600;
@@ -2069,17 +2069,56 @@ label.pin-btn{
   }
 
   .header-right .theme-toggle{
-    position: absolute;
-    top: 80px;
-    right: 10px;
-  }
-
-  .header-right:has(.phase-badge) .theme-toggle{
     position: relative;
     top: 0;
     right: 0;
     margin-left: auto;
     margin-right: 0;
+  }
+
+  .header-right:not(:has(.phase-badge)) .theme-toggle{
+    position: fixed;
+    right: calc((100% - 40px) / 2);
+    bottom: 65px; 
+    top: unset;
+    z-index: 10000000;
+    border-radius: 999px;
+    box-shadow: inset 0 -5px 10px var(--color-accent);
+    border: none;
+    margin: 0;
+    color: var(--color-accent);
+    width: 40px;
+    height: 40px;
+    @media screen and (min-width: 560px) {
+      width: 50px;
+      height: 50px;
+      right: calc((100% - 50px) / 2);
+    }
+  }
+
+  .app-header:not(:has(.phase-badge)) nav.nav-bar{
+    mask-image: radial-gradient(
+      circle 24px at center -5px,
+      transparent 99%,
+      black 100%
+    );
+    -webkit-mask-image: radial-gradient(
+      circle 24px at center -5px,
+      transparent 99%,
+      black 100%
+    );
+    @media screen and (min-width: 560px) {
+      mask-image: radial-gradient(
+        circle 29px at center -6px,
+        transparent 99%,
+        black 100%
+      );
+      -webkit-mask-image: radial-gradient(
+        circle 29px at center -6px,
+        transparent 99%,
+        black 100%
+      );
+    }
   }
 
   nav.nav-bar{
@@ -2338,6 +2377,22 @@ label.pin-btn{
     min-width: unset;
     max-width: 100%;
   }
+
+  /* *Turnierbaum */
+  .bracket-row{
+    height: calc(100% + 20px);
+    overflow: clip;
+  }
+
+  .match-box {
+    animation: fadeInUp ease-in-out forwards;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+
+  .bracket-col-final{
+    margin-bottom: 50px;
+  }
   
   /* *Urkunden */
   .urkunden-toolbar{
@@ -2353,6 +2408,9 @@ label.pin-btn{
   
   .urkunde{
     width: 90%;
+    animation: fadeInUp ease-in-out forwards;
+    animation-timeline: view();
+    animation-range: entry 0% cover 25%;
   }
 
   .urkunde-inner{
@@ -2484,6 +2542,43 @@ label.pin-btn{
   .input-field-name{
     width: 90%;
     min-width: unset;
+  }
+
+  .start-nr-cell {
+    align-items: unset;
+    background: var(--color-primary-variation);
+    border: none;
+    color: white;
+  }
+
+  .start-nr-btn {
+    border-color: transparent;
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .start-nr-value {
+    color: white;
+    font-weight: 900;
+    background: var(--color-primary);
+    margin-top: 0;
+    padding: 5px;
+    border-radius: 3px;
+  }
+
+  .start-nr-jump-input {
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary-variation);
+  }
+
+  .start-nr-jump-input::placeholder {
+    color: var(--color-primary-variation);
+  }
+
+  .start-nr-ok {
+    background: var(--color-primary);
+    border-color: transparent;
+    color: white;
   }
 
   /* Backup-Menu */
