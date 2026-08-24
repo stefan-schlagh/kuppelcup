@@ -4,6 +4,7 @@ export interface UrkundeEntry {
   name: string;
   wertung: string;
   detail?: string;
+  comment?: string;
   extra?: string;
 }
 
@@ -69,12 +70,13 @@ export function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMeta): js
     doc.setFontSize(18);
     doc.text(e.wertung.toUpperCase(), cx, 120, { align: "center" });
 
-    // Detail (+ optional Gemeindewertung line)
+    // Detail lines: placement, optional comment, optional Gemeindewertung --
+    // stacked in order, only the lines that are present take up space.
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(13);
-    if (e.detail) doc.text(e.detail, cx, 132, { align: "center" });
-    if (e.extra) doc.text(e.extra, cx, e.detail ? 140 : 132, { align: "center" });
+    const detailLines = [e.detail, e.comment, e.extra].filter((l): l is string => !!l);
+    detailLines.forEach((line, i) => doc.text(line, cx, 132 + i * 8, { align: "center" }));
 
     // Team name
     color(DARK);

@@ -183,6 +183,14 @@ export default function KuppelCup() {
     setTeams(teams.map((t) => (t.id === id ? { ...t, name } : t)));
   };
 
+  // Optional note printed below the placement on the team's certificate --
+  // unlike name/roster, useful to add or adjust after Anmeldung (e.g. once
+  // results are in), so it's only blocked once the event is locked.
+  const updateTeamKommentar = (id: string, kommentar: string) => {
+    if (locked) return;
+    setTeams(teams.map((t) => (t.id === id ? { ...t, kommentar } : t)));
+  };
+
   // Unlike name/roster changes, the start number may need correcting even
   // after registration has closed (e.g. a running-order mistake). Colliding
   // with another team's number shifts everyone in between instead of
@@ -335,6 +343,7 @@ export default function KuppelCup() {
             addTeam={addTeam}
             removeTeam={removeTeam}
             renameTeam={renameTeam}
+            updateTeamKommentar={updateTeamKommentar}
             updateTeamStart={updateTeamStart}
             moveTeamUp={moveTeamUp}
             moveTeamDown={moveTeamDown}

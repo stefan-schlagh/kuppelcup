@@ -43,7 +43,8 @@ export default function Urkunden({ gesamt, bracket, competitionName, year }: Urk
     const { platz, gemeindePlatz } = placements.get(t.id) ?? {};
     const detail = platz ? `${platz}. Platz` : undefined;
     const extra = gemeindePlatz ? `Gemeindewertung: ${gemeindePlatz}. Platz` : undefined;
-    return { name: t.name, wertung: wertungFor(t), detail, extra };
+    const comment = t.kommentar?.trim() || undefined;
+    return { name: t.name, wertung: wertungFor(t), detail, extra, comment };
   });
 
   return (
@@ -77,6 +78,7 @@ export default function Urkunden({ gesamt, bracket, competitionName, year }: Urk
               <div className="urkunde-rule" />
               <p className="urkunde-wertung">{e.wertung}</p>
               {e.detail && <p className="urkunde-platz">{e.detail}</p>}
+              {e.comment && <p className="urkunde-platz">{e.comment}</p>}
               {e.extra && <p className="urkunde-platz">{e.extra}</p>}
               <p className="urkunde-team">{e.name}</p>
               <div className="urkunde-signatures">

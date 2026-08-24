@@ -28,6 +28,7 @@ interface AdminPanelProps {
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
   renameTeam: (id: string, name: string) => void;
+  updateTeamKommentar: (id: string, kommentar: string) => void;
   updateTeamStart: (id: string, start: number) => void;
   moveTeamUp: (id: string) => void;
   moveTeamDown: (id: string) => void;
@@ -65,6 +66,7 @@ export default function AdminPanel({
   addTeam,
   removeTeam,
   renameTeam,
+  updateTeamKommentar,
   updateTeamStart,
   moveTeamUp,
   moveTeamDown,
@@ -331,12 +333,13 @@ export default function AdminPanel({
                   <th>Team</th>
                   <th style={{ textAlign: "center" }}>Gastgeber<br />(außer Konkurrenz)</th>
                   <th style={{ textAlign: "center" }}>Gemeindewertung</th>
+                  <th>Kommentar<br />(Urkunde)</th>
                   {isAnmeldung && <th style={{ textAlign: "center" }}>Aktion</th>}
                 </tr>
               </thead>
               <tbody>
                 {teams.length === 0 && (
-                  <tr><td colSpan={isAnmeldung ? 5 : 4} className="hint-text">Noch keine Teams angemeldet.</td></tr>
+                  <tr><td colSpan={isAnmeldung ? 6 : 5} className="hint-text">Noch keine Teams angemeldet.</td></tr>
                 )}
                 {teams.map((t: Team, idx: number) => (
                   <tr key={t.id}>
@@ -406,6 +409,16 @@ export default function AdminPanel({
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <input type="checkbox" disabled={locked} checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
+                    </td>
+                    <td className="td-name">
+                      <input
+                        type="text"
+                        value={t.kommentar ?? ""}
+                        disabled={locked}
+                        placeholder="optional"
+                        onChange={(e) => updateTeamKommentar(t.id, e.target.value)}
+                        className="input-field-name"
+                      />
                     </td>
                     {isAnmeldung && (
                       <td style={{ textAlign: "center" }}>
