@@ -119,8 +119,9 @@ export default function KuppelCup() {
   const rankedWithResult = useMemo(() => ranked.filter((t) => t.punkte > 0), [ranked]);
 
   // Gemeindewertung follows the overall standings (K.O. placement for the
-  // top 8, base-round rank for the rest), not raw base-round order.
-  const gemeinde = gesamt.filter((t) => t.gemeinde && t.punkte > 0);
+  // top 8, base-round rank for the rest), not raw base-round order. Gastgeber
+  // teams (außer Konkurrenz) are excluded here too, even if flagged gemeinde.
+  const gemeinde = gesamt.filter((t) => t.gemeinde && !t.gastgeber && t.punkte > 0);
 
   // Split-Ansicht: two of the presentation views side by side on one big
   // screen (e.g. Bestenliste + Live-Monitor when there's only one beamer).

@@ -211,10 +211,11 @@ export interface UrkundePlacement {
 // Konkurrenz) don't take a place in the final ranking -- they're skipped
 // entirely so real competitors keep their rightful number. Teams in the
 // Gemeindewertung additionally get their own community placement, numbered
-// separately in the same overall order.
+// separately in the same overall order -- Gastgeber teams are excluded here
+// too, even if flagged gemeinde.
 export function urkundePlacements(gesamt: RankedTeam[]): Map<string, UrkundePlacement> {
   const platzById = new Map(gesamt.filter((t) => !t.gastgeber).map((t, i) => [t.id, i + 1]));
-  const gemeindePlatzById = new Map(gesamt.filter((t) => t.gemeinde).map((t, i) => [t.id, i + 1]));
+  const gemeindePlatzById = new Map(gesamt.filter((t) => t.gemeinde && !t.gastgeber).map((t, i) => [t.id, i + 1]));
   return new Map(
     gesamt.map((t) => [t.id, { platz: platzById.get(t.id), gemeindePlatz: gemeindePlatzById.get(t.id) }]),
   );
