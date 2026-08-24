@@ -6,6 +6,7 @@ export interface UrkundeEntry {
   detail?: string;
   comment?: string;
   extra?: string;
+  fastest?: string;
 }
 
 interface UrkundeMeta {
@@ -75,7 +76,7 @@ export function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMeta): js
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(13);
-    const detailLines = [e.detail, e.comment, e.extra].filter((l): l is string => !!l);
+    const detailLines = [e.detail, e.comment, e.extra, e.fastest].filter((l): l is string => !!l);
     detailLines.forEach((line, i) => doc.text(line, cx, 132 + i * 8, { align: "center" }));
 
     // Team name

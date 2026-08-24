@@ -318,6 +318,7 @@ export default function KuppelCup() {
           <Urkunden
             gesamt={gesamt}
             bracket={bracket}
+            dailyBestTimes={dailyBestTimes}
             competitionName={competitionName}
             year={2026}
           />

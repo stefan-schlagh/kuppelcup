@@ -15,6 +15,7 @@ function loserTeam(m: Match): Team | null {
 interface UrkundenProps {
   gesamt: RankedTeam[];
   bracket: BracketData;
+  dailyBestTimes: RankedTeam[];
   competitionName: string;
   year: number | string;
 }
@@ -23,7 +24,7 @@ interface UrkundenProps {
 // achievement (K.O. placement), otherwise a plain Teilnehmerurkunde. The
 // numeric rank shown is the overall standing (Gesamtwertung), not the
 // base-round rank alone.
-export default function Urkunden({ gesamt, bracket, competitionName, year }: UrkundenProps) {
+export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionName, year }: UrkundenProps) {
   const champion = winnerTeam(bracket.final);
   const finalist = loserTeam(bracket.final);
   const semiIds = new Set(
@@ -38,13 +39,19 @@ export default function Urkunden({ gesamt, bracket, competitionName, year }: Urk
     return "Teilnehmerurkunde";
   };
 
+  // The Tagesbestzeit board (fastest total across base round + K.O. runs)
+  // is already ranked ascending -- its first entry, if any team has a
+  // result at all, is the category winner.
+  const fastestId = dailyBestTimes[0]?.punkte && dailyBestTimes[0].punkte > 0 ? dailyBestTimes[0].id : undefined;
+
   const placements = urkundePlacements(gesamt);
   const entries: UrkundeEntry[] = gesamt.map((t) => {
     const { platz, gemeindePlatz } = placements.get(t.id) ?? {};
     const detail = platz ? `${platz}. Platz` : undefined;
     const extra = gemeindePlatz ? `Gemeindewertung: ${gemeindePlatz}. Platz` : undefined;
     const comment = t.kommentar?.trim() || undefined;
-    return { name: t.name, wertung: wertungFor(t), detail, extra, comment };
+    const fastest = t.id === fastestId ? "Schnellste Zeit" : undefined;
+    return { name: t.name, wertung: wertungFor(t), detail, extra, comment, fastest };
   });
 
   return (
@@ -80,6 +87,7 @@ export default function Urkunden({ gesamt, bracket, competitionName, year }: Urk
               {e.detail && <p className="urkunde-platz">{e.detail}</p>}
               {e.comment && <p className="urkunde-platz">{e.comment}</p>}
               {e.extra && <p className="urkunde-platz">{e.extra}</p>}
+              {e.fastest && <p className="urkunde-platz">{e.fastest}</p>}
               <p className="urkunde-team">{e.name}</p>
               <div className="urkunde-signatures">
                 <span className="urkunde-sig">Datum</span>
