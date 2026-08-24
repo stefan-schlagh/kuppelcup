@@ -130,8 +130,10 @@ body {
 }
 
 .brand-year {
-  color: var(--color-accent);
+  color: transparent;
   font-weight: 500;
+  background: linear-gradient(to top, #FFA51F, #FF751F);
+  background-clip: text;
 }
 
 .header-right {
@@ -362,13 +364,10 @@ span.nav-icon{
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  position: absolute;
-  top: 35px;
-  right: 35px;
+  position: relative;
 }
 
 .bestenliste .fs-toggle{
-  position: relative;
   top: 50px;
 }
 
@@ -518,6 +517,27 @@ span.nav-icon{
        Live-Monitor's 3-column layout) could then trigger an unwanted
        horizontal scrollbar even where nothing actually needs it. */
     overflow-x: hidden;
+  }
+
+  .split-pane-content:has(.monitor-container) {
+    overflow: visible;
+  }
+
+  .split-pane-content .monitor-container{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .split-pane-content .monitor-container .monitor-parallel-group{
+    flex-direction: row;
+    justify-content: space-evenly;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .fs-panel.is-fullscreen .monitor-container .monitor-team-name.giant-text {
+    font-size: 40px;
   }
 
   .fs-panel.is-fullscreen .split-view.split-row {
@@ -1634,12 +1654,13 @@ span.nav-icon{
 .monitor-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 15px;
   padding: 24px;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
 
 .card-dim {
@@ -1648,19 +1669,57 @@ span.nav-icon{
 }
 
 .card-active {
-  border-color: var(--color-accent);
+  border-color: transparent;
   box-shadow: 0 0 25px rgba(201, 154, 60, 0.15);
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-rotation{
+  to {
+    --angle: 360deg;
+  }
+}
+
+.card-active::after{
+  content: "";
+  display: block;
+  height: calc(100% + 5px);
+  width: calc(100% + 6px);
+  position: absolute;
+  background: conic-gradient(from var(--angle),#f9b959, #ff5500, #f9b959);
+  animation: border-rotation 5s linear infinite;
+  z-index: -1;
+  border-radius: 16px;
+}
+
+.card-active::before{
+  content: "";
+  display: block;
+  height: calc(100% + 6px);
+  width: calc(100% + 5px);
+  position: absolute;
+  background: conic-gradient(from var(--angle),#f9b959, #ff5500, #f9b959);
+  animation: border-rotation 5s linear infinite;
+  z-index: -1;
+  border-radius: 16px;
+  filter: blur(20px);
+  opacity: 0.2;
 }
 
 .monitor-badge {
   position: absolute;
   top: 14px;
-  right: 16px;
+  right: 14px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: 7.5px;
   letter-spacing: 0.5px;
 }
 
@@ -1675,7 +1734,7 @@ span.nav-icon{
 }
 
 .monitor-team-name.giant-text {
-  font-size: 36px;
+  font-size: clamp(24px, 7vw, 36px);
   color: var(--color-accent);
 }
 
@@ -1690,19 +1749,20 @@ span.nav-icon{
 
 .monitor-meta {
   margin: 0;
-  font-size: 13px;
+  font-size: clamp(10px, 3vw, 13px);
   color: var(--text-muted);
 }
 
 .monitor-meta.giant-meta {
-  font-size: 16px;
+  font-size: clamp(12px, 4vw, 16px);
+  font-weight: 500;
   color: var(--text-main);
 }
 
 .monitor-time-box {
   margin-top: 16px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 24px;
+  font-size: clamp(18px, 5vw, 24px);
   font-weight: 600;
 }
 
@@ -1710,12 +1770,13 @@ span.nav-icon{
   margin-top: 30px;
   color: var(--text-muted);
   font-style: italic;
-  font-size: 14px;
+  font-size: clamp(12px, 4vw, 16px);
+  font-weight: 100; 
 }
 
 .monitor-next-box {
   margin-top: 16px;
-  font-size: 14px;
+  font-size: clamp(12px, 4vw, 14px);
   color: var(--color-host);
   font-weight: 500;
 }
@@ -2392,6 +2453,14 @@ span.nav-icon{
 
   .bracket-col-final{
     margin-bottom: 50px;
+  }
+
+  /* *Monitor */
+  .monitor-badge {
+    font-size: 9px;
+    padding: 2px 4px;
+    top: 7px;
+    right: 7px;
   }
   
   /* *Urkunden */
