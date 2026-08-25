@@ -1,6 +1,7 @@
 import type { BracketData, Match, Team } from "../types";
 import { generateUrkundenPdf, type UrkundeEntry } from "../utils/urkunde-pdf";
 import { urkundePlacements, type RankedTeam } from "../utils/tournament";
+import React, { useEffect, useState } from 'react';
 
 function winnerTeam(m: Match): Team | null {
   if (!m.winnerId) return null;
@@ -11,6 +12,29 @@ function loserTeam(m: Match): Team | null {
   if (!m.winnerId) return null;
   return m.winnerId === m.teamA?.id ? m.teamB : m.teamA;
 }
+
+interface DynamicSvgProps {
+  src: string;
+  className?: string;
+}
+
+export const DynamicSvg: React.FC<DynamicSvgProps> = ({ src, className }) => {
+  const [svgContent, setSvgContent] = useState<string>('');
+
+  useEffect(() => {
+    fetch(src)
+      .then((res: Response) => res.text())
+      .then((data: string) => setSvgContent(data))
+      .catch((err: unknown) => console.error('Fehler beim Laden des SVGs:', err));
+  }, [src]);
+
+  return (
+    <div 
+      className={className}
+      dangerouslySetInnerHTML={{ __html: svgContent }} 
+    />
+  );
+};
 
 interface UrkundenProps {
   gesamt: RankedTeam[];
@@ -80,6 +104,12 @@ export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionN
         {entries.map((e, i) => (
           <div className="urkunde" key={i}>
             <div className="urkunde-inner">
+              <div className="geiss-container">
+                <DynamicSvg src="/Geiss.svg" className="geiss" />
+              </div>
+              <div className="feuerwehr-title-container">
+                <h2 className="feuerwehr-title"><span>Freiwillige Feuerwehr</span> Ringendorf</h2>
+              </div>
               <div className="urkunde-hose">⊃⊂</div>
               <h1 className="urkunde-title">Urkunde</h1>
               <p className="urkunde-event">{competitionName} {year}</p>

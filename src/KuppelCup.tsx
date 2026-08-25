@@ -5,12 +5,12 @@ import { AuthNotice } from "./backend";
 import { seedTeams, withRandomResults, randomKoResults, makeTeam, reassignStart, PHASE_LABELS } from "./utils/helpers";
 import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest, gesamtwertung } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
-import Bestenliste, { Gemeindewertung, Tagesbestzeit, Gesamtwertung } from "./components/Bestenliste";
+import Bestenliste, { DisplayTagesbestzeit, Gemeindewertung, SummaryBestenliste, Tagesbestzeit, Gesamtwertung } from "./components/Bestenliste";
 import Turnierbaum from "./components/Turnierbaum";
 import LiveMonitor from "./components/LiveMonitor";
 import AdminPanel from "./components/AdminPanel";
+import Urkunden, { DynamicSvg } from "./components/Urkunden";
 import Impressum from "./components/Impressum";
-import Urkunden from "./components/Urkunden";
 import FullscreenPanel from "./components/FullscreenPanel";
 import SplitView from "./components/SplitView";
 import type { SplitLayout } from "./components/SplitView";
@@ -223,13 +223,30 @@ export default function KuppelCup() {
     patchEvent({ teams: withResults, ko: randomKoResults(withResults) });
   };
 
+  const hasKoStarted = useMemo(() => {
+    return Object.values(ko).some((match) => match?.runA?.zeit != null || match?.runB?.zeit != null);
+  }, [ko]);
+
+  const isKoFinished = useMemo(() => {
+    const finalMatch = ko["final"] || ko["f1"];
+    return finalMatch?.runA?.zeit != null && finalMatch?.runB?.zeit != null;
+  }, [ko]);
+
   if (!loaded) return <div className="loading-screen">Lade Daten…</div>;
 
   return (
     <div className="app-container">
       <header className="app-header">
         <div className="brand-row">
-          <div className="hose-icon">⊃⊂</div>
+          <div className="hose-icon">
+            <DynamicSvg className="icon" src="/favicon.svg" />
+            <svg className="svg-gradient" aria-hidden="true" focusable="false">
+              <radialGradient id="svg-gradient" x2="1" y2="1">
+                <stop offset="0%" stopColor="var(--inner-gradient-color)" />
+                <stop offset="100%" stopColor="var(--outer-gradient-color)" />
+              </radialGradient>
+            </svg>
+          </div>
           <h1 className="brand-title">{competitionName}<span className="brand-year">2026</span></h1>
           <div className="header-right">
             {authed && (
@@ -279,12 +296,19 @@ export default function KuppelCup() {
           </div>
         )}
         {tab === "liste" && (
-          <FullscreenPanel>
-            <Bestenliste ranked={rankedWithResult} top8Ids={new Set(top8.map(t => t.id))} />
-            <Gemeindewertung ranked={gemeinde} />
-            <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
-            <Gesamtwertung ranked={gesamt} />
-          </FullscreenPanel>
+          <div className="bestenliste">
+            <div className="dashboard"> 
+              {!hasKoStarted && (<SummaryBestenliste ranked={rankedWithResult.slice(0,3)} />)}
+              {hasKoStarted && isKoFinished && (<SummaryBestenliste ranked={gesamt.slice(0,3)} />)}
+              <DisplayTagesbestzeit ranked={dailyBestTimes.slice(0,1)} />
+            </div>
+            <FullscreenPanel>
+              <Bestenliste ranked={rankedWithResult} top8Ids={new Set(top8.map(t => t.id))} />
+              <Gemeindewertung ranked={gemeinde} />
+              <Tagesbestzeit ranked={dailyBestTimes.slice(0,3)} />
+              <Gesamtwertung ranked={gesamt} />
+            </FullscreenPanel>
+          </div>
         )}
         {tab === "monitor" && (
           <FullscreenPanel>
