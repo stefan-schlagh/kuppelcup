@@ -234,11 +234,12 @@ test("teams with no run yet are hidden from Bestenliste and Gemeindewertung unti
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "Beispiel-Teams laden" }).click();
 
-  // Mark the first team (already Gastgeber) for Gemeindewertung too.
+  // Mark the second team (the first is Gastgeber, excluded from
+  // Gemeindewertung regardless of the flag) for Gemeindewertung.
   const teamsTable = page.locator(".data-table").nth(1);
-  const firstRow = teamsTable.locator("tbody tr").first();
-  const firstName = await firstRow.locator(".input-field-name").inputValue();
-  await firstRow.locator('input[type="checkbox"]').nth(1).check();
+  const secondRow = teamsTable.locator("tbody tr").nth(1);
+  const secondName = await secondRow.locator(".input-field-name").inputValue();
+  await secondRow.locator('input[type="checkbox"]').nth(1).check();
 
   await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
   const bestenlisteSection = page.locator("h2", { hasText: "Bestenliste — Grunddurchgang" }).locator("xpath=..");
@@ -249,13 +250,13 @@ test("teams with no run yet are hidden from Bestenliste and Gemeindewertung unti
 
   await page.getByRole("button", { name: /^Admin$/ }).click();
   await page.getByRole("button", { name: "Grunddurchgang erfassen" }).click();
-  await page.locator(".input-field").first().fill("21.00"); // first team's DG1 zeit
+  await page.locator(".input-field").nth(2).fill("21.00"); // second team's DG1 zeit
 
   await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
   await expect(bestenlisteSection.locator(".data-table tbody tr")).toHaveCount(1);
-  await expect(bestenlisteSection.locator(".td-name")).toContainText(firstName);
+  await expect(bestenlisteSection.locator(".td-name")).toContainText(secondName);
   await expect(gemeindeSection.locator(".data-table tbody tr")).toHaveCount(1);
-  await expect(gemeindeSection.locator(".td-name")).toHaveText(firstName);
+  await expect(gemeindeSection.locator(".td-name")).toHaveText(secondName);
 });
 
 test("Gemeindewertung follows the overall (K.O.-aware) standings, not raw base rank", async ({ page }) => {

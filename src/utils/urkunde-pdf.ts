@@ -4,7 +4,9 @@ export interface UrkundeEntry {
   name: string;
   wertung: string;
   detail?: string;
+  comment?: string;
   extra?: string;
+  fastest?: string;
 }
 
 interface UrkundeMeta {
@@ -275,18 +277,25 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     doc.setFontSize(18);
     drawTextWithLetterSpacing(doc, e.wertung.toUpperCase(), cx, 144, 0.8, { align: "center" });
 
-    // 9. Detail-Text ("Grunddurchgang: Rang 1...")
+    // 9. Detail-Text: placement, optional comment, optional Gemeindewertung,
+    // optional Tagesbestzeit note -- stacked in order, only the lines that
+    // are present take up space. Free-text ones (the comment) can be long,
+    // so each is wrapped to the certificate width rather than run off the
+    // edge the way a fixed-position doc.text() call would.
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(16);
+    const detailLines = [e.detail, e.comment, e.extra, e.fastest].filter((l): l is string => !!l);
+    const maxDetailWidth = W - 50;
     let nextY = 152;
-    if (e.detail) {
-      doc.text(e.detail, cx, nextY, { align: "center" });
-      nextY += 8;
-    }
-    if (e.extra) {
-      doc.text(e.extra, cx, nextY, { align: "center" });
-    }
+    detailLines.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line, maxDetailWidth) as string[];
+      wrapped.forEach((wrappedLine) => {
+        doc.text(wrappedLine, cx, nextY, { align: "center" });
+        nextY += 6;
+      });
+      nextY += 2;
+    });
     // 10. Team Name ("FF Greifenstein")
     color(DARK);
     doc.setFont(hasCustomFont ? "Oswald" : "helvetica", "bold");

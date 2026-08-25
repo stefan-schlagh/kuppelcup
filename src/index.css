@@ -1222,14 +1222,26 @@ span.nav-icon{
   font-family: 'IBM Plex Mono', monospace;
 }
 
-.input-field-name {
+.input-field-name,
+.input-field-comment {
   width: 100%;
-  min-width: 240px;
   padding: 6px 8px;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
   border-radius: 5px;
   color: var(--text-main);
+}
+
+.input-field-name {
+  min-width: 240px;
+}
+
+/* Kept narrower than the name field -- the Teams table already has two
+   other wide-ish columns (Gastgeber/Gemeindewertung headers), and the
+   comment text isn't truncated anywhere it matters (it wraps on the
+   certificate), so it doesn't need as much space here. */
+.input-field-comment {
+  min-width: 120px;
 }
 
 /* Start-number cell: current value + one-step move arrows, plus a
@@ -1657,6 +1669,11 @@ span.nav-icon{
   border-radius: 15px;
   padding: 24px;
   position: relative;
+  /* .card-active's ::before/::after glow border is sized a few px past this
+     box (see below) -- clip it here so that bleed can't register as real
+     horizontal overflow on an ancestor (e.g. a Split-Ansicht pane) and pull
+     in a scrollbar. */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
