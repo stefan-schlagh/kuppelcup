@@ -1669,11 +1669,6 @@ span.nav-icon{
   border-radius: 15px;
   padding: 24px;
   position: relative;
-  /* .card-active's ::before/::after glow border is sized a few px past this
-     box (see below) -- clip it here so that bleed can't register as real
-     horizontal overflow on an ancestor (e.g. a Split-Ansicht pane) and pull
-     in a scrollbar. */
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
