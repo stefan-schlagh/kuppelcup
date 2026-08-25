@@ -71,13 +71,24 @@ export function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMeta): js
     doc.setFontSize(18);
     doc.text(e.wertung.toUpperCase(), cx, 120, { align: "center" });
 
-    // Detail lines: placement, optional comment, optional Gemeindewertung --
-    // stacked in order, only the lines that are present take up space.
+    // Detail lines: placement, optional comment, optional Gemeindewertung,
+    // optional Tagesbestzeit note -- stacked in order, only the lines that
+    // are present take up space. Free-text ones (the comment) can be long,
+    // so each is wrapped to the certificate width rather than run off the
+    // edge the way a fixed-position doc.text() call would.
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(13);
     const detailLines = [e.detail, e.comment, e.extra, e.fastest].filter((l): l is string => !!l);
-    detailLines.forEach((line, i) => doc.text(line, cx, 132 + i * 8, { align: "center" }));
+    let detailY = 132;
+    detailLines.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line, W - 50) as string[];
+      wrapped.forEach((wrappedLine) => {
+        doc.text(wrappedLine, cx, detailY, { align: "center" });
+        detailY += 6;
+      });
+      detailY += 2;
+    });
 
     // Team name
     color(DARK);
