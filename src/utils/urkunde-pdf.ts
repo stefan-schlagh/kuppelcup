@@ -4,7 +4,9 @@ export interface UrkundeEntry {
   name: string;
   wertung: string;
   detail?: string;
+  comment?: string;
   extra?: string;
+  fastest?: string;
 }
 
 interface UrkundeMeta {
@@ -69,12 +71,24 @@ export function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMeta): js
     doc.setFontSize(18);
     doc.text(e.wertung.toUpperCase(), cx, 120, { align: "center" });
 
-    // Detail (+ optional Gemeindewertung line)
+    // Detail lines: placement, optional comment, optional Gemeindewertung,
+    // optional Tagesbestzeit note -- stacked in order, only the lines that
+    // are present take up space. Free-text ones (the comment) can be long,
+    // so each is wrapped to the certificate width rather than run off the
+    // edge the way a fixed-position doc.text() call would.
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(13);
-    if (e.detail) doc.text(e.detail, cx, 132, { align: "center" });
-    if (e.extra) doc.text(e.extra, cx, e.detail ? 140 : 132, { align: "center" });
+    const detailLines = [e.detail, e.comment, e.extra, e.fastest].filter((l): l is string => !!l);
+    let detailY = 132;
+    detailLines.forEach((line) => {
+      const wrapped = doc.splitTextToSize(line, W - 50) as string[];
+      wrapped.forEach((wrappedLine) => {
+        doc.text(wrappedLine, cx, detailY, { align: "center" });
+        detailY += 6;
+      });
+      detailY += 2;
+    });
 
     // Team name
     color(DARK);

@@ -9,6 +9,7 @@ const COLUMNS = [
   "name",
   "gastgeber",
   "gemeinde",
+  "kommentar",
   "dg1_zeit",
   "dg1_strafe",
   "dg2_zeit",
@@ -30,6 +31,7 @@ export function teamsToCsv(teams: Team[]): string {
       escapeCell(t.name),
       t.gastgeber ? "1" : "0",
       t.gemeinde ? "1" : "0",
+      escapeCell(t.kommentar ?? ""),
       numCell(t.dg1.zeit),
       numCell(t.dg1.strafe),
       numCell(t.dg2.zeit),
@@ -96,6 +98,7 @@ export function csvToTeams(csv: string): Team[] {
       name: at("name").trim(),
       gastgeber: at("gastgeber").trim() === "1",
       gemeinde: at("gemeinde").trim() === "1",
+      kommentar: at("kommentar").trim() || undefined,
       dg1: { zeit: parseNum(at("dg1_zeit")), strafe: parseNum(at("dg1_strafe")) },
       dg2: { zeit: parseNum(at("dg2_zeit")), strafe: parseNum(at("dg2_strafe")) },
     };

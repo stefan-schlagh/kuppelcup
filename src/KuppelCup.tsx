@@ -119,8 +119,9 @@ export default function KuppelCup() {
   const rankedWithResult = useMemo(() => ranked.filter((t) => t.punkte > 0), [ranked]);
 
   // Gemeindewertung follows the overall standings (K.O. placement for the
-  // top 8, base-round rank for the rest), not raw base-round order.
-  const gemeinde = gesamt.filter((t) => t.gemeinde && t.punkte > 0);
+  // top 8, base-round rank for the rest), not raw base-round order. Gastgeber
+  // teams (außer Konkurrenz) are excluded here too, even if flagged gemeinde.
+  const gemeinde = gesamt.filter((t) => t.gemeinde && !t.gastgeber && t.punkte > 0);
 
   // Split-Ansicht: two of the presentation views side by side on one big
   // screen (e.g. Bestenliste + Live-Monitor when there's only one beamer).
@@ -180,6 +181,14 @@ export default function KuppelCup() {
     if (phase !== "anmeldung") return;
     if (!name.trim()) return;
     setTeams(teams.map((t) => (t.id === id ? { ...t, name } : t)));
+  };
+
+  // Optional note printed below the placement on the team's certificate --
+  // unlike name/roster, useful to add or adjust after Anmeldung (e.g. once
+  // results are in), so it's only blocked once the event is locked.
+  const updateTeamKommentar = (id: string, kommentar: string) => {
+    if (locked) return;
+    setTeams(teams.map((t) => (t.id === id ? { ...t, kommentar } : t)));
   };
 
   // Unlike name/roster changes, the start number may need correcting even
@@ -309,6 +318,7 @@ export default function KuppelCup() {
           <Urkunden
             gesamt={gesamt}
             bracket={bracket}
+            dailyBestTimes={dailyBestTimes}
             competitionName={competitionName}
             year={2026}
           />
@@ -334,6 +344,7 @@ export default function KuppelCup() {
             addTeam={addTeam}
             removeTeam={removeTeam}
             renameTeam={renameTeam}
+            updateTeamKommentar={updateTeamKommentar}
             updateTeamStart={updateTeamStart}
             moveTeamUp={moveTeamUp}
             moveTeamDown={moveTeamDown}

@@ -435,15 +435,15 @@ describe("urkundePlacements", () => {
     expect(placements.get("c")).toEqual({ platz: 3, gemeindePlatz: 2 });
   });
 
-  it("still gives a Gemeindewertung placement to a Gastgeber team excluded from the main ranking", () => {
+  it("excludes a Gastgeber team from the Gemeindewertung placement too", () => {
     const ranked = rankTeams([
       team("host", 1, [5, 0], [5, 0], { gastgeber: true, gemeinde: true }),
       team("a", 2, [10, 0], [10, 0], { gemeinde: true }),
       team("b", 3, [20, 0], [20, 0]),
     ]);
     const placements = urkundePlacements(ranked);
-    expect(placements.get("host")).toEqual({ platz: undefined, gemeindePlatz: 1 });
-    expect(placements.get("a")).toEqual({ platz: 1, gemeindePlatz: 2 });
+    expect(placements.get("host")).toEqual({ platz: undefined, gemeindePlatz: undefined });
+    expect(placements.get("a")).toEqual({ platz: 1, gemeindePlatz: 1 });
     expect(placements.get("b")).toEqual({ platz: 2, gemeindePlatz: undefined });
   });
 });

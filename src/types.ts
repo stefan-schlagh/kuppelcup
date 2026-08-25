@@ -11,6 +11,8 @@ export interface Team {
   name: string;
   gastgeber?: boolean;
   gemeinde?: boolean;
+  // Free-text note, printed below the placement on the team's certificate.
+  kommentar?: string;
   dg1: RunData;
   dg2: RunData;
   punkte?: number;
