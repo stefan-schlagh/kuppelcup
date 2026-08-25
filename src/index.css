@@ -527,6 +527,12 @@ span.nav-icon{
     display: flex;
     flex-direction: column;
     gap: 20px;
+    /* Room for .card-active's glow border (its ::before/::after are sized a
+       few px past the active card's own box -- see .card-active below) so
+       it stays visible without that bleed registering as real overflow on
+       this pane and pulling in a horizontal scrollbar. */
+    box-sizing: border-box;
+    padding: 0 6px;
   }
 
   .split-pane-content .monitor-container .monitor-parallel-group{
