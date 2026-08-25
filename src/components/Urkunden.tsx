@@ -41,8 +41,9 @@ export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionN
 
   // The Tagesbestzeit board (fastest total across base round + K.O. runs)
   // is already ranked ascending -- its first entry, if any team has a
-  // result at all, is the category winner.
-  const fastestId = dailyBestTimes[0]?.punkte && dailyBestTimes[0].punkte > 0 ? dailyBestTimes[0].id : undefined;
+  // result at all, is the category winner. Its punkte field holds that
+  // total (zeit + strafe, in seconds).
+  const fastestTeam = dailyBestTimes[0]?.punkte && dailyBestTimes[0].punkte > 0 ? dailyBestTimes[0] : undefined;
 
   const placements = urkundePlacements(gesamt);
   const entries: UrkundeEntry[] = gesamt.map((t) => {
@@ -50,7 +51,7 @@ export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionN
     const detail = platz ? `${platz}. Platz` : undefined;
     const extra = gemeindePlatz ? `Gemeindewertung: ${gemeindePlatz}. Platz` : undefined;
     const comment = t.kommentar?.trim() || undefined;
-    const fastest = t.id === fastestId ? "Schnellste Zeit" : undefined;
+    const fastest = t.id === fastestTeam?.id ? `Schnellste Zeit: ${fastestTeam.punkte!.toFixed(2)}s` : undefined;
     return { name: t.name, wertung: wertungFor(t), detail, extra, comment, fastest };
   });
 
