@@ -417,7 +417,7 @@ export default function AdminPanel({
                         disabled={locked}
                         placeholder="optional"
                         onChange={(e) => updateTeamKommentar(t.id, e.target.value)}
-                        className="input-field-name"
+                        className="input-field-comment"
                       />
                     </td>
                     {isAnmeldung && (

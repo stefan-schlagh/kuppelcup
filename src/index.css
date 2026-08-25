@@ -859,7 +859,8 @@ span.nav-icon{
   font-family: 'IBM Plex Mono', monospace;
 }
 
-.input-field-name {
+.input-field-name,
+.input-field-comment {
   width: 100%;
   min-width: 240px;
   padding: 6px 8px;
