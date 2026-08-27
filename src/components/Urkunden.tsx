@@ -110,7 +110,6 @@ export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionN
               <div className="feuerwehr-title-container">
                 <h2 className="feuerwehr-title"><span>Freiwillige Feuerwehr</span> Ringendorf</h2>
               </div>
-              <div className="urkunde-hose">⊃⊂</div>
               <h1 className="urkunde-title">Urkunde</h1>
               <p className="urkunde-event">{competitionName} {year}</p>
               <div className="urkunde-rule" />
@@ -122,7 +121,7 @@ export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionN
               <p className="urkunde-team">{e.name}</p>
               <div className="urkunde-signatures">
                 <span className="urkunde-sig">Datum</span>
-                <span className="urkunde-sig">Turnierleitung</span>
+                <span className="urkunde-sig">Bewerbsleitung</span>
               </div>
             </div>
           </div>
