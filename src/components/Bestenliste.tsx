@@ -119,13 +119,13 @@ export function Tagesbestzeit({ ranked }: { ranked: RankedTeam[] }) {
 }
 
 
-export function SummaryBestenliste({ ranked }: { ranked: RankedTeam[] }) {
+export function SummaryBestenliste({ title, ranked }: { title: string, ranked: RankedTeam[] }) {
   if (!ranked || ranked.length === 0) {
     return;
   } else {
     return(
       <div>
-        <h2 className="panel-title">Bestenliste — Leaderboard</h2>
+        <h2 className="panel-title">{title} — Leaderboard</h2>
         <div className="summary-bestenliste">
         {ranked.map((t, i) => {
           if (t.punkte ===  0) {
@@ -136,9 +136,11 @@ export function SummaryBestenliste({ ranked }: { ranked: RankedTeam[] }) {
                 <div className="award-container">{i < 1 ? <Trophy /> : <Award />}</div>
                 <div className="bar">
                   <span>{i+1}</span>
+                  {title === "Bestenliste" ? (
                   <div className="points" title="Niedrigerer Wert aus (Zeit + Strafe) von DG1 und DG2">
                     <span>{t.punkte}</span>
                   </div>
+                  ):(null)}
                 </div>
                 <span className="team-name">
                   {t.name}
