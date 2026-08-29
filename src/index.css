@@ -492,7 +492,12 @@ span.nav-icon{
   min-width: 0;
 }
 
-@media (min-width: 1000px) {
+.split-pane-content:has(.monitor-container) {
+  container-name: monitor;
+  container-type: inline-size;
+}
+
+@media (min-width: 768px) {
   /* Side by side, opt-in via the layout toggle (.split-row). Each pane
      scrolls on its own here, so a long list (e.g. Bestenliste) doesn't drag
      a short one (e.g. Live-Monitor, which then needs no scrolling at all)
@@ -519,18 +524,24 @@ span.nav-icon{
     overflow-x: hidden;
   }
 
-  .split-pane-content:has(.monitor-container) {
-    overflow: visible;
+  .fs-panel.is-fullscreen .monitor-container .monitor-team-name.giant-text {
+    font-size: 40px;
   }
 
+  .fs-panel.is-fullscreen .split-view.split-row {
+    height: calc(100vh - 90px);
+  }
+}
+
+@container monitor (width < 1000px) {
   .split-pane-content .monitor-container{
     display: flex;
     flex-direction: column;
     gap: 20px;
     /* Room for .card-active's glow border (its ::before/::after are sized a
-       few px past the active card's own box -- see .card-active below) so
-       it stays visible without that bleed registering as real overflow on
-       this pane and pulling in a horizontal scrollbar. */
+      few px past the active card's own box -- see .card-active below) so
+      it stays visible without that bleed registering as real overflow on
+      this pane and pulling in a horizontal scrollbar. */
     box-sizing: border-box;
     padding: 0 6px;
   }
@@ -542,12 +553,9 @@ span.nav-icon{
     gap: 0.75rem;
   }
 
-  .fs-panel.is-fullscreen .monitor-container .monitor-team-name.giant-text {
-    font-size: 40px;
-  }
-
-  .fs-panel.is-fullscreen .split-view.split-row {
-    height: calc(100vh - 90px);
+  .split-pane-content .monitor-container .card-active::before {
+    opacity: 1;
+    filter: blur(2px);
   }
 }
 
@@ -973,7 +981,20 @@ span.nav-icon{
 
 .bracket-col-final .match-box {
   border-color: var(--color-accent);
-  box-shadow: 0 0 18px rgba(201, 154, 60, 0.15);
+  border-width: 2px;
+  box-shadow: 0 0 18px 6px rgba(201, 154, 60, 0.15);
+}
+
+.bracket-col-final .match-box:not(:has(input)) .match-team-row.match-winner:first-child {
+  border-right: none;
+  border-left: none;
+  border-top: none;
+}
+
+.bracket-col-final .match-box:not(:has(input)) .match-team-row.match-winner:last-child {
+  border-right: none;
+  border-left: none;
+  border-bottom: none;
 }
 
 /* Lauf um Platz 3 rides along in the final's column but isn't the final
@@ -1025,7 +1046,7 @@ span.nav-icon{
 
 .match-box {
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 15px;
   overflow: hidden;
   background: var(--bg-surface);
 }
@@ -1057,6 +1078,26 @@ span.nav-icon{
 .match-winner {
   color: var(--color-accent);
   font-weight: 700;
+}
+
+.match-box:not(:has(input)):has(.match-winner) .match-team-row {
+  opacity: 0.5;
+  background: light-dark(#DDDDDD90, #11111190);
+}
+
+.match-box:not(:has(input)) .match-team-row.match-winner {
+  color: var(--color-accent);
+  background: light-dark(#ede8d9, #302d27);
+  opacity: 1;
+  border: 1px solid var(--color-accent);
+}
+
+.match-box:not(:has(input)) .match-team-row.match-winner:first-child {
+  border-radius: 14px 14px 0 0;
+}
+
+.match-box:not(:has(input)) .match-team-row.match-winner:last-child {
+  border-radius: 0 0 14px 14px;
 }
 
 .match-tied-badge {
@@ -1250,7 +1291,7 @@ span.nav-icon{
 
 .input-field-name,
 .input-field-comment {
-  width: 100%;
+  width: 90%;
   padding: 6px 8px;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
@@ -2480,13 +2521,33 @@ span.nav-icon{
   /* *Turnierbaum */
   .bracket-row{
     height: calc(100% + 20px);
-    overflow: clip;
+    overflow-y: clip;
+    overflow-x: visible;
+  }
+
+  .bracket-col-label {
+    font-size: clamp(10px, 3vw, 14px);
+    margin-top: 10px;
+    letter-spacing: 1px;
   }
 
   .match-box {
     animation: fadeInUp ease-in-out forwards;
     animation-timeline: view();
     animation-range: entry 0% cover 30%;
+  }
+
+  .match-team-row {
+    padding: 10px 20px;
+  }
+  
+  .team-name-span{
+    font-size: clamp(12px, 4vw, 16px);
+    font-weight: 500;
+  }
+
+  .bracket-time-display{
+    font-size: clamp(12px, 4vw, 16px);
   }
 
   .bracket-col-final{
@@ -2646,9 +2707,10 @@ span.nav-icon{
     grid-area: item-3;
   }
 
-  .input-field-name{
+  .input-field-name, .input-field-comment {
     width: 90%;
     min-width: unset;
+    margin-top: 5px;
   }
 
   .start-nr-cell {

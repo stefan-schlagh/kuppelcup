@@ -298,8 +298,8 @@ export default function KuppelCup() {
         {tab === "liste" && (
           <div className="bestenliste">
             <div className="dashboard"> 
-              {!hasKoStarted && (<SummaryBestenliste ranked={rankedWithResult.slice(0,3)} />)}
-              {hasKoStarted && isKoFinished && (<SummaryBestenliste ranked={gesamt.slice(0,3)} />)}
+              {!hasKoStarted && (<SummaryBestenliste title="Bestenliste" ranked={rankedWithResult.slice(0,3)} />)}
+              {hasKoStarted && isKoFinished && (<SummaryBestenliste title="Gesamtwertung" ranked={gesamt.slice(0,3)} />)}
               <DisplayTagesbestzeit ranked={dailyBestTimes.slice(0,1)} />
             </div>
             <FullscreenPanel>

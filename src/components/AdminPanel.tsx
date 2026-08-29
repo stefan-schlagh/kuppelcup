@@ -410,7 +410,7 @@ export default function AdminPanel({
                     <td data-cell="gemeindewertung" style={{ textAlign: "center" }}>
                       <input type="checkbox" disabled={locked} checked={!!t.gemeinde} onChange={() => toggleGemeinde(t.id)} />
                     </td>
-                    <td className="td-name">
+                    <td className="td-name" data-cell="kommentar (urkunde)">
                       <input
                         type="text"
                         value={t.kommentar ?? ""}

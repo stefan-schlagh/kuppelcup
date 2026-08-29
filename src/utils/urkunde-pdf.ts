@@ -213,9 +213,8 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     console.warn("Custom Font Oswald-Bold.ttf konnte nicht geladen werden, verwende Fallback Helvetica.");
   }
 
-  const [backgroundImage, hoseLogoDataUrl, geissPngDataUrl, ffLogoPngDataUrl] = await Promise.all([
+  const [backgroundImage, geissPngDataUrl, ffLogoPngDataUrl] = await Promise.all([
     loadImage("/CertificateBackground.png"),
-    loadSvgAsPng("/Hose.svg", 400, 150),
     loadSvgAsPng("/GeissColored.svg", 200, 414),
     loadSvgAsPng("/ff.svg", 100, 100),
   ]);
@@ -248,34 +247,40 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     doc.setLineWidth(0.8);
     doc.roundedRect(margin, margin, innerWidth, innerHeight, borderRadiusMm, borderRadiusMm, "S");
 
-    // 4. Rotes DC-Logo als PNG gerendert
-    const logoWidth = 16;
-    const logoHeight = 6.4;
-    doc.addImage(hoseLogoDataUrl, "PNG", cx - logoWidth / 2, 72, logoWidth, logoHeight);
-
     // 5. Title ("URKUNDE")
     color(DARK);
     doc.setFont(hasCustomFont ? "Oswald" : "helvetica", "bold");
     doc.setFontSize(60);
-    drawTextWithLetterSpacing(doc, "URKUNDE", cx, 112, 1.5875, { align: "center" });
+    drawTextWithLetterSpacing(doc, "URKUNDE", cx, 92, 1.5875, { align: "center" });
 
     // 6. Event ("1. GEISSBERGKUPPELCUP 2026")
     color(MUTED);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(16);
     const eventNameFormatted = `${meta.competitionName} ${meta.year}`.replace(/ß/g, "SS").toUpperCase();
-    doc.text(eventNameFormatted, cx, 123, { align: "center" });
+    doc.text(eventNameFormatted, cx, 103, { align: "center" });
 
     // 7. Trennlinie
     color(RED);
     doc.setLineWidth(0.5);
-    doc.line(cx - 24, 132, cx + 24, 132);
+    doc.line(cx - 24, 112, cx + 24, 112);
 
     // 8. Wertung ("TEILNEHMERURKUNDE")
     color(RED);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
-    drawTextWithLetterSpacing(doc, e.wertung.toUpperCase(), cx, 144, 0.8, { align: "center" });
+    const text = e.wertung.toUpperCase();
+    let nextY = 135;
+
+    if (text.includes("(")) {
+      const [mainText, subText] = text.split(/\s*(?=\()/);
+
+      drawTextWithLetterSpacing(doc, mainText, cx, 124, 0.8, { align: "center"});
+      drawTextWithLetterSpacing(doc, subText, cx, 136, 0.8, { align: "center"});
+      nextY = 147;
+    } else {
+      drawTextWithLetterSpacing(doc, text, cx, 124, 0.8, { align: "center"});
+    }
 
     // 9. Detail-Text: placement, optional comment, optional Gemeindewertung,
     // optional Tagesbestzeit note -- stacked in order, only the lines that
@@ -287,12 +292,11 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     doc.setFontSize(16);
     const detailLines = [e.detail, e.comment, e.extra, e.fastest].filter((l): l is string => !!l);
     const maxDetailWidth = W - 50;
-    let nextY = 152;
     detailLines.forEach((line) => {
       const wrapped = doc.splitTextToSize(line, maxDetailWidth) as string[];
       wrapped.forEach((wrappedLine) => {
         doc.text(wrappedLine, cx, nextY, { align: "center" });
-        nextY += 6;
+        nextY += 8;
       });
       nextY += 2;
     });
@@ -306,10 +310,14 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
       teamFontSize--;
       doc.setFontSize(teamFontSize);
     }
-    doc.text(e.name, cx, 186, { align: "center" });
+    let teamY = 180;
+    if (!detailLines || detailLines.length === 0) {
+      teamY = 165;
+    }
+    doc.text(e.name, cx, teamY, { align: "center" });
 
     // 11. Unterschriftenzeilen
-    const sy = 224;
+    const sy = 209;
     const lineLength = 52;
     const spacingFromCenter = 18;
 
@@ -328,26 +336,26 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     const rightLineStart = cx + spacingFromCenter;
     const rightLineEnd = cx + spacingFromCenter + lineLength;
     doc.line(rightLineStart, sy, rightLineEnd, sy);
-    doc.text("Turnierleitung", (rightLineStart + rightLineEnd) / 2, sy + 6, { align: "center" });
+    doc.text("Bewerbsleitung", (rightLineStart + rightLineEnd) / 2, sy + 6, { align: "center" });
 
     // 12. Geiß-Logo
     const geissW = 20;
     const geissH = 41.4194915254236;
-    doc.addImage(geissPngDataUrl, "PNG", cx - geissW / 2, 198.580508474576 , geissW, geissH);
+    doc.addImage(geissPngDataUrl, "PNG", cx - geissW / 2, 193.580508474576 , geissW, geissH);
 
     //13. Feuerwehr Ringendorf Badge
-    const badgeW = 42;
-    const badgeH = 17;
+    const badgeW = 52;
+    const badgeH = 20;
     const badgeX = cx - badgeW / 2;
-    const badgeY = 239.5;
+    const badgeY = 235;
 
     doc.setFillColor(255, 255, 255);
     color(ORANGE);
     doc.setLineWidth(0.35);
     doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 5, 5, "FD");
 
-    const ffLogoW = 6.6;
-    const ffLogoH = 8.5;
+    const ffLogoW = 8.5;
+    const ffLogoH = 10.2;
     const ffLogoX = badgeX + 4.3;
     const ffLogoY = badgeY + (badgeH - ffLogoH) / 2;
 
@@ -356,14 +364,14 @@ export async function buildUrkundenDoc(entries: UrkundeEntry[], meta: UrkundeMet
     const textX = ffLogoX + ffLogoW + 2;
     
     color(MUTED);
-    doc.setFontSize(7);
+    doc.setFontSize(9);
     doc.setFont(hasCustomFont ? "Oswald" : "helvetica" , "bold");
-    doc.text("FREIWILLIGE FEUERWEHR", textX, badgeY + 6.5);
+    doc.text("FREIWILLIGE FEUERWEHR", textX, badgeY + 7.5);
 
     color(MUTED);
-    doc.setFontSize(13.5);
+    doc.setFontSize(17.5);
     doc.setFont(hasCustomFont ? "Oswald" : "helvetica" , "bold");
-    doc.text("RINGENDORF", textX, badgeY + 12.2);
+    doc.text("RINGENDORF", textX, badgeY + 14.5);
   });
 
   return doc;
