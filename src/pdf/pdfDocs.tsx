@@ -98,6 +98,11 @@ const rangCol: Column = { key: "rang", header: "#", width: 15, render: (_t, i) =
 const teamCol: Column = { key: "team", header: "Team", width: 55, render: (t) => t.name };
 const punkteCol: Column = { key: "punkte", header: "Pkt.", width: 30, align: "right", render: (t) => String(t.punkte) };
 const simpleColumns: Column[] = [rangCol, teamCol, punkteCol];
+// Gesamtwertung and Gemeindewertung drop the "Pkt." column — Gesamtwertung's
+// rank reflects K.O. placement rather than punkte, and Gemeindewertung is
+// kept in the same compact rank/team style for consistency. Tagesbestzeit
+// keeps punkte since that's literally the time being ranked.
+const noPunkteColumns: Column[] = [rangCol, { ...teamCol, width: 85 }];
 
 function fmtRun(run?: RunData | null) {
   if (!run || run.zeit === null) return "-";
@@ -212,9 +217,9 @@ export function GesamtberichtPdf({ ranked, top8Ids, gemeinde, dailyBest, gesamt,
             rows={ranked}
             highlight={(t) => top8Ids.has(t.id)}
           />
-          <CompactTable title="Gemeindewertung" flex={1} columns={simpleColumns} rows={gemeinde} />
+          <CompactTable title="Gemeindewertung" flex={1} columns={noPunkteColumns} rows={gemeinde} />
           <CompactTable title="Tagesbestzeit" flex={1} columns={simpleColumns} rows={dailyBest} />
-          <CompactTable title="Gesamtwertung" flex={1} columns={simpleColumns} rows={gesamt} />
+          <CompactTable title="Gesamtwertung" flex={1} columns={noPunkteColumns} rows={gesamt} />
         </View>
       </Page>
     </Document>
