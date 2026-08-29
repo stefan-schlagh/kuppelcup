@@ -209,6 +209,46 @@ describe("buildBracket", () => {
     expect(b.final.teamA).toBeNull();
     expect(b.final.teamB).toBeNull();
     expect(b.final.winnerId).toBeNull();
+    expect(b.small.teamA).toBeNull();
+    expect(b.small.teamB).toBeNull();
+    expect(b.small.winnerId).toBeNull();
+  });
+
+  describe("small final (Lauf um Platz 3)", () => {
+    it("pits the two semi-final losers against each other", () => {
+      const b = buildBracket(seeds, {
+        ...ko,
+        sf1: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 25, strafe: 0 } }, // s0 beats s3
+        sf2: { runA: { zeit: 30, strafe: 0 }, runB: { zeit: 20, strafe: 0 } }, // s2 beats s6
+      });
+      expect([b.small.teamA?.id, b.small.teamB?.id]).toEqual(["s3", "s6"]);
+    });
+
+    it("picks a winner by lower total, same as any other K.O. match", () => {
+      const b = buildBracket(seeds, {
+        ...ko,
+        sf1: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 25, strafe: 0 } }, // s0 beats s3
+        sf2: { runA: { zeit: 30, strafe: 0 }, runB: { zeit: 20, strafe: 0 } }, // s2 beats s6
+        small: { runA: { zeit: 22, strafe: 0 }, runB: { zeit: 21, strafe: 0 } }, // s6 beats s3
+      });
+      expect(b.small.winnerId).toBe("s6");
+    });
+
+    it("stays undecided while a semi-final is still unplayed", () => {
+      const b = buildBracket(seeds, ko); // qf done, sf/final not yet
+      expect(b.small.teamA).toBeNull();
+      expect(b.small.teamB).toBeNull();
+      expect(b.small.winnerId).toBeNull();
+    });
+
+    it("has no small final at all when a bye reaches the semi-final undefeated", () => {
+      // Only 2 teams total: both get byes straight to the final, so neither
+      // semi-final ever produces a real loser to feed the small final.
+      const b = buildBracket(seeds.slice(0, 2), {});
+      expect(b.small.teamA).toBeNull();
+      expect(b.small.teamB).toBeNull();
+      expect(b.small.winnerId).toBeNull();
+    });
   });
 });
 
@@ -368,13 +408,26 @@ describe("gesamtwertung", () => {
     final: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 30, strafe: 0 } }, // t0 beats t1
   };
 
-  it("orders 1-8 by how far each team got in the bracket, then the rest by base rank", () => {
+  it("falls back to base rank for 3rd/4th while the small final is unplayed", () => {
     const ranked = rankTeams(teams10);
     const bracket = buildBracket(selectTop8(ranked), decisive);
     const result = gesamtwertung(ranked, bracket);
-    // 1: champion, 2: runner-up, 3-4: SF losers (t2 < t3 on base punkte),
-    // 5-8: QF losers (t4 < t5 < t6 < t7 on base punkte), 9-10: never in K.O.
+    // 1: champion, 2: runner-up, 3-4: SF losers (t2 < t3 on base punkte,
+    // small final not yet played), 5-8: QF losers (t4 < t5 < t6 < t7 on
+    // base punkte), 9-10: never in K.O.
     expect(result.map((t) => t.id)).toEqual(["t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"]);
+  });
+
+  it("uses the small final's result to decide 3rd vs. 4th once it's played", () => {
+    const ranked = rankTeams(teams10);
+    const bracket = buildBracket(selectTop8(ranked), {
+      ...decisive,
+      small: { runA: { zeit: 20, strafe: 0 }, runB: { zeit: 30, strafe: 0 } }, // t3 (teamA) beats t2 (teamB)
+    });
+    const result = gesamtwertung(ranked, bracket);
+    // t3 won the small final, so it takes 3rd over t2 despite t2's better
+    // base-round punkte -- the opposite of the base-rank fallback above.
+    expect(result.slice(0, 4).map((t) => t.id)).toEqual(["t0", "t1", "t3", "t2"]);
   });
 
   it("falls back to base-round order for anyone not yet decided in the bracket", () => {

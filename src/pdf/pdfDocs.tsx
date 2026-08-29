@@ -120,7 +120,11 @@ function CompactBracket({ bracket }: { bracket: BracketData }) {
       <View style={s.bracketRow}>
         <View style={s.bracketCol}><MatchBox match={qfL1} /><MatchBox match={qfL2} /></View>
         <View style={s.bracketCol}><MatchBox match={sfL} /></View>
-        <View style={s.bracketCol}><MatchBox match={bracket.final} /></View>
+        <View style={s.bracketCol}>
+          <MatchBox match={bracket.final} />
+          <Text style={s.sectionLabel}>Lauf um Platz 3</Text>
+          <MatchBox match={bracket.small} />
+        </View>
         <View style={s.bracketCol}><MatchBox match={sfR} /></View>
         <View style={s.bracketCol}><MatchBox match={qfR1} /><MatchBox match={qfR2} /></View>
       </View>

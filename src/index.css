@@ -976,6 +976,26 @@ span.nav-icon{
   box-shadow: 0 0 18px rgba(201, 154, 60, 0.15);
 }
 
+/* Lauf um Platz 3 rides along in the final's column but isn't the final
+   itself, so it keeps the plain (non-gold) match-box styling. */
+.bracket-small-final {
+  margin-top: 10px;
+}
+
+.bracket-small-final-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.bracket-small-final .match-box {
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
 /* On narrow screens the five-column bracket can't fit without a cramped
    horizontal scroll, so stack the columns and group them QF → SF → Final. */
 @media (max-width: 860px) {

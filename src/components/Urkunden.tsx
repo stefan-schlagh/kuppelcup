@@ -51,6 +51,8 @@ interface UrkundenProps {
 export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionName, year }: UrkundenProps) {
   const champion = winnerTeam(bracket.final);
   const finalist = loserTeam(bracket.final);
+  const thirdPlace = winnerTeam(bracket.small);
+  const fourthPlace = loserTeam(bracket.small);
   const semiIds = new Set(
     bracket.sf.map(loserTeam).filter((t): t is Team => !!t).map((t) => t.id),
   );
@@ -58,6 +60,8 @@ export default function Urkunden({ gesamt, bracket, dailyBestTimes, competitionN
   const wertungFor = (t: RankedTeam): string => {
     if (champion && t.id === champion.id) return "Turniersieger";
     if (finalist && t.id === finalist.id) return "Finalist";
+    if (thirdPlace && t.id === thirdPlace.id) return "3. Platz";
+    if (fourthPlace && t.id === fourthPlace.id) return "4. Platz";
     if (semiIds.has(t.id)) return "Halbfinalist";
     if (t.gastgeber) return "Teilnehmer (außer Konkurrenz)";
     return "Teilnehmerurkunde";
