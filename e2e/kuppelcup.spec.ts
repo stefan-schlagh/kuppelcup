@@ -32,8 +32,9 @@ test("admin can log in, load sample data, and see a full K.O. bracket", async ({
 
   await page.getByRole("button", { name: "Turnierbaum", exact: true }).click();
   await expect(page.getByText("Turnierbaum — Top 8")).toBeVisible();
-  // Every QF/SF/Final match box is populated (no lone "—" with 8 real teams).
-  await expect(page.locator(".match-box")).toHaveCount(7);
+  // Every QF/SF/Final/small-final match box is populated (no lone "—" with
+  // 8 real teams): 4 QF + 2 SF + 1 Final + 1 Lauf um Platz 3.
+  await expect(page.locator(".match-box")).toHaveCount(8);
   await expect(page.locator(".match-tied-badge")).toHaveCount(0);
 });
 
@@ -266,7 +267,10 @@ test("Gemeindewertung follows the overall (K.O.-aware) standings, not raw base r
   // Read the actual K.O. champion (random data, so read it back rather than
   // assuming a name) and the worst base-round team.
   await page.getByRole("button", { name: "Turnierbaum", exact: true }).click();
-  const championName = await page.locator(".bracket-col-final .match-winner .team-name-span").innerText();
+  // ".bracket-col-final" now also holds the small final (Lauf um Platz 3)
+  // box -- scope to the Final's own match-box (a direct child) so this
+  // doesn't also match the small final's winner.
+  const championName = await page.locator(".bracket-col-final > .match-box .match-winner .team-name-span").innerText();
 
   await page.getByRole("button", { name: "Bestenliste", exact: true }).click();
   const lastRowName = await page.locator(".data-table").first().locator("tbody tr").last().locator(".td-name").innerText();

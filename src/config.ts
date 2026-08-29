@@ -1,8 +1,13 @@
 // TEMPORARY: enables the test-data buttons in the Admin "Event & Teams"
 // tab (load sample teams / generate random results for Grunddurchgang
 // AND the K.O. phase). These are only meant for testing and showcases.
-// Set to false to hide them.
-export const ENABLE_TEST_DATA = false;
+// Set to false to hide them in a real deploy.
+//
+// Always on when VITE_FORCE_LOCAL_BACKEND is set (see FIREBASE_WIRED below)
+// — that flag already means "this run can't touch the real Firebase
+// project" (npm run dev:local, npm run test:e2e), so the e2e suite can rely
+// on these buttons without needing the production toggle flipped on too.
+export const ENABLE_TEST_DATA = import.meta.env.VITE_FORCE_LOCAL_BACKEND === "true" ? true : false;
 
 export type BackendKind = "local" | "firebase";
 
