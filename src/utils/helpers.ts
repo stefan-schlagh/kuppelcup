@@ -97,6 +97,17 @@ export function reassignStart(teams: Team[], id: string, start: number): Team[] 
   });
 }
 
+// Removes a team and closes the gap it leaves in the start numbers, so
+// starts stay sequential from 1 to the number of remaining teams (like
+// pulling a team out of a start list and bumping everyone after up).
+export function removeTeamAndCloseGap(teams: Team[], id: string): Team[] {
+  const removed = teams.find((t) => t.id === id);
+  if (!removed) return teams;
+  return teams
+    .filter((t) => t.id !== id)
+    .map((t) => (t.start > removed.start ? { ...t, start: t.start - 1 } : t));
+}
+
 // Create a fresh team with empty runs and a unique id.
 export function makeTeam(name: string, start: number): Team {
   return {
