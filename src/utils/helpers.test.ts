@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER, makeTeam, reassignStart, withRandomResults, randomKoResults, KO_MATCH_IDS, byPunkte } from "./helpers";
+import { fmtTime, gesamt, punkte, seedTeams, SEED_ORDER, makeTeam, reassignStart, removeTeamAndCloseGap, withRandomResults, randomKoResults, KO_MATCH_IDS, byPunkte } from "./helpers";
 import type { Team } from "../types";
 
 const teamWithRuns = (dg1: Team["dg1"], dg2: Team["dg2"], id = "t1", start = 1): Team => ({
@@ -135,6 +135,46 @@ describe("reassignStart", () => {
   it("does not mutate the input teams", () => {
     const input = teams([1, 2, 3]);
     reassignStart(input, "t1", 3);
+    expect(input.map((t) => t.start)).toEqual([1, 2, 3]);
+  });
+});
+
+describe("removeTeamAndCloseGap", () => {
+  const teams = (starts: number[]): Team[] =>
+    starts.map((start, i) => teamWithRuns({ zeit: null, strafe: null }, { zeit: null, strafe: null }, `t${i + 1}`, start));
+
+  it("removes the team and shifts every later start number down by one", () => {
+    const result = removeTeamAndCloseGap(teams([1, 2, 3, 4, 5]), "t2");
+    expect(result.map((t) => t.id)).toEqual(["t1", "t3", "t4", "t5"]);
+    expect(result.map((t) => t.start)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("leaves earlier start numbers untouched when removing the last team", () => {
+    const result = removeTeamAndCloseGap(teams([1, 2, 3]), "t3");
+    expect(result.map((t) => t.start)).toEqual([1, 2]);
+  });
+
+  it("leaves every start number untouched when removing the first team", () => {
+    const result = removeTeamAndCloseGap(teams([1, 2, 3]), "t1");
+    expect(result.map((t) => t.start)).toEqual([1, 2]);
+  });
+
+  it("keeps start numbers sequential with no gaps and no duplicates", () => {
+    const result = removeTeamAndCloseGap(teams([1, 2, 3, 4, 5]), "t3");
+    const starts = result.map((t) => t.start).sort((a, b) => a - b);
+    expect(starts).toEqual([1, 2, 3, 4]);
+    expect(new Set(starts).size).toBe(starts.length);
+  });
+
+  it("is a no-op for an unknown team id", () => {
+    const input = teams([1, 2, 3]);
+    expect(removeTeamAndCloseGap(input, "does-not-exist")).toBe(input);
+  });
+
+  it("does not mutate the input teams", () => {
+    const input = teams([1, 2, 3]);
+    removeTeamAndCloseGap(input, "t1");
+    expect(input.map((t) => t.id)).toEqual(["t1", "t2", "t3"]);
     expect(input.map((t) => t.start)).toEqual([1, 2, 3]);
   });
 });

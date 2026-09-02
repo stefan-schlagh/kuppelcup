@@ -99,16 +99,19 @@ export function selectTop8(ranked: RankedTeam[]): RankedTeam[] {
 interface Slot { team: Team | null; dead: boolean }
 
 // Assemble the K.O. bracket from the top-8 seeds and the recorded match runs.
-// Winners propagate QF -> SF -> Final; an exact tie is left unresolved and
-// flagged (`tied`) rather than guessed at — it needs a real decider run. A
-// team whose opponent slot is a dead branch (no seed, and nothing upstream
+// Winners propagate QF -> SF -> Final, losers of the semi-finals propagate
+// into the small final (Lauf um Platz 3); an exact tie is left unresolved
+// and flagged (`tied`) rather than guessed at — it needs a real decider run.
+// A team whose opponent slot is a dead branch (no seed, and nothing upstream
 // can ever fill it) advances automatically — a bye cascades forward until it
-// reaches an opponent who actually exists.
+// reaches an opponent who actually exists. The loser side of a bye is dead
+// too: nobody was ever eliminated there, so there's no team to feed into the
+// small final either.
 export function buildBracket(top8: Team[], ko: KoState): BracketData {
   const defaultRun = (): RunData => ({ zeit: null, strafe: 0 });
   const seedSlot = (t: Team | undefined): Slot => ({ team: t ?? null, dead: t === undefined });
 
-  const assembleMatch = (matchId: string, a: Slot, b: Slot): { match: Match; slot: Slot } => {
+  const assembleMatch = (matchId: string, a: Slot, b: Slot): { match: Match; winnerSlot: Slot; loserSlot: Slot } => {
     const saved = ko[matchId] || {};
     const runA = { ...defaultRun(), ...saved.runA };
     const runB = { ...defaultRun(), ...saved.runB };
@@ -116,7 +119,8 @@ export function buildBracket(top8: Team[], ko: KoState): BracketData {
     const teamB = b.team;
 
     if (a.dead && b.dead) {
-      return { match: { id: matchId, teamA: null, teamB: null, runA, runB, winnerId: null }, slot: { team: null, dead: true } };
+      const dead: Slot = { team: null, dead: true };
+      return { match: { id: matchId, teamA: null, teamB: null, runA, runB, winnerId: null }, winnerSlot: dead, loserSlot: dead };
     }
     if (a.dead || b.dead) {
       // The dead side will never have a competitor, so whoever comes out of
@@ -125,13 +129,18 @@ export function buildBracket(top8: Team[], ko: KoState): BracketData {
       const winnerId = live?.id ?? null;
       return {
         match: { id: matchId, teamA: a.dead ? null : teamA, teamB: b.dead ? null : teamB, runA, runB, winnerId },
-        slot: { team: live, dead: false },
+        winnerSlot: { team: live, dead: false },
+        loserSlot: { team: null, dead: true },
       };
     }
     if (!teamA || !teamB) {
       // Both sides are still alive, but at least one hasn't been decided yet
       // (its own feeder match is unplayed) — nothing to compare yet.
-      return { match: { id: matchId, teamA, teamB, runA, runB, winnerId: null }, slot: { team: null, dead: false } };
+      return {
+        match: { id: matchId, teamA, teamB, runA, runB, winnerId: null },
+        winnerSlot: { team: null, dead: false },
+        loserSlot: { team: null, dead: false },
+      };
     }
 
     // Rounded to hundredths (gesamt), matching how points are displayed and
@@ -142,35 +151,47 @@ export function buildBracket(top8: Team[], ko: KoState): BracketData {
     const scoreB = gesamt(runB) ?? Infinity;
     if (scoreA < Infinity && scoreA === scoreB) {
       // Both ran, exact tie — not decided by seeding, needs a decider run.
-      return { match: { id: matchId, teamA, teamB, runA, runB, winnerId: null, tied: true }, slot: { team: null, dead: false } };
+      return {
+        match: { id: matchId, teamA, teamB, runA, runB, winnerId: null, tied: true },
+        winnerSlot: { team: null, dead: false },
+        loserSlot: { team: null, dead: false },
+      };
     }
     let winnerId: string | null = null;
     if (scoreA < Infinity || scoreB < Infinity) {
       winnerId = scoreA <= scoreB ? teamA.id : teamB.id;
     }
     const winner = winnerId ? (winnerId === teamA.id ? teamA : teamB) : null;
-    return { match: { id: matchId, teamA, teamB, runA, runB, winnerId }, slot: { team: winner, dead: false } };
+    const loser = winnerId ? (winnerId === teamA.id ? teamB : teamA) : null;
+    return {
+      match: { id: matchId, teamA, teamB, runA, runB, winnerId },
+      winnerSlot: { team: winner, dead: false },
+      loserSlot: { team: loser, dead: false },
+    };
   };
 
   const qfResults = SEED_ORDER.map(([a, b], i) => assembleMatch(`qf${i + 1}`, seedSlot(top8[a]), seedSlot(top8[b])));
   const qf = qfResults.map((r) => r.match);
 
-  const sf1 = assembleMatch("sf1", qfResults[0].slot, qfResults[1].slot);
-  const sf2 = assembleMatch("sf2", qfResults[2].slot, qfResults[3].slot);
+  const sf1 = assembleMatch("sf1", qfResults[0].winnerSlot, qfResults[1].winnerSlot);
+  const sf2 = assembleMatch("sf2", qfResults[2].winnerSlot, qfResults[3].winnerSlot);
   const sf = [sf1.match, sf2.match];
 
-  const final = assembleMatch("final", sf1.slot, sf2.slot).match;
+  const final = assembleMatch("final", sf1.winnerSlot, sf2.winnerSlot).match;
+  const small = assembleMatch("small", sf1.loserSlot, sf2.loserSlot).match;
 
-  return { qf, sf, final };
+  return { qf, sf, final, small };
 }
 
 // Overall final standings: places 1-8 come from how far each team got in
-// the K.O. bracket (champion, runner-up, semi-final losers, quarter-final
-// losers) — decided matches only, so this firms up as K.O. results come in.
-// Teams eliminated in the same round never played each other, so there's no
-// rule to rank them by; they're ordered by base-round punkte as a display
-// tie-break. Everyone else (no K.O. slot, or a match still undecided) keeps
-// their base-round rank.
+// the K.O. bracket (champion, runner-up, small-final winner/loser for 3rd
+// and 4th, quarter-final losers) — decided matches only, so this firms up
+// as K.O. results come in. Quarter-final losers were eliminated in the same
+// round and never played each other, so there's no rule to rank them by;
+// they're ordered by base-round punkte as a display tie-break. Until the
+// small final is actually decided, its two semi-final losers fall back to
+// that same base-punkte tie-break. Everyone else (no K.O. slot, or a match
+// still undecided) keeps their base-round rank.
 export function gesamtwertung(ranked: RankedTeam[], bracket: BracketData): RankedTeam[] {
   const byId = new Map(ranked.map((t) => [t.id, t]));
   const placed = new Set<string>();
@@ -195,6 +216,8 @@ export function gesamtwertung(ranked: RankedTeam[], bracket: BracketData): Ranke
 
   place(bracket.final.winnerId);
   place(loserOf(bracket.final));
+  place(bracket.small.winnerId);
+  place(loserOf(bracket.small));
   placeGroup(bracket.sf.map(loserOf));
   placeGroup(bracket.qf.map(loserOf));
   ranked.forEach((t) => place(t.id));
@@ -222,7 +245,7 @@ export function urkundePlacements(gesamt: RankedTeam[]): Map<string, UrkundePlac
 }
 
 const koLabel = (id: string): string =>
-  id.startsWith("qf") ? "Viertelfinale" : id.startsWith("sf") ? "Halbfinale" : "Finale";
+  id.startsWith("qf") ? "Viertelfinale" : id.startsWith("sf") ? "Halbfinale" : id === "small" ? "Lauf um Platz 3" : "Finale";
 
 // Split one phase's runners into heats of at most `parallel` teams. Kept
 // per-phase (not sliced across the whole queue) so an odd team count can't
@@ -256,7 +279,7 @@ export function buildMonitorQueue(scheduledTeams: Team[], bracket: BracketData, 
     ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG1", t.dg1)), parallel, ["A", "B"]),
     ...chunkHeats(scheduledTeams.map((t) => runner(t, "DG2", t.dg2)), parallel, ["B", "A"]),
   ];
-  [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
+  [...bracket.qf, ...bracket.sf, bracket.small, bracket.final].forEach((m) => {
     if (m.teamA && m.teamB) {
       heats.push([
         { ...runner(m.teamA, koLabel(m.id), m.runA, m.tied), lane: "A" },
@@ -292,7 +315,7 @@ export function dailyBest(ranked: RankedTeam[], bracket: BracketData): RankedTea
     arr.push(total);
     koTotals.set(teamId, arr);
   };
-  [...bracket.qf, ...bracket.sf, bracket.final].forEach((m) => {
+  [...bracket.qf, ...bracket.sf, bracket.small, bracket.final].forEach((m) => {
     if (m.teamA) addRun(m.teamA.id, gesamt(m.runA));
     if (m.teamB) addRun(m.teamB.id, gesamt(m.runB));
   });

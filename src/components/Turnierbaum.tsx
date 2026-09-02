@@ -98,6 +98,10 @@ export default function Turnierbaum({ bracket, editable = false, onUpdateRun }: 
         <div className="bracket-col bracket-col-final">
           <div className="bracket-col-label">Finale</div>
           {box(bracket.final)}
+          <div className="bracket-small-final">
+            <div className="bracket-small-final-label">Lauf um Platz 3</div>
+            {box(bracket.small)}
+          </div>
         </div>
         <div className="bracket-col">
           <div className="bracket-col-label">Halbfinale</div>

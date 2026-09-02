@@ -98,6 +98,11 @@ const rangCol: Column = { key: "rang", header: "#", width: 15, render: (_t, i) =
 const teamCol: Column = { key: "team", header: "Team", width: 55, render: (t) => t.name };
 const punkteCol: Column = { key: "punkte", header: "Pkt.", width: 30, align: "right", render: (t) => String(t.punkte) };
 const simpleColumns: Column[] = [rangCol, teamCol, punkteCol];
+// Gesamtwertung and Gemeindewertung drop the "Pkt." column — Gesamtwertung's
+// rank reflects K.O. placement rather than punkte, and Gemeindewertung is
+// kept in the same compact rank/team style for consistency. Tagesbestzeit
+// keeps punkte since that's literally the time being ranked.
+const noPunkteColumns: Column[] = [rangCol, { ...teamCol, width: 85 }];
 
 function fmtRun(run?: RunData | null) {
   if (!run || run.zeit === null) return "-";
@@ -162,7 +167,12 @@ function CompactBracket({ bracket }: { bracket: BracketData }) {
       <View style={s.bracketRow}>
         <View style={s.bracketCol}><MatchBox match={qfL1} /><MatchBox match={qfL2} /></View>
         <View style={s.bracketCol}><MatchBox match={sfL} /></View>
-        <View style={s.bracketCol}><MatchBox match={bracket.final} final={true} /></View>
+        <View style={s.bracketCol}>
+          <Text style={s.sectionLabel}>Finale</Text>
+          <MatchBox match={bracket.final} final={true} />
+          <Text style={s.sectionLabel}>Lauf um Platz 3</Text>
+          <MatchBox match={bracket.small} />
+        </View>
         <View style={s.bracketCol}><MatchBox match={sfR} /></View>
         <View style={s.bracketCol}><MatchBox match={qfR1} /><MatchBox match={qfR2} /></View>
       </View>
@@ -207,9 +217,9 @@ export function GesamtberichtPdf({ ranked, top8Ids, gemeinde, dailyBest, gesamt,
             rows={ranked}
             highlight={(t) => top8Ids.has(t.id)}
           />
-          <CompactTable title="Gemeindewertung" flex={1} columns={simpleColumns} rows={gemeinde} />
+          <CompactTable title="Gemeindewertung" flex={1} columns={noPunkteColumns} rows={gemeinde} />
           <CompactTable title="Tagesbestzeit" flex={1} columns={simpleColumns} rows={dailyBest} />
-          <CompactTable title="Gesamtwertung" flex={1} columns={simpleColumns} rows={gesamt} />
+          <CompactTable title="Gesamtwertung" flex={1} columns={noPunkteColumns} rows={gesamt} />
         </View>
       </Page>
     </Document>

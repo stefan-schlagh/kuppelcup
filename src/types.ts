@@ -35,6 +35,9 @@ export interface BracketData {
   qf: Match[];
   sf: Match[];
   final: Match;
+  // Lauf um Platz 3: the two semi-final losers play each other to decide
+  // 3rd vs. 4th place, instead of leaving them tied on K.O. round alone.
+  small: Match;
 }
 
 // Per-match K.O. run times, keyed by match id (qf1..final).

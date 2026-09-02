@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useStorage } from "./hooks/useStorage";
 import { useEvents } from "./hooks/useEvents";
 import { AuthNotice } from "./backend";
-import { seedTeams, withRandomResults, randomKoResults, makeTeam, reassignStart, PHASE_LABELS } from "./utils/helpers";
+import { seedTeams, withRandomResults, randomKoResults, makeTeam, reassignStart, removeTeamAndCloseGap, PHASE_LABELS } from "./utils/helpers";
 import { sortByStart, rankTeams, selectTop8, buildBracket, buildMonitorQueue, dailyBest, gesamtwertung } from "./utils/tournament";
 import type { Team, EventPhase, KoState } from "./types";
 import Bestenliste, { DisplayTagesbestzeit, Gemeindewertung, SummaryBestenliste, Tagesbestzeit, Gesamtwertung } from "./components/Bestenliste";
@@ -170,7 +170,7 @@ export default function KuppelCup() {
 
   const removeTeam = (id: string) => {
     if (phase !== "anmeldung") return;
-    setTeams(teams.filter((t) => t.id !== id));
+    setTeams(removeTeamAndCloseGap(teams, id));
   };
 
   // Renaming is only meaningful while teams are still being registered.
